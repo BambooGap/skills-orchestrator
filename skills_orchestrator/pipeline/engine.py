@@ -32,7 +32,7 @@ class PipelineEngine:
         return state
 
     def advance(self, state: RunState) -> RunState:
-        """推进到下一步"""
+        """推进到下一步（假设 gate 已通过）"""
         current = self._get_current_step(state)
 
         if current is None:
@@ -60,8 +60,8 @@ class PipelineEngine:
             state.current_step = None
             return state
 
-        # 取 next 中的第一个作为下一步（分支逻辑未来扩展）
-        next_step_id = current.next[0]
+        # 默认行为：走 next[0]
+        next_step_id = current.next[0] if current.next else ""
         next_step = self.pipeline.get_step(next_step_id)
 
         if next_step is None:
@@ -72,6 +72,71 @@ class PipelineEngine:
         # 自动跳过
         state = self._auto_skip(state)
         return state
+
+    def complete_and_advance(self, state: RunState) -> RunState:
+        """完成当前步骤并推进到下一步（带 gate 检查和分支逻辑）
+        
+        这是推荐使用的推进方法，会：
+        1. 检查 gate 是否通过
+        2. 根据结果标记步骤状态（completed/failed）
+        3. 根据分支配置决定下一步
+        """
+        current = self._get_current_step(state)
+
+        if current is None:
+            if state.status == "running":
+                state.status = "completed"
+            return state
+
+        # 检查 gate
+        gate_passed = True
+        gate_reason = ""
+        if current.gate:
+            gate_passed, gate_reason = current.gate.check(state.context)
+
+        if not gate_passed:
+            # Gate 失败
+            state.fail_current(reason=gate_reason)
+            
+            # 检查是否有失败分支
+            next_step_id = None
+            if current.gate and current.gate.on_failure:
+                next_step_id = current.gate.on_failure
+            elif current.on_gate_failure:
+                next_step_id = current.on_gate_failure
+            
+            if next_step_id:
+                # 跳转到失败分支
+                next_step = self.pipeline.get_step(next_step_id)
+                if next_step:
+                    state.status = "running"  # 重置状态
+                    state.advance_to(next_step_id)
+                    return self._auto_skip(state)
+            
+            # 没有失败分支，停在失败状态
+            return state
+
+        # Gate 通过，标记完成
+        artifacts = []
+        if current.gate and current.gate.must_produce:
+            artifacts = [current.gate.must_produce]
+        state.complete_current(artifacts=artifacts)
+
+        # 找到下一步
+        if current.is_terminal:
+            state.status = "completed"
+            state.current_step = None
+            return state
+
+        next_step_id = current.next[0] if current.next else ""
+        next_step = self.pipeline.get_step(next_step_id)
+
+        if next_step is None:
+            state.fail_current(reason=f"下一步 '{next_step_id}' 不存在")
+            return state
+
+        state.advance_to(next_step_id)
+        return self._auto_skip(state)
 
     def check_gate(self, state: RunState, step: Step) -> Tuple[bool, str]:
         """检查步骤的门禁条件"""

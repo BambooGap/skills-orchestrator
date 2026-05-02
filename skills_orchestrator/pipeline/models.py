@@ -16,6 +16,7 @@ class Gate:
     min_length: int = 0  # artifact 最小字符数
     check_command: str = ""  # 可选：运行命令验证
     max_iterations: int = 0  # 可选：最大重试轮数（0=不限）
+    on_failure: Optional[str] = None  # 失败时跳转的步骤 ID
 
     def check(self, context: Dict[str, Any]) -> Tuple[bool, str]:
         """检查门禁是否通过，返回 (passed, reason)"""
@@ -44,11 +45,18 @@ class Step:
     next: List[str] = field(default_factory=list)  # 下一步骤 ID 列表
     skip_if: Optional[str] = None  # 跳过条件（context 中的 bool key）
     gate: Optional[Gate] = None  # 质量门禁
+    # 条件分支：gate 失败时跳转的步骤（用于重试或终止）
+    on_gate_failure: Optional[str] = None
 
     @property
     def is_terminal(self) -> bool:
         """是否终止步骤"""
         return len(self.next) == 0
+    
+    @property
+    def has_branch(self) -> bool:
+        """是否有条件分支"""
+        return self.on_gate_failure is not None
 
 
 @dataclass

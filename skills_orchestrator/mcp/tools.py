@@ -623,26 +623,25 @@ class ToolExecutor:
         # 更新上下文
         state.context.update(context_updates)
 
-        # 完成当前步骤
-        current_step = pipeline.get_step(state.current_step) if state.current_step else None
-        if current_step:
-            # 门禁检查
-            if current_step.gate:
-                passed, reason = engine.check_gate(state, current_step)
-                if not passed:
-                    store.save(state)
-                    return [
-                        types.TextContent(
-                            type="text",
-                            text=f"门禁未通过: {reason}\n当前步骤: {state.current_step}\n请补充所需产出后重试。",
-                        )
-                    ]
-
-            state.complete_current(artifacts=artifacts)
-
-        # 推进
-        state = engine.advance(state)
+        # 使用新的 complete_and_advance 方法（带分支逻辑）
+        state = engine.complete_and_advance(state)
         store.save(state)
+
+        # 检查是否失败
+        if state.status == "failed":
+            lines = [
+                f"❌ 步骤执行失败",
+                f"当前步骤: {state.current_step}",
+            ]
+            # 从历史记录中获取失败原因
+            if state.step_history:
+                last_record = state.step_history[-1]
+                if last_record.get("status") == "failed":
+                    lines.append(f"失败原因: {last_record.get('reason', '未知')}")
+            
+            lines.append("")
+            lines.append("💡 建议：检查产出是否符合门禁要求，或使用其他 pipeline")
+            return [types.TextContent(type="text", text="\n".join(lines))]
 
         if state.status == "completed":
             return [
@@ -659,6 +658,8 @@ class ToolExecutor:
         ]
         if next_step and next_step.gate:
             lines.append(f"门禁要求: 产出 '{next_step.gate.must_produce}'")
+            if next_step.gate.on_failure:
+                lines.append(f"  失败分支: {next_step.gate.on_failure}")
         if next_step and next_step.skip_if:
             lines.append(
                 f"跳过条件: {next_step.skip_if} = {state.context.get(next_step.skip_if, False)}"
@@ -679,6 +680,8 @@ class ToolExecutor:
             lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{next_step.gate.must_produce}'")
             if next_step.gate.min_length:
                 lines.append(f"  最小长度: {next_step.gate.min_length} 字符")
+            if next_step.gate.on_failure:
+                lines.append(f"  失败时跳转: {next_step.gate.on_failure}")
 
         lines.append("")
         lines.append(

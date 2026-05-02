@@ -35,6 +35,7 @@ class PipelineLoader:
                     min_length=gate_raw.get("min_length", 0),
                     check_command=gate_raw.get("check_command", ""),
                     max_iterations=gate_raw.get("max_iterations", 0),
+                    on_failure=gate_raw.get("on_failure"),  # 新增
                 )
             step = Step(
                 id=step_raw["id"],
@@ -42,6 +43,7 @@ class PipelineLoader:
                 next=step_raw.get("next", []),
                 skip_if=step_raw.get("skip_if"),
                 gate=gate,
+                on_gate_failure=step_raw.get("on_gate_failure"),  # 新增
             )
             steps.append(step)
 
