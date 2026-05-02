@@ -31,6 +31,9 @@ pip install skills-orchestrator
 pip install skills-orchestrator
 ```
 
+> **注意**：`pip` 包仅提供 CLI / MCP / Pipeline 能力，不内置 skills 模板。
+> 需要 clone 本仓库获取示例 `config/` 和 `skills/` 目录，或自行创建。
+
 ### 初始化项目
 
 ```bash
@@ -47,7 +50,7 @@ skills-orchestrator init
 
 ```bash
 skills-orchestrator build --config config/skills.yaml
-# ✓ 解析完成: 21 skills, 3 zones
+# ✓ 解析完成: N skills, N zones
 # ✓ 使用 Zone: 默认区 (default)
 # ✓ 输出: AGENTS.md
 ```
@@ -124,7 +127,7 @@ steps:
     gate:
       must_produce: [test_code]
       min_length: 100
-  - skill: requesting-code-review
+  - skill: pr-review
     skip_if: trivial_fix
 ```
 

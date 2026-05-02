@@ -19,9 +19,11 @@ class SkillRegistry:
     - 支持热重载（reload()）
     """
 
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str, zone_id: str | None = None):
         self._config_path = config_path
+        self._zone_id = zone_id
         self._skills: dict[str, SkillMeta] = {}
+        self._all_skills: dict[str, SkillMeta] = {}  # 全量索引（用于 base 继承）
         self._combos: list[Combo] = []
         self._content_cache: dict[str, str] = {}
         self._load()
@@ -30,9 +32,21 @@ class SkillRegistry:
         parser = Parser(self._config_path)
         config: Config = parser.parse()
 
-        resolver = Resolver(config)
-        resolved = resolver.resolve()
+        # 全量索引（仅用于 base 继承解析）
+        self._all_skills = {s.id: s for s in config.skills}
 
+        resolver = Resolver(config)
+
+        # 解析 zone
+        zone = None
+        if self._zone_id:
+            zone = next((z for z in config.zones if z.id == self._zone_id), None)
+            if zone is None:
+                raise ValueError(f"未知 zone: {self._zone_id}")
+
+        resolved = resolver.resolve(zone)
+
+        # zone 过滤索引（用于 list/search/MCP 暴露）
         self._skills = {}
         for skill in resolved.forced_skills + resolved.passive_skills:
             self._skills[skill.id] = skill
@@ -78,7 +92,7 @@ class SkillRegistry:
         if skill_id in self._content_cache:
             return self._content_cache[skill_id]
 
-        skill = self._skills.get(skill_id)
+        skill = self._skills.get(skill_id) or self._all_skills.get(skill_id)
         if skill is None:
             return None
 

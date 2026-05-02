@@ -829,7 +829,8 @@ def import_skill(source: str, skills_dir: str, config: str, dry_run: bool):
 
 @cli.command()
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
-def serve(config: str):
+@click.option("--zone", "-z", default=None, help="指定 MCP 使用的 zone id")
+def serve(config: str, zone: str | None):
     """启动 MCP Skills Server（stdio 模式，供 Claude Code 连接）
 
     \b
@@ -857,6 +858,8 @@ def serve(config: str):
     config_path = str(Path(config).resolve())
     click.echo(_ok("Skills MCP Server 启动中..."), err=True)
     click.echo(f"  配置: {config_path}", err=True)
+    if zone:
+        click.echo(f"  Zone: {zone}", err=True)
 
     try:
         from .mcp.registry import SkillRegistry
@@ -867,7 +870,7 @@ def serve(config: str):
         click.echo(_err(f"加载失败: {e}"), err=True)
         raise SystemExit(1)
 
-    asyncio.run(run_stdio(config_path))
+    asyncio.run(run_stdio(config_path, zone_id=zone))
 
 
 @cli.command("mcp-test")

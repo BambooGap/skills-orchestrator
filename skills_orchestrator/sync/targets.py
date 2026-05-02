@@ -431,16 +431,39 @@ class SyncEngine:
         """读取 skill 文件完整内容（通过 SkillContentResolver 统一处理 base 继承合并）。"""
         return self._resolver.read(skill)
 
-    def _make_summary_content(self, skill: SkillMeta) -> str:
-        """为 passive skill 生成摘要格式的 markdown"""
+    def _make_meta(self, skill: SkillMeta, effective_load_policy: str | None = None) -> dict:
+        """生成 skill 元数据，支持覆盖 load_policy
+
+        Args:
+            skill: skill 元数据
+            effective_load_policy: 覆盖的 load_policy（如 Zone require 升级后的 "require"）
+        """
+        return {
+            "name": skill.name,
+            "summary": skill.summary,
+            "tags": skill.tags,
+            "load_policy": effective_load_policy or skill.load_policy,
+            "priority": skill.priority,
+        }
+
+    def _make_summary_content(
+        self, skill: SkillMeta, effective_load_policy: str | None = None
+    ) -> str:
+        """为 passive skill 生成摘要格式的 markdown
+
+        Args:
+            skill: skill 元数据
+            effective_load_policy: 覆盖的 load_policy
+        """
         tags = ", ".join(skill.tags)
+        load_policy = effective_load_policy or skill.load_policy
         return (
             f"---\n"
             f"id: {skill.id}\n"
             f"name: {skill.name}\n"
             f'summary: "{skill.summary}"\n'
             f"tags: [{tags}]\n"
-            f"load_policy: {skill.load_policy}\n"
+            f"load_policy: {load_policy}\n"
             f"---\n\n"
             f"# {skill.name}\n\n"
             f"{skill.summary}\n\n"
@@ -460,37 +483,18 @@ class SyncEngine:
             all_skills = list(self.resolved.forced_skills) + list(self.resolved.passive_skills)
             for skill in all_skills:
                 content = self._read_skill_content(skill)
-                meta = {
-                    "name": skill.name,
-                    "summary": skill.summary,
-                    "tags": skill.tags,
-                    "load_policy": skill.load_policy,
-                    "priority": skill.priority,
-                }
-                target.write(skill.id, content, meta)
+                # forced skills 使用 "require"，passive 使用原始值
+                effective_policy = "require" if skill in self.resolved.forced_skills else None
+                target.write(skill.id, content, self._make_meta(skill, effective_policy))
         else:
             # 默认模式：forced 完整 + passive 摘要，按 Zone
             for skill in self.resolved.forced_skills:
                 content = self._read_skill_content(skill)
-                meta = {
-                    "name": skill.name,
-                    "summary": skill.summary,
-                    "tags": skill.tags,
-                    "load_policy": skill.load_policy,
-                    "priority": skill.priority,
-                }
-                target.write(skill.id, content, meta)
+                target.write(skill.id, content, self._make_meta(skill, "require"))
 
             for skill in self.resolved.passive_skills:
                 content = self._make_summary_content(skill)
-                meta = {
-                    "name": skill.name,
-                    "summary": skill.summary,
-                    "tags": skill.tags,
-                    "load_policy": skill.load_policy,
-                    "priority": skill.priority,
-                    "_is_summary": True,
-                }
+                meta = {**self._make_meta(skill), "_is_summary": True}
                 target.write(skill.id, content, meta)
 
         return target.finalize()
@@ -524,7 +528,7 @@ class CursorTarget(SyncTarget):
     def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
         """写入单个 skill 文件"""
         rule_file = self.rules_dir / f"{skill_id}.mdc"
-        
+
         # 确保 content 有 frontmatter
         if not content.startswith("---"):
             # 没有 frontmatter，添加最基本的描述
@@ -537,7 +541,7 @@ class CursorTarget(SyncTarget):
                 frontmatter, allow_unicode=True, default_flow_style=False, sort_keys=False
             )
             content = f"---\n{fm_yaml}---\n\n{content}"
-        
+
         rule_file.write_text(content, encoding="utf-8")
         self._count += 1
 
