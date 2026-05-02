@@ -30,9 +30,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourname/skills-orchestrator"
-Repository = "https://github.com/yourname/skills-orchestrator"
-"Bug Tracker" = "https://github.com/yourname/skills-orchestrator/issues"
+Homepage = "https://github.com/BambooGap/skills-orchestrator"
+Repository = "https://github.com/BambooGap/skills-orchestrator"
+"Bug Tracker" = "https://github.com/BambooGap/skills-orchestrator/issues"
 
 [project.scripts]
 skills-orchestrator = "src.main:cli"
