@@ -4,14 +4,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from src.models import ResolvedConfig, Manifest, Zone
+from skills_orchestrator.models import ResolvedConfig, Manifest, Zone
 
 
 class Compressor:
     """压缩器 - 生成 AGENTS.md"""
 
-    def __init__(self, resolved: ResolvedConfig):
+    def __init__(self, resolved: ResolvedConfig, registry=None):
         self.resolved = resolved
+        self._registry = registry  # 可选：传入后 forced skill 读取走 registry.get_content()，支持 base 继承合并
 
     def compress(self) -> Manifest:
         """压缩并生成 Manifest"""
@@ -77,13 +78,20 @@ class Compressor:
         return (Path(self.resolved.base_dir) / p).resolve()
 
     def _read_forced_skills(self) -> str:
-        """读取 forced skills 完整内容，每个 skill 用 --- 块包裹"""
+        """读取 forced skills 完整内容，每个 skill 用 --- 块包裹。
+
+        如果构造时传入了 registry，优先走 registry.get_content() 以支持 base 继承合并；
+        否则直接读文件（兼容无 registry 的 CLI 场景）。
+        """
         parts = []
         for skill in self.resolved.forced_skills:
-            path = self._resolve_path(skill.path)
-            content = (
-                path.read_text(encoding="utf-8") if path.exists() else f"> 文件不存在: {skill.path}"
-            )
+            if self._registry:
+                content = self._registry.get_content(skill.id) or f"> 文件不存在: {skill.path}"
+            else:
+                path = self._resolve_path(skill.path)
+                content = (
+                    path.read_text(encoding="utf-8") if path.exists() else f"> 文件不存在: {skill.path}"
+                )
             stripped = content.strip()
             # 文件已有 frontmatter（--- 开头），不再双重包裹
             if stripped.startswith("---"):

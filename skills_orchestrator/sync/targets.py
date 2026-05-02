@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-from src.models import ResolvedConfig, SkillMeta
+from skills_orchestrator.models import ResolvedConfig, SkillMeta
 
 
 # ═══════════════════════════ 抽象基类 ═══════════════════════════

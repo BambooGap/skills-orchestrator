@@ -1,9 +1,9 @@
 import pytest
 import tempfile
 
-from src.compiler.parser import Parser
-from src.compiler.resolver import Resolver
-from src.models import Zone, SkillMeta, Config, Rule
+from skills_orchestrator.compiler.parser import Parser
+from skills_orchestrator.compiler.resolver import Resolver
+from skills_orchestrator.models import Zone, SkillMeta, Config, Rule
 
 
 def test_combo_members_expansion():

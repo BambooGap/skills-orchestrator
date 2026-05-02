@@ -4,7 +4,7 @@ import os
 import tempfile
 
 
-from src.pipeline.models import Gate, Pipeline, RunState, Step
+from skills_orchestrator.pipeline.models import Gate, Pipeline, RunState, Step
 
 
 # ═══════════════════════════════════════════════════════════
@@ -229,7 +229,7 @@ class TestPipelineLoader:
         return os.path.join(os.path.dirname(__file__), "..", "config", "pipelines")
 
     def test_load_full_dev(self):
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         path = os.path.join(self._pipelines_dir(), "full-dev.yaml")
         loader = PipelineLoader()
@@ -239,7 +239,7 @@ class TestPipelineLoader:
         assert pipeline.first_step.id == "brainstorm"
 
     def test_load_quick_fix(self):
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         path = os.path.join(self._pipelines_dir(), "quick-fix.yaml")
         loader = PipelineLoader()
@@ -248,7 +248,7 @@ class TestPipelineLoader:
         assert len(pipeline.steps) == 3
 
     def test_load_review_only(self):
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         path = os.path.join(self._pipelines_dir(), "review-only.yaml")
         loader = PipelineLoader()
@@ -258,7 +258,7 @@ class TestPipelineLoader:
 
     def test_validate_yaml_pipelines(self):
         """所有内置 YAML pipeline 应通过结构验证"""
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         loader = PipelineLoader()
         pipelines_dir = self._pipelines_dir()
@@ -269,7 +269,7 @@ class TestPipelineLoader:
                 assert len(errors) == 0, f"{f} 验证失败: {errors}"
 
     def test_load_string(self):
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         yaml_str = """
 id: test
@@ -288,7 +288,7 @@ steps:
         assert len(pipeline.steps) == 2
 
     def test_validate_skills_missing(self):
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         path = os.path.join(self._pipelines_dir(), "full-dev.yaml")
         loader = PipelineLoader()
@@ -302,7 +302,7 @@ steps:
         assert "finish-branch" in missing
 
     def test_gate_parsed_correctly(self):
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         path = os.path.join(self._pipelines_dir(), "full-dev.yaml")
         loader = PipelineLoader()
@@ -314,7 +314,7 @@ steps:
         assert plan_step.gate.min_length == 500
 
     def test_skip_if_parsed(self):
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         path = os.path.join(self._pipelines_dir(), "full-dev.yaml")
         loader = PipelineLoader()
@@ -344,7 +344,7 @@ class TestPipelineEngine:
         )
 
     def test_start_pipeline(self):
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = self._make_simple_pipeline()
         engine = PipelineEngine(pipeline)
@@ -353,7 +353,7 @@ class TestPipelineEngine:
         assert state.status == "running"
 
     def test_advance_step(self):
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = self._make_simple_pipeline()
         engine = PipelineEngine(pipeline)
@@ -363,7 +363,7 @@ class TestPipelineEngine:
         assert state.current_step == "b"
 
     def test_complete_pipeline(self):
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = self._make_simple_pipeline()
         engine = PipelineEngine(pipeline)
@@ -377,7 +377,7 @@ class TestPipelineEngine:
         assert state.current_step is None
 
     def test_skip_step_on_advance(self):
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
             id="skip-test",
@@ -398,7 +398,7 @@ class TestPipelineEngine:
 
     def test_auto_skip_on_start(self):
         """启动时如果第一步应跳过，自动跳到第二步"""
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
             id="auto-skip",
@@ -414,7 +414,7 @@ class TestPipelineEngine:
         assert any(h["step"] == "a" and h["status"] == "skipped" for h in state.step_history)
 
     def test_gate_check_pass(self):
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
             id="gate-test",
@@ -432,7 +432,7 @@ class TestPipelineEngine:
         assert passed
 
     def test_gate_check_fail(self):
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
             id="gate-fail",
@@ -453,7 +453,7 @@ class TestPipelineEngine:
 
     def test_resume_from_saved_state(self):
         """中断恢复：从保存的 RunState 恢复"""
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = self._make_simple_pipeline()
         engine = PipelineEngine(pipeline)
@@ -469,7 +469,7 @@ class TestPipelineEngine:
 
     def test_resume_failed_state(self):
         """恢复失败状态：重置为 running"""
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = self._make_simple_pipeline()
         engine = PipelineEngine(pipeline)
@@ -481,7 +481,7 @@ class TestPipelineEngine:
         assert state.status == "running"
 
     def test_get_current_step(self):
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = self._make_simple_pipeline()
         engine = PipelineEngine(pipeline)
@@ -491,7 +491,7 @@ class TestPipelineEngine:
         assert step.id == "a"
 
     def test_get_current_step_completed(self):
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = self._make_simple_pipeline()
         engine = PipelineEngine(pipeline)
@@ -505,7 +505,7 @@ class TestPipelineEngine:
 
     def test_consecutive_skips(self):
         """连续跳过多个步骤"""
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
             id="multi-skip",
@@ -533,7 +533,7 @@ class TestRunStateStore:
         return RunState(pipeline_id=pipeline_id, run_id=run_id)
 
     def test_save_and_load(self):
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store = RunStateStore(base_dir=tmpdir)
@@ -549,7 +549,7 @@ class TestRunStateStore:
             assert loaded.current_step == "step_a"
 
     def test_load_nonexistent(self):
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store = RunStateStore(base_dir=tmpdir)
@@ -557,7 +557,7 @@ class TestRunStateStore:
             assert loaded is None
 
     def test_load_latest(self):
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store = RunStateStore(base_dir=tmpdir)
@@ -573,7 +573,7 @@ class TestRunStateStore:
             assert latest.run_id == "r2"
 
     def test_load_latest_by_pipeline(self):
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store = RunStateStore(base_dir=tmpdir)
@@ -586,7 +586,7 @@ class TestRunStateStore:
             assert latest.pipeline_id == "p1"
 
     def test_list_runs(self):
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store = RunStateStore(base_dir=tmpdir)
@@ -602,7 +602,7 @@ class TestRunStateStore:
             assert len(p1_runs) == 2
 
     def test_delete(self):
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store = RunStateStore(base_dir=tmpdir)
@@ -615,7 +615,7 @@ class TestRunStateStore:
             assert store.load("test", "r1") is None
 
     def test_delete_nonexistent(self):
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store = RunStateStore(base_dir=tmpdir)
@@ -624,7 +624,7 @@ class TestRunStateStore:
 
     def test_persistence_across_instances(self):
         """不同 Store 实例应能读取同一份数据"""
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         with tempfile.TemporaryDirectory() as tmpdir:
             store1 = RunStateStore(base_dir=tmpdir)
@@ -647,8 +647,8 @@ class TestPipelineMCPTools:
     """测试 Pipeline MCP 工具的 ToolExecutor 集成"""
 
     def _make_executor(self):
-        from src.mcp.tools import ToolExecutor
-        from src.mcp.registry import SkillRegistry
+        from skills_orchestrator.mcp.tools import ToolExecutor
+        from skills_orchestrator.mcp.registry import SkillRegistry
         import os
 
         config_path = os.path.join(os.path.dirname(__file__), "..", "config", "skills.yaml")
@@ -709,7 +709,7 @@ class TestPipelineMCPTools:
         with tempfile.TemporaryDirectory() as tmpdir:
             executor = self._make_executor()
             # 用临时目录覆盖 store
-            from src.pipeline.store import RunStateStore
+            from skills_orchestrator.pipeline.store import RunStateStore
 
             executor._store = RunStateStore(base_dir=tmpdir)
 

@@ -47,7 +47,7 @@ skills-orchestrator init
 
 ```bash
 skills-orchestrator build --config config/skills.yaml
-# ✓ 解析完成: 19 skills, 3 zones
+# ✓ 解析完成: 20 skills, 3 zones
 # ✓ 使用 Zone: 默认区 (default)
 # ✓ 输出: AGENTS.md
 ```
@@ -58,7 +58,7 @@ skills-orchestrator build --config config/skills.yaml
 
 ```bash
 skills-orchestrator validate --config config/skills.yaml
-# ✓ 配置合法：19 skills，无冲突
+# ✓ 配置合法：20 skills，无冲突
 ```
 
 ---
@@ -269,7 +269,7 @@ skill_dirs:
 zones:
   - id: enterprise
     name: 企业强制区
-    load_policy: require       # 该 Zone 内所有 Skill 强制注入
+    load_policy: require       # 该 Zone 内所有 Skill 强制注入（free 自动升级为 forced）
     rules:
       - pattern: "*/internal/*"
       - git_contains: "company.com"
@@ -319,7 +319,11 @@ skills-orchestrator pipeline resume                      # 恢复中断的工作
 skills-orchestrator sync hermes                          # 同步到 Hermes Agent
 skills-orchestrator sync openclaw                        # 同步到 OpenClaw
 skills-orchestrator sync agents-md [-o FILE]             # 同步到 AGENTS.md
-skills-orchestrator sync copilot                         # 同步到 Copilot
+skills-orchestrator sync copilot [-o FILE]               # 同步到 Copilot
+
+# Lock 可复现性
+skills-orchestrator build --lock                         # 编译时同时生成 skills.lock.json
+skills-orchestrator validate --check-lock skills.lock.json  # 检查 lock 是否过期
 ```
 
 ---
@@ -342,7 +346,7 @@ git clone https://github.com/BambooGap/skills-orchestrator
 cd skills-orchestrator
 pip install -e ".[dev]"
 pytest tests/ -v
-ruff check src/ tests/
+ruff check skills_orchestrator/ tests/
 ```
 
 CI 运行：ruff lint + format check + Python 3.10/3.11/3.12 矩阵测试。
@@ -355,7 +359,7 @@ CI 运行：ruff lint + format check + Python 3.10/3.11/3.12 矩阵测试。
 
 - [x] 编译时治理（build / validate / zone / conflict）
 - [x] Auto-Discovery from frontmatter
-- [x] 19 个生产级 Skill 内容库
+- [x] 20 个生产级 Skill 内容库
 
 ### v1.1 — 动态加载 & 继承
 

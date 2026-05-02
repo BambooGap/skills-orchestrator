@@ -10,8 +10,8 @@ from .registry import SkillRegistry
 from .search import KeywordSearcher
 
 if TYPE_CHECKING:
-    from src.pipeline.loader import Pipeline
-    from src.pipeline.store import RunStateStore
+    from skills_orchestrator.pipeline.loader import Pipeline
+    from skills_orchestrator.pipeline.store import RunStateStore
 
 
 # ── Tool Schema 定义 ──────────────────────────────────────────────
@@ -219,7 +219,7 @@ class ToolExecutor:
         self._store: RunStateStore | None = None
 
     def _get_store(self) -> RunStateStore:
-        from src.pipeline.store import RunStateStore
+        from skills_orchestrator.pipeline.store import RunStateStore
 
         if self._store is None:
             self._store = RunStateStore()
@@ -227,7 +227,7 @@ class ToolExecutor:
 
     def _get_pipeline(self, pipeline_id: str) -> Pipeline | None:
         import os
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         if pipeline_id in self._pipelines:
             return self._pipelines[pipeline_id]
@@ -473,7 +473,7 @@ class ToolExecutor:
 
     def _pipeline_start(self, args: dict) -> list[types.TextContent]:
         import os
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         pipeline_id = args.get("pipeline_id", "").strip()
         context = args.get("context", {})
@@ -500,7 +500,7 @@ class ToolExecutor:
             return [types.TextContent(type="text", text=f"找不到 Pipeline: '{pipeline_id}'")]
 
         # 校验 pipeline 引用的 skill 是否存在于 registry
-        from src.pipeline.loader import PipelineLoader
+        from skills_orchestrator.pipeline.loader import PipelineLoader
 
         loader = PipelineLoader()
         known_skills = {s.id for s in self._registry.all()}
@@ -602,7 +602,7 @@ class ToolExecutor:
     # ── pipeline_advance ─────────────────────────────────────────
 
     def _pipeline_advance(self, args: dict) -> list[types.TextContent]:
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         run_id = args.get("run_id", "").strip()
         pipeline_id = args.get("pipeline_id", "").strip()
@@ -689,7 +689,7 @@ class ToolExecutor:
     # ── pipeline_resume ──────────────────────────────────────────
 
     def _pipeline_resume(self, args: dict) -> list[types.TextContent]:
-        from src.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.engine import PipelineEngine
 
         run_id = args.get("run_id", "").strip()
         pipeline_id = args.get("pipeline_id", "").strip()

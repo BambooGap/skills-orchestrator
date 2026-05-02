@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from src.compiler.parser import Parser
-from src.compiler.resolver import Resolver
-from src.compiler.compressor import Compressor
-from src.enforcer import Enforcer
-from src.models import Zone, Rule, SkillMeta, Config, Manifest
+from skills_orchestrator.compiler.parser import Parser
+from skills_orchestrator.compiler.resolver import Resolver
+from skills_orchestrator.compiler.compressor import Compressor
+from skills_orchestrator.enforcer import Enforcer
+from skills_orchestrator.models import Zone, Rule, SkillMeta, Config, Manifest
 
 
 def _make_config_with_skills(skills, zones=None):

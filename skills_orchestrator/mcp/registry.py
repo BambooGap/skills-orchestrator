@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from src.compiler.parser import Parser
-from src.compiler.resolver import Resolver
-from src.models import SkillMeta, Config, Combo
+from skills_orchestrator.compiler.parser import Parser
+from skills_orchestrator.compiler.resolver import Resolver
+from skills_orchestrator.models import SkillMeta, Config, Combo
 
 
 class SkillRegistry:

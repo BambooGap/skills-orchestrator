@@ -11,7 +11,7 @@ from typing import Optional
 import click
 import yaml
 
-from .compiler import Parser, Resolver, Compressor
+from .compiler import Parser, Resolver, Compressor, SkillsLock
 from .enforcer import Enforcer
 from .sync.targets import get_target, SyncEngine, TARGET_REGISTRY
 from .models import Manifest
@@ -34,7 +34,7 @@ def _err(msg: str) -> str:
 
 def _load_pipeline(pipeline_id: str):
     """加载 Pipeline 定义，返回 Pipeline 对象或 None"""
-    from src.pipeline.loader import PipelineLoader
+    from skills_orchestrator.pipeline.loader import PipelineLoader
 
     pipelines_dir = Path("config/pipelines")
     if not pipelines_dir.exists():
@@ -261,7 +261,8 @@ def cli():
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--output", "-o", default="AGENTS.md", help="输出文件路径")
 @click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则自动探测")
-def build(config: str, output: str, zone: Optional[str]):
+@click.option("--lock", is_flag=True, help="同时生成 skills.lock.json 保证可复现性")
+def build(config: str, output: str, zone: Optional[str], lock: bool):
     """编译配置，生成 AGENTS.md"""
     try:
         parser = Parser(config)
@@ -301,6 +302,13 @@ def build(config: str, output: str, zone: Optional[str]):
         output_path.write_text(agents_md, encoding="utf-8")
         click.echo(_ok(f"输出: {output_path}"))
 
+        # 生成 skills.lock.json
+        if lock:
+            lock_path = output_path.parent / "skills.lock.json"
+            locker = SkillsLock(resolved)
+            locker.write(str(lock_path))
+            click.echo(_ok(f"Lock: {lock_path}"))
+
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)
@@ -309,7 +317,8 @@ def build(config: str, output: str, zone: Optional[str]):
 @cli.command()
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则使用 default zone")
-def validate(config: str, zone: Optional[str]):
+@click.option("--check-lock", default=None, help="检查 skills.lock.json 是否过期")
+def validate(config: str, zone: Optional[str], check_lock: Optional[str]):
     """验证配置合法性（不生成文件）"""
     try:
         parser = Parser(config)
@@ -353,6 +362,22 @@ def validate(config: str, zone: Optional[str]):
                 reason = resolved.block_reasons.get(s.id, "冲突声明")
                 click.echo(f"  {click.style('✗', fg='red')} {s.id}: {s.name}")
                 click.echo(f"    {click.style('→', fg='red')} {reason}")
+
+        # 检查 skills.lock 是否过期
+        if check_lock:
+            lock_path = Path(check_lock)
+            if not lock_path.exists():
+                click.echo(_warn(f"Lock 文件不存在: {lock_path}"))
+            else:
+                issues = SkillsLock.check(resolved, str(lock_path))
+                if issues:
+                    click.echo(
+                        f"\n{click.style('Lock 差异', fg='yellow', bold=True)} ({len(issues)})"
+                    )
+                    for issue in issues:
+                        click.echo(f"  {issue}")
+                else:
+                    click.echo(_ok("Lock 校验通过: 所有 skill 与 lock 一致"))
 
     except Exception as e:
         click.echo(_err(str(e)), err=True)
@@ -939,7 +964,7 @@ def pipeline_start(pipeline_id: str, context: str, config: str):
 @click.option("--pipeline-id", "-p", default=None, help="Pipeline ID")
 def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str]):
     """查看 Pipeline 运行状态"""
-    from src.pipeline.store import RunStateStore
+    from skills_orchestrator.pipeline.store import RunStateStore
 
     try:
         store = RunStateStore()
@@ -1035,8 +1060,8 @@ def pipeline_advance(run_id: str, pipeline_id: str, artifacts: str, context: str
 @click.option("--pipeline-id", "-p", default=None, help="Pipeline ID")
 def pipeline_resume(run_id: Optional[str], pipeline_id: Optional[str]):
     """恢复中断的 Pipeline 运行"""
-    from src.pipeline.engine import PipelineEngine
-    from src.pipeline.store import RunStateStore
+    from skills_orchestrator.pipeline.engine import PipelineEngine
+    from skills_orchestrator.pipeline.store import RunStateStore
 
     try:
         store = RunStateStore()

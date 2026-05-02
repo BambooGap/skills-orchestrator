@@ -3,5 +3,6 @@
 from .parser import Parser
 from .resolver import Resolver
 from .compressor import Compressor
+from .lock import SkillsLock
 
-__all__ = ["Parser", "Resolver", "Compressor"]
+__all__ = ["Parser", "Resolver", "Compressor", "SkillsLock"]

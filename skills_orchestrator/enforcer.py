@@ -3,7 +3,7 @@
 from fnmatch import fnmatch
 from pathlib import Path
 
-from src.models import Zone, Config, Manifest, LoadPlan
+from skills_orchestrator.models import Zone, Config, Manifest, LoadPlan
 
 
 class Enforcer:

@@ -11,7 +11,7 @@ import math
 import re
 from dataclasses import dataclass
 
-from src.models import SkillMeta
+from skills_orchestrator.models import SkillMeta
 
 
 @dataclass

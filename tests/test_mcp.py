@@ -3,10 +3,10 @@
 from pathlib import Path
 import pytest
 
-from src.models import SkillMeta
-from src.mcp.search import KeywordSearcher
-from src.mcp.registry import SkillRegistry
-from src.mcp.tools import ToolExecutor
+from skills_orchestrator.models import SkillMeta
+from skills_orchestrator.mcp.search import KeywordSearcher
+from skills_orchestrator.mcp.registry import SkillRegistry
+from skills_orchestrator.mcp.tools import ToolExecutor
 
 
 # ── 测试 fixtures ────────────────────────────────────────────────
@@ -116,7 +116,7 @@ class MockRegistry:
         return SAMPLE_SKILLS
 
     def combos(self):
-        from src.models import Combo
+        from skills_orchestrator.models import Combo
 
         return [
             Combo(

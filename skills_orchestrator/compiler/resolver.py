@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from src.models import Zone, SkillMeta, Config, ResolvedConfig
+from skills_orchestrator.models import Zone, SkillMeta, Config, ResolvedConfig
 
 
 class Resolver:
@@ -22,8 +22,10 @@ class Resolver:
         # 验证 base 引用
         self._validate_bases(zone_skills)
 
-        # 检测冲突
-        forced, passive, blocked, block_reasons = self._detect_conflicts(zone_skills)
+        # 检测冲突（传入 active_zone 以支持 zone 级 load_policy 覆盖）
+        forced, passive, blocked, block_reasons = self._detect_conflicts(
+            zone_skills, active_zone
+        )
 
         return ResolvedConfig(
             forced_skills=forced,
@@ -82,9 +84,17 @@ class Resolver:
         return [s for s in self.config.skills if zone.id in s.zones or not s.zones]
 
     def _detect_conflicts(
-        self, skills: List[SkillMeta]
+        self, skills: List[SkillMeta], zone: Optional[Zone] = None
     ) -> tuple[List[SkillMeta], List[SkillMeta], List[SkillMeta], dict]:
-        """检测冲突并分类，返回 (forced, passive, blocked, block_reasons)"""
+        """检测冲突并分类，返回 (forced, passive, blocked, block_reasons)
+
+        Zone load_policy 语义：
+        - zone require 时，zone 内 free skill 自动升级为 forced
+          （企业强制区 = 所有 skill 都强制加载）
+        - skill 的 require 始终是 forced，不受 zone 影响
+        - skill 可以通过 overrides 中显式声明 load_policy: free 来拒绝升级
+        """
+        zone_forces_all = zone is not None and zone.load_policy == "require"
         forced = []
         passive = []
         blocked = []
@@ -131,7 +141,11 @@ class Resolver:
                         break
 
             if not conflict_found and skill.id not in blocked_ids:
-                if skill.load_policy == "require":
+                # Zone require 时，free skill 升级为 forced
+                is_forced = skill.load_policy == "require" or (
+                    zone_forces_all and skill.load_policy == "free"
+                )
+                if is_forced:
                     forced.append(skill)
                 else:
                     passive.append(skill)

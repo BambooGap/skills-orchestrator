@@ -24,3 +24,7 @@ env/
 # Secrets
 .env
 .env.local
+
+# Generated
+AGENTS.md
+skills.lock.json

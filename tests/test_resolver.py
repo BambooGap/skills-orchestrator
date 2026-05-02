@@ -1,6 +1,6 @@
 import pytest
-from src.models import Zone, SkillMeta, Config, Rule
-from src.compiler.resolver import Resolver
+from skills_orchestrator.models import Zone, SkillMeta, Config, Rule
+from skills_orchestrator.compiler.resolver import Resolver
 
 
 def test_conflict_resolution():
@@ -173,3 +173,77 @@ def test_exclusive_zone_with_whitelist():
     # other-skill 不应该出现
     all_ids = forced_ids | passive_ids | {s.id for s in resolved.blocked_skills}
     assert "other-skill" not in all_ids
+
+
+def test_zone_require_upgrades_free_to_forced():
+    """Zone load_policy=require 时，free skill 自动升级为 forced"""
+    zone_require = Zone(
+        id="enterprise",
+        name="企业强制区",
+        load_policy="require",
+        priority=200,
+    )
+
+    # 这个 skill 自己是 free，属于 enterprise zone
+    skill_free_in_enterprise = SkillMeta(
+        id="code-review",
+        name="Code Review",
+        path="/path/cr",
+        summary="CR",
+        load_policy="free",
+        priority=80,
+        zones=["enterprise"],
+    )
+
+    # 这个 skill 自己已经是 require
+    skill_require = SkillMeta(
+        id="chinese-review",
+        name="Chinese Review",
+        path="/path/chr",
+        summary="CHR",
+        load_policy="require",
+        priority=200,
+        zones=["enterprise"],
+    )
+
+    config = Config(
+        zones=[zone_require],
+        skills=[skill_free_in_enterprise, skill_require],
+    )
+    resolver = Resolver(config)
+    resolved = resolver.resolve(zone_require)
+
+    # 两个 skill 都应该在 forced 中
+    forced_ids = {s.id for s in resolved.forced_skills}
+    assert "code-review" in forced_ids, "free skill 在 require zone 下应升级为 forced"
+    assert "chinese-review" in forced_ids
+    assert len(resolved.passive_skills) == 0
+
+
+def test_zone_free_does_not_upgrade():
+    """Zone load_policy=free 时，free skill 保持 passive"""
+    zone_free = Zone(
+        id="default",
+        name="默认区",
+        load_policy="free",
+        priority=0,
+    )
+
+    skill_free = SkillMeta(
+        id="tdd",
+        name="TDD",
+        path="/path/tdd",
+        summary="TDD",
+        load_policy="free",
+        priority=90,
+        zones=["default"],
+    )
+
+    config = Config(zones=[zone_free], skills=[skill_free])
+    resolver = Resolver(config)
+    resolved = resolver.resolve(zone_free)
+
+    # free skill 在 free zone 下应该是 passive
+    assert len(resolved.forced_skills) == 0
+    assert len(resolved.passive_skills) == 1
+    assert resolved.passive_skills[0].id == "tdd"

@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.models import ResolvedConfig, SkillMeta
-from src.sync.targets import (
+from skills_orchestrator.models import ResolvedConfig, SkillMeta
+from skills_orchestrator.sync.targets import (
     SyncTarget,
     HermesTarget,
     OpenClawTarget,

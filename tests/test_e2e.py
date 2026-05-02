@@ -4,9 +4,9 @@ import os
 import re
 
 
-from src.mcp.registry import SkillRegistry
-from src.mcp.tools import ToolExecutor
-from src.pipeline.store import RunStateStore
+from skills_orchestrator.mcp.registry import SkillRegistry
+from skills_orchestrator.mcp.tools import ToolExecutor
+from skills_orchestrator.pipeline.store import RunStateStore
 
 
 # ─────────────────── helpers ───────────────────
@@ -307,7 +307,7 @@ class TestE2ECLIIntegration:
         import subprocess
 
         result = subprocess.run(
-            ["python", "-m", "src.main", "pipeline", "list"],
+            ["python", "-m", "skills_orchestrator.main", "pipeline", "list"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -326,7 +326,7 @@ class TestE2ECLIIntegration:
             [
                 "python",
                 "-m",
-                "src.main",
+                "skills_orchestrator.main",
                 "pipeline",
                 "start",
                 "quick-fix",
@@ -349,7 +349,7 @@ class TestE2ECLIIntegration:
             [
                 "python",
                 "-m",
-                "src.main",
+                "skills_orchestrator.main",
                 "pipeline",
                 "status",
                 "--run-id",

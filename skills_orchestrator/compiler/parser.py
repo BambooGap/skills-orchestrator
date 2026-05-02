@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from src.models import Zone, Rule, SkillMeta, Combo, Config
+from skills_orchestrator.models import Zone, Rule, SkillMeta, Combo, Config
 
 
 class Parser:

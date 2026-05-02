@@ -1,10 +1,10 @@
 from pathlib import Path
 import os
 
-from src.compiler.parser import Parser
-from src.compiler.resolver import Resolver
-from src.compiler.compressor import Compressor
-from src.models import Manifest
+from skills_orchestrator.compiler.parser import Parser
+from skills_orchestrator.compiler.resolver import Resolver
+from skills_orchestrator.compiler.compressor import Compressor
+from skills_orchestrator.models import Manifest
 
 
 def test_compressor_generates_manifest():
