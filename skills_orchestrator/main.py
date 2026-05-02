@@ -1013,7 +1013,7 @@ def pipeline_list(detail: bool, compact: bool):
                         preview += f" → ... (共{step_count}步)"
                     click.echo(f"   🛣️  流程预览: {preview}")
                 
-                click.echo(f"   {"─"*50}")
+                click.echo("   " + "─" * 50)
                 
             except Exception as e:
                 click.echo(f"\n❌ 加载 {pipeline_id} 时出错: {e}")

@@ -606,7 +606,6 @@ class ToolExecutor:
 
         run_id = args.get("run_id", "").strip()
         pipeline_id = args.get("pipeline_id", "").strip()
-        artifacts = args.get("artifacts", [])
         context_updates = args.get("context_updates", {})
 
         store = self._get_store()
@@ -630,7 +629,7 @@ class ToolExecutor:
         # 检查是否失败
         if state.status == "failed":
             lines = [
-                f"❌ 步骤执行失败",
+                "❌ 步骤执行失败",
                 f"当前步骤: {state.current_step}",
             ]
             # 从历史记录中获取失败原因

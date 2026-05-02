@@ -1,6 +1,5 @@
 """测试 Pipeline 条件分支功能"""
 
-import pytest
 from skills_orchestrator.pipeline.loader import PipelineLoader
 from skills_orchestrator.pipeline.engine import PipelineEngine
 
