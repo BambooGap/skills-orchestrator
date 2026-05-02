@@ -11,6 +11,7 @@ from typing import Optional
 import click
 import yaml
 
+from . import __version__
 from .compiler import Parser, Resolver, Compressor, SkillsLock
 from .enforcer import Enforcer
 from .sync.targets import get_target, SyncEngine, TARGET_REGISTRY
@@ -262,6 +263,7 @@ def _fetch_github_skills(source: str) -> list[tuple[str, str]]:
 
 
 @click.group()
+@click.version_option(version=__version__, prog_name="skills-orchestrator")
 def cli():
     """Skills Orchestrator — 编译时 Skill 治理工具"""
     pass
