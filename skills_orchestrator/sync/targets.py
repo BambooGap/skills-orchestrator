@@ -412,19 +412,25 @@ class SyncEngine:
     - --full 模式：所有 skill 完整内容（不分 forced/passive），不按 Zone 过滤
     """
 
-    def __init__(self, resolved: ResolvedConfig, full: bool = False, registry=None):
+    def __init__(
+        self, resolved: ResolvedConfig, full: bool = False, registry=None, all_skills=None
+    ):
         """
         Args:
             resolved: 编译解析后的配置
             full: True = 全量导出所有 skill 完整内容
             registry: SkillRegistry 实例（可选），传入后走 registry.get_content()
                      以支持 base 继承合并
+            all_skills: 全量 skill 列表（用于跨 Zone base 继承）
         """
         self.resolved = resolved
         self.full = full
-        all_skills = resolved.forced_skills + resolved.passive_skills
+        current_skills = resolved.forced_skills + resolved.passive_skills
         self._resolver = SkillContentResolver(
-            base_dir=resolved.base_dir, registry=registry, skills=all_skills
+            base_dir=resolved.base_dir,
+            registry=registry,
+            skills=current_skills,
+            all_skills=all_skills or current_skills,
         )
 
     def _read_skill_content(self, skill: SkillMeta) -> str:

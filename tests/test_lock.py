@@ -35,7 +35,8 @@ class TestLockEntry:
             name="TDD",
             path="/path/tdd.md",
             content_hash="abc123",
-            load_policy="free",
+            source_load_policy="free",
+            effective_load_policy="free",
             priority=90,
             zones=["default"],
             base="",
@@ -81,7 +82,7 @@ class TestSkillsLock:
             lock_path = lock.write(str(tmpdir / "skills.lock.json"))
 
             data = json.loads(Path(lock_path).read_text(encoding="utf-8"))
-            assert data["version"] == "1.0"
+            assert data["version"] == "1.1"
             assert data["zone"] == "default"
             assert len(data["skills"]) == 2
 
@@ -255,5 +256,6 @@ class TestSkillsLock:
             resolved2 = _make_resolved(tmpdir, skills2)
 
             issues = SkillsLock.check(resolved2, lock_path)
-            assert len(issues) == 1
-            assert "load_policy 变化" in issues[0]
+            # source_load_policy 和 effective_load_policy 都会变化（free → require）
+            assert len(issues) == 2
+            assert any("load_policy 变化" in i for i in issues)

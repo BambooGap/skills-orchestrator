@@ -108,12 +108,12 @@ class Resolver:
             for conflict_id in skill.conflict_with:
                 if conflict_id in skill_map:
                     other = skill_map[conflict_id]
-                    winner = self._resolve_conflict(skill, other)
+                    winner = self._resolve_conflict(skill, other, zone_forces_all)
                     if winner is None:
                         raise ValueError(
-                            f"{skill.id} 与 {conflict_id} 互相冲突（均为 require 级别，无法自动裁决）\n"
-                            f"  {skill.id} priority={skill.priority}"
-                            f"  ↔  {conflict_id} priority={other.priority}\n"
+                            f"{skill.id} 与 {conflict_id} 互相冲突（均为 effective require 级别，无法自动裁决）\n"
+                            f"  {skill.id} policy={skill.load_policy}, priority={skill.priority}"
+                            f"  ↔  {conflict_id} policy={other.load_policy}, priority={other.priority}\n"
                             f"\n修复方案（三选一）：\n"
                             f"  1. 调优先级：将 {skill.id} 的 priority 改为"
                             f" {other.priority + 1} 或更高\n"
@@ -156,13 +156,33 @@ class Resolver:
 
         return forced, passive, blocked, block_reasons
 
-    def _resolve_conflict(self, skill1: SkillMeta, skill2: SkillMeta) -> Optional[SkillMeta]:
-        """解决两个 skill 之间的冲突，返回胜者；若无法决定返回 None"""
-        # load_policy 权重
+    def _resolve_conflict(
+        self, skill1: SkillMeta, skill2: SkillMeta, zone_forces_all: bool = False
+    ) -> Optional[SkillMeta]:
+        """解决两个 skill 之间的冲突，返回胜者；若无法决定返回 None
+
+        Args:
+            skill1: 第一个 skill
+            skill2: 第二个 skill
+            zone_forces_all: 是否在 Zone require 模式下（free skill 会被升级为 forced）
+        """
+
+        def effective_policy(skill: SkillMeta) -> str:
+            """计算 effective load_policy"""
+            if skill.load_policy == "require":
+                return "require"
+            if zone_forces_all and skill.load_policy == "free":
+                return "require"
+            return skill.load_policy
+
+        # effective load_policy 权重
         policy_weight = {"require": 2, "free": 1}
 
-        w1 = policy_weight.get(skill1.load_policy, 1)
-        w2 = policy_weight.get(skill2.load_policy, 1)
+        p1 = effective_policy(skill1)
+        p2 = effective_policy(skill2)
+
+        w1 = policy_weight.get(p1, 1)
+        w2 = policy_weight.get(p2, 1)
 
         if w1 > w2:
             return skill1
@@ -175,9 +195,9 @@ class Resolver:
         elif skill2.priority > skill1.priority:
             return skill2
 
-        # 同 priority，且都是 require → 无法自动解决
-        if skill1.load_policy == "require":
+        # 同 priority，且都是 effective require → 无法自动解决
+        if p1 == "require":
             return None
 
-        # 同 priority，都是 free → 保留第一个
+        # 同 priority，都是 effective free → 保留第一个
         return skill1

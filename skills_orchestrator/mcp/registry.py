@@ -92,6 +92,18 @@ class SkillRegistry:
             return None
         return self._get_content_internal(skill_id, allow_all_for_base=True)
 
+    def get_base_content(self, skill_id: str, chain: tuple[str, ...] = ()) -> Optional[str]:
+        """读取 base skill 内容（内部方法，支持跨 Zone）。
+
+        Args:
+            skill_id: base skill 的唯一标识
+            chain: 循环继承检测链
+
+        Returns:
+            base skill 的完整内容，或 None
+        """
+        return self._get_content_internal(skill_id, _chain=chain, allow_all_for_base=True)
+
     def _get_content_internal(
         self, skill_id: str, _chain: tuple[str, ...] = (), allow_all_for_base: bool = False
     ) -> Optional[str]:

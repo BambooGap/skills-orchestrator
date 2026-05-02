@@ -306,7 +306,7 @@ def build(config: str, output: str, zone: Optional[str], lock: bool):
             )
         )
 
-        compressor = Compressor(resolved)
+        compressor = Compressor(resolved, all_skills=cfg.skills)
         manifest = compressor.compress()
         agents_md = compressor.generate_agents_md(manifest, resolved.active_zone)
 
@@ -704,11 +704,11 @@ def sync(
 
         if dry_run:
             click.echo(f"\n{click.style('[dry-run]', fg='yellow')} 目标: {target_name}")
-            engine = SyncEngine(resolved, full=full)
+            engine = SyncEngine(resolved, full=full, all_skills=cfg.skills)
             # 列出将要导出的 skills
             if full:
-                all_skills = list(resolved.forced_skills) + list(resolved.passive_skills)
-                for skill in all_skills:
+                all_skills_list = list(resolved.forced_skills) + list(resolved.passive_skills)
+                for skill in all_skills_list:
                     click.echo(f"  {click.style('✓', fg='green')} {skill.id}: {skill.name} (完整)")
             else:
                 for skill in resolved.forced_skills:
@@ -721,7 +721,7 @@ def sync(
         # 构建 Registry（让 SyncEngine 支持继承合并）
         from .mcp.registry import SkillRegistry
 
-        registry = SkillRegistry(config)
+        registry = SkillRegistry(config, zone_id=target_zone.id if target_zone else None)
 
         # 创建 target
         kwargs = {}
@@ -734,7 +734,7 @@ def sync(
         click.echo(f"\n同步到: {target.name}")
 
         # 执行同步
-        engine = SyncEngine(resolved, full=full, registry=registry)
+        engine = SyncEngine(resolved, full=full, registry=registry, all_skills=cfg.skills)
         count = engine.sync_to(target)
 
         click.echo(_ok(f"已同步 {count} 个 skill 到 {target.name}"))
@@ -852,7 +852,8 @@ def serve(config: str, zone: str | None):
     except ImportError as e:
         missing = str(e).replace("No module named ", "").strip("'")
         click.echo(_err(f"缺少依赖: {missing}"), err=True)
-        click.echo(_err("请运行: pip install 'skills-orchestrator[mcp]'"), err=True)
+        click.echo(_err("请运行: pip install skills-orchestrator"), err=True)
+        click.echo(_err("或本地开发: pip install -e ."), err=True)
         raise SystemExit(1)
 
     config_path = str(Path(config).resolve())
@@ -877,7 +878,8 @@ def serve(config: str, zone: str | None):
 @click.argument("tool_name")
 @click.argument("args_json", default="{}")
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
-def mcp_test(tool_name: str, args_json: str, config: str):
+@click.option("--zone", "-z", default=None, help="指定 zone id")
+def mcp_test(tool_name: str, args_json: str, config: str, zone: Optional[str]):
     """在命令行测试 MCP 工具调用（不启动 server）
 
     \b
@@ -887,13 +889,14 @@ def mcp_test(tool_name: str, args_json: str, config: str):
       skills-orchestrator mcp-test get_skill '{"id": "karpathy-guidelines"}'
       skills-orchestrator mcp-test suggest_combo '{"requirement": "部署 Node.js 微服务"}'
       skills-orchestrator mcp-test pipeline_start '{"pipeline_id": "full-dev"}'
+      skills-orchestrator mcp-test list_skills '{}' -z enterprise
     """
     from .mcp.registry import SkillRegistry
     from .mcp.tools import ToolExecutor
 
     config_path = str(Path(config).resolve())
     try:
-        registry = SkillRegistry(config_path)
+        registry = SkillRegistry(config_path, zone_id=zone)
         executor = ToolExecutor(registry)
         arguments = json.loads(args_json)
         results = executor.execute(tool_name, arguments)
@@ -1066,7 +1069,8 @@ def pipeline_list(detail: bool, compact: bool):
     help="初始上下文 JSON 或 @文件路径，如 '{\"skip_review\": true}' 或 @ctx.json",
 )
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
-def pipeline_start(pipeline_id: str, context: str, config: str):
+@click.option("--zone", "-z", default=None, help="指定 zone id")
+def pipeline_start(pipeline_id: str, context: str, config: str, zone: Optional[str]):
     """启动一个 Pipeline 运行
 
     \b
@@ -1075,13 +1079,14 @@ def pipeline_start(pipeline_id: str, context: str, config: str):
       skills-orchestrator pipeline start quick-fix
       skills-orchestrator pipeline start bug-fix --context '{"skip_review": true}'
       skills-orchestrator pipeline start bug-fix --context @context.json
+      skills-orchestrator pipeline start quick-fix -z enterprise
     """
     from .mcp.registry import SkillRegistry
     from .mcp.tools import ToolExecutor
 
     config_path = str(Path(config).resolve())
     try:
-        registry = SkillRegistry(config_path)
+        registry = SkillRegistry(config_path, zone_id=zone)
         executor = ToolExecutor(registry)
         ctx = _parse_context(context)
         results = executor.execute("pipeline_start", {"pipeline_id": pipeline_id, "context": ctx})
@@ -1160,8 +1165,14 @@ def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str]):
     help="上下文更新 JSON 或 @文件路径，如 '{\"done\": true}' 或 @ctx.json",
 )
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
+@click.option("--zone", "-z", default=None, help="指定 zone id")
 def pipeline_advance(
-    pipeline_id: str, run_id: Optional[str], artifacts: str, context: str, config: str
+    pipeline_id: str,
+    run_id: Optional[str],
+    artifacts: str,
+    context: str,
+    config: str,
+    zone: Optional[str],
 ):
     """推进 Pipeline 到下一步
 
@@ -1171,6 +1182,7 @@ def pipeline_advance(
       skills-orchestrator pipeline advance bug-fix --run-id abc123
       skills-orchestrator pipeline advance bug-fix --artifacts '["root_cause"]'
       skills-orchestrator pipeline advance bug-fix --context @updates.json
+      skills-orchestrator pipeline advance bug-fix -z enterprise
     """
     from .mcp.registry import SkillRegistry
     from .mcp.tools import ToolExecutor
@@ -1196,7 +1208,7 @@ def pipeline_advance(
             run_id = state.run_id
             click.echo(f"  自动使用运行 ID: {click.style(run_id, bold=True)}")
 
-        registry = SkillRegistry(config_path)
+        registry = SkillRegistry(config_path, zone_id=zone)
         executor = ToolExecutor(registry)
         arts = json.loads(artifacts)
         ctx = _parse_context(context)

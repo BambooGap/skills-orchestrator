@@ -19,7 +19,17 @@ from skills_orchestrator.models import ResolvedConfig
 class LockEntry:
     """单个 skill 的 lock 记录"""
 
-    __slots__ = ("id", "name", "path", "content_hash", "load_policy", "priority", "zones", "base")
+    __slots__ = (
+        "id",
+        "name",
+        "path",
+        "content_hash",
+        "source_load_policy",
+        "effective_load_policy",
+        "priority",
+        "zones",
+        "base",
+    )
 
     def __init__(
         self,
@@ -27,7 +37,8 @@ class LockEntry:
         name: str,
         path: str,
         content_hash: str,
-        load_policy: str,
+        source_load_policy: str,
+        effective_load_policy: str,
         priority: int,
         zones: list[str],
         base: str = "",
@@ -36,7 +47,8 @@ class LockEntry:
         self.name = name
         self.path = path
         self.content_hash = content_hash
-        self.load_policy = load_policy
+        self.source_load_policy = source_load_policy
+        self.effective_load_policy = effective_load_policy
         self.priority = priority
         self.zones = zones
         self.base = base
@@ -47,7 +59,8 @@ class LockEntry:
             "name": self.name,
             "path": self.path,
             "content_hash": self.content_hash,
-            "load_policy": self.load_policy,
+            "source_load_policy": self.source_load_policy,
+            "effective_load_policy": self.effective_load_policy,
             "priority": self.priority,
             "zones": self.zones,
             "base": self.base,
@@ -83,6 +96,17 @@ class SkillsLock:
         entries = []
         all_skills = self.resolved.forced_skills + self.resolved.passive_skills
 
+        # 计算 effective_load_policy
+        zone = self.resolved.active_zone
+        zone_forces_all = zone is not None and zone.load_policy == "require"
+
+        def effective_policy(skill) -> str:
+            if skill.load_policy == "require":
+                return "require"
+            if zone_forces_all and skill.load_policy == "free":
+                return "require"
+            return skill.load_policy
+
         for skill in all_skills:
             path = self._resolve_path(skill.path)
             content_hash = self._hash_file(path)
@@ -92,7 +116,8 @@ class SkillsLock:
                     name=skill.name,
                     path=skill.path,
                     content_hash=content_hash,
-                    load_policy=skill.load_policy,
+                    source_load_policy=skill.load_policy,
+                    effective_load_policy=effective_policy(skill),
                     priority=skill.priority,
                     zones=skill.zones,
                     base=skill.base,
@@ -109,7 +134,8 @@ class SkillsLock:
                     name=skill.name,
                     path=skill.path,
                     content_hash=content_hash,
-                    load_policy=skill.load_policy,
+                    source_load_policy=skill.load_policy,
+                    effective_load_policy=effective_policy(skill),
                     priority=skill.priority,
                     zones=skill.zones,
                     base=skill.base,
@@ -117,7 +143,7 @@ class SkillsLock:
             )
 
         return {
-            "version": "1.0",
+            "version": "1.1",
             "generated_at": datetime.now().isoformat(),
             "zone": self.resolved.active_zone.id if self.resolved.active_zone else "default",
             "skills": entries,
@@ -145,6 +171,17 @@ class SkillsLock:
 
         all_skills = resolved.forced_skills + resolved.passive_skills + resolved.blocked_skills
 
+        # 计算 effective_load_policy
+        zone = resolved.active_zone
+        zone_forces_all = zone is not None and zone.load_policy == "require"
+
+        def effective_policy(skill) -> str:
+            if skill.load_policy == "require":
+                return "require"
+            if zone_forces_all and skill.load_policy == "free":
+                return "require"
+            return skill.load_policy
+
         for skill in all_skills:
             entry = lock_entries.get(skill.id)
             if not entry:
@@ -161,12 +198,23 @@ class SkillsLock:
                     f"~ {skill.id}: 内容已变化（hash {entry['content_hash']} → {current_hash}）"
                 )
 
-            # 检查 load_policy 变化
-            if skill.load_policy != entry.get("load_policy"):
+            # 检查 source_load_policy 变化（兼容旧版 lock）
+            old_policy = entry.get("source_load_policy") or entry.get("load_policy")
+            if skill.load_policy != old_policy:
                 issues.append(
                     f"~ {skill.id}: load_policy 变化"
-                    f"（{entry.get('load_policy')} → {skill.load_policy}）"
+                    f"（{old_policy} → {skill.load_policy}）"
                 )
+
+            # 检查 effective_load_policy 变化（仅当 lock 版本 >= 1.1）
+            if lock_data.get("version") >= "1.1":
+                old_effective = entry.get("effective_load_policy")
+                current_effective = effective_policy(skill)
+                if current_effective != old_effective:
+                    issues.append(
+                        f"~ {skill.id}: effective_load_policy 变化"
+                        f"（{old_effective} → {current_effective}）"
+                    )
 
             # 检查 priority 变化
             if skill.priority != entry.get("priority"):

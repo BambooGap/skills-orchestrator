@@ -11,11 +11,14 @@ from skills_orchestrator.compiler.content_resolver import SkillContentResolver
 class Compressor:
     """压缩器 - 生成 AGENTS.md"""
 
-    def __init__(self, resolved: ResolvedConfig, registry=None):
+    def __init__(self, resolved: ResolvedConfig, registry=None, all_skills=None):
         self.resolved = resolved
-        all_skills = resolved.forced_skills + resolved.passive_skills
+        current_skills = resolved.forced_skills + resolved.passive_skills
         self._resolver = SkillContentResolver(
-            base_dir=resolved.base_dir, registry=registry, skills=all_skills
+            base_dir=resolved.base_dir,
+            registry=registry,
+            skills=current_skills,
+            all_skills=all_skills or current_skills,
         )
 
     def compress(self) -> Manifest:
