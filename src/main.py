@@ -217,7 +217,8 @@ def _fetch_github_skills(source: str) -> list[tuple[str, str]]:
         if (
             item.get("type") == "file"
             and item["name"].endswith(".md")
-            and item["name"] not in ("README.md", "CLAUDE.md", "CURSOR.md", "EXAMPLES.md")
+            and not item["name"].lower().startswith("readme")
+            and item["name"] not in ("CLAUDE.md", "CURSOR.md", "EXAMPLES.md")
         ):
             try:
                 content = _fetch_raw(item["download_url"])
@@ -307,16 +308,25 @@ def build(config: str, output: str, zone: Optional[str]):
 
 @cli.command()
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
-def validate(config: str):
+@click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则使用 default zone")
+def validate(config: str, zone: Optional[str]):
     """验证配置合法性（不生成文件）"""
     try:
         parser = Parser(config)
         cfg = parser.parse()
 
+        target_zone = None
+        if zone:
+            target_zone = next((z for z in cfg.zones if z.id == zone), None)
+            if not target_zone:
+                raise ValueError(f"Zone '{zone}' 不存在")
+
         resolver = Resolver(cfg)
-        resolved = resolver.resolve()
+        resolved = resolver.resolve(target_zone)
 
         click.echo(_ok("配置验证通过"))
+        if target_zone:
+            click.echo(f"  Zone:   {target_zone.name} ({target_zone.id})")
         click.echo(f"  Zones:  {len(cfg.zones)}")
         click.echo(f"  Skills: {len(cfg.skills)}")
         click.echo(f"  Combos: {len(cfg.combos)}")
@@ -374,14 +384,23 @@ def inspect(workdir: str, config: str):
 
 @cli.command()
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
-def status(config: str):
+@click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则使用 default zone")
+def status(config: str, zone: Optional[str]):
     """显示所有 skills 及状态（forced / passive / blocked）"""
     try:
         parser = Parser(config)
         cfg = parser.parse()
 
+        target_zone = None
+        if zone:
+            target_zone = next((z for z in cfg.zones if z.id == zone), None)
+            if not target_zone:
+                raise ValueError(f"Zone '{zone}' 不存在")
+
         resolver = Resolver(cfg)
-        resolved = resolver.resolve()
+        resolved = resolver.resolve(target_zone)
+        if target_zone:
+            click.echo(f"Zone: {target_zone.name} ({target_zone.id})\n")
 
         click.echo(f"\n{click.style('Forced Skills', fg='green', bold=True)} — 强制加载")
         if resolved.forced_skills:
@@ -495,11 +514,11 @@ def init(skills_dir: str, output: str, non_interactive: bool):
             tags_str = click.prompt("  标签（逗号分隔）", default=default_tags)
             policy = click.prompt(
                 "  加载策略",
-                default="free",
+                default=default_policy,
                 type=click.Choice(["require", "free"]),
                 show_choices=True,
             )
-            priority = click.prompt("  优先级 (0-999)", default=50, type=int)
+            priority = click.prompt("  优先级 (0-999)", default=default_priority, type=int)
             tags_list = [t.strip() for t in tags_str.split(",") if t.strip()]
             click.echo("")
 
@@ -558,7 +577,7 @@ def init(skills_dir: str, output: str, non_interactive: bool):
     help="摘要模式：passive skill 只导出摘要（仅对 hermes/openclaw 有效，它们默认全量）",
 )
 @click.option(
-    "--output", "-o", default=None, help="输出路径（仅 agents-md target 使用，默认 AGENTS.md）"
+    "--output", "-o", default=None, help="输出路径（agents-md / copilot target 使用，默认各 target 自带路径）"
 )
 @click.option("--base-dir", default=None, help="目标根目录（hermes/openclaw 使用，默认自动检测）")
 @click.option("--dry-run", is_flag=True, help="预览导出结果，不实际写入文件")
@@ -666,7 +685,7 @@ def sync(
 
         # 创建 target
         kwargs = {}
-        if target_name == "agents-md" and output:
+        if target_name in ("agents-md", "copilot") and output:
             kwargs["output_path"] = output
         if target_name in ("hermes", "openclaw") and base_dir:
             kwargs["base_dir"] = base_dir
@@ -722,6 +741,9 @@ def import_skill(source: str, skills_dir: str, config: str, dry_run: bool):
 
     if not files:
         click.echo(_warn("未找到任何 .md 文件"))
+        if "github.com" in source and "/tree/" not in source and "/blob/" not in source:
+            click.echo("  提示：尝试指定子目录，例如：")
+            click.echo(f"    skills-orchestrator import {source.rstrip('/')}/tree/main/skills")
         return
 
     click.echo(f"\n共 {len(files)} 个文件：")

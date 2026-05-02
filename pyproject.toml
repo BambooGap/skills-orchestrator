@@ -1,6 +1,6 @@
 [project]
 name = "skills-orchestrator"
-version = "1.2.1"
+version = "1.2.2"
 description = "编译时 Skill 治理工具 — 生成 AGENTS.md，强制执行冲突检测，MCP Server 按需加载"
 readme = "README.md"
 requires-python = ">=3.10"

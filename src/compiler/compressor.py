@@ -84,7 +84,12 @@ class Compressor:
             content = (
                 path.read_text(encoding="utf-8") if path.exists() else f"> 文件不存在: {skill.path}"
             )
-            parts.append(f"---\n{content.strip()}\n---")
+            stripped = content.strip()
+            # 文件已有 frontmatter（--- 开头），不再双重包裹
+            if stripped.startswith("---"):
+                parts.append(stripped)
+            else:
+                parts.append(f"---\n{stripped}\n---")
 
         return "\n\n".join(parts)
 
