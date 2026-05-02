@@ -47,7 +47,7 @@ skills-orchestrator init
 
 ```bash
 skills-orchestrator build --config config/skills.yaml
-# ✓ 解析完成: 20 skills, 3 zones
+# ✓ 解析完成: 21 skills, 3 zones
 # ✓ 使用 Zone: 默认区 (default)
 # ✓ 输出: AGENTS.md
 ```
@@ -58,7 +58,7 @@ skills-orchestrator build --config config/skills.yaml
 
 ```bash
 skills-orchestrator validate --config config/skills.yaml
-# ✓ 配置合法：20 skills，无冲突
+# ✓ 配置合法：21 skills，无冲突
 ```
 
 ---
@@ -359,7 +359,7 @@ CI 运行：ruff lint + format check + Python 3.10/3.11/3.12 矩阵测试。
 
 - [x] 编译时治理（build / validate / zone / conflict）
 - [x] Auto-Discovery from frontmatter
-- [x] 20 个生产级 Skill 内容库
+- [x] 21 个生产级 Skill 内容库
 
 ### v1.1 — 动态加载 & 继承
 

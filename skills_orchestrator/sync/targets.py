@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from skills_orchestrator.models import ResolvedConfig, SkillMeta
+from skills_orchestrator.compiler.content_resolver import SkillContentResolver
 
 
 # ═══════════════════════════ 抽象基类 ═══════════════════════════
@@ -416,38 +417,19 @@ class SyncEngine:
         Args:
             resolved: 编译解析后的配置
             full: True = 全量导出所有 skill 完整内容
-            registry: SkillRegistry 实例（可选），传入后 _read_skill_content 会走
-                      registry.get_content() 以支持 base 继承合并
+            registry: SkillRegistry 实例（可选），传入后走 registry.get_content()
+                     以支持 base 继承合并
         """
         self.resolved = resolved
         self.full = full
-        self._registry = registry
-
-    def _resolve_path(self, skill_path: str) -> Path:
-        """将 skill.path 解析为绝对路径"""
-        p = Path(skill_path)
-        if p.is_absolute():
-            return p
-        return (Path(self.resolved.base_dir) / p).resolve()
+        all_skills = resolved.forced_skills + resolved.passive_skills
+        self._resolver = SkillContentResolver(
+            base_dir=resolved.base_dir, registry=registry, skills=all_skills
+        )
 
     def _read_skill_content(self, skill: SkillMeta) -> str:
-        """读取 skill 文件完整内容
-
-        如果构造时传入了 registry，优先走 registry.get_content() 以支持 base 继承合并；
-        否则降级为直接读文件（兼容无 registry 的场景，如测试）。
-        """
-        if self._registry is not None:
-            try:
-                content = self._registry.get_content(skill.id)
-                if content:
-                    return content
-            except Exception:
-                pass  # registry 查询失败时降级为文件直读
-
-        path = self._resolve_path(skill.path)
-        if path.exists():
-            return path.read_text(encoding="utf-8")
-        return f"> 文件不存在: {skill.path}"
+        """读取 skill 文件完整内容（通过 SkillContentResolver 统一处理 base 继承合并）。"""
+        return self._resolver.read(skill)
 
     def _make_summary_content(self, skill: SkillMeta) -> str:
         """为 passive skill 生成摘要格式的 markdown"""

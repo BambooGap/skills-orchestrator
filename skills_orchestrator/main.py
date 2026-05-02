@@ -829,7 +829,15 @@ def serve(config: str):
     }
     """
     import asyncio
-    from .mcp.server import run_stdio
+
+    # 检查 mcp 包是否已安装
+    try:
+        from .mcp.server import run_stdio
+    except ImportError as e:
+        missing = str(e).replace("No module named ", "").strip("'")
+        click.echo(_err(f"缺少依赖: {missing}"), err=True)
+        click.echo(_err("请运行: pip install 'skills-orchestrator[mcp]'"), err=True)
+        raise SystemExit(1)
 
     config_path = str(Path(config).resolve())
     click.echo(_ok("Skills MCP Server 启动中..."), err=True)
