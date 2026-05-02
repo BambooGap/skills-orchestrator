@@ -1,0 +1,13 @@
+---
+id: pr-review
+name: PR Review
+summary: "Systematic PR review process with blocking/suggestion/nit severity levels"
+tags: [review, english]
+load_policy: free
+---
+
+# PR Review
+
+Systematic PR review process with blocking/suggestion/nit severity levels
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

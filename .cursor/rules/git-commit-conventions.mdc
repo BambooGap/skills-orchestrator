@@ -1,0 +1,13 @@
+---
+id: git-commit-conventions
+name: Git 提交规范
+summary: "基于 git-operations 扩展的提交信息规范，强调 Conventional Commits 格式"
+tags: [git, commit, convention]
+load_policy: free
+---
+
+# Git 提交规范
+
+基于 git-operations 扩展的提交信息规范，强调 Conventional Commits 格式
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

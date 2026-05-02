@@ -1,0 +1,13 @@
+---
+id: karpathy-guidelines
+name: Karpathy Guidelines
+summary: "减少 LLM 编码错误的行为准则：编码前先思考、最小化实现、外科式修改、目标驱动执行"
+tags: [coding, quality, mindset, best-practices]
+load_policy: free
+---
+
+# Karpathy Guidelines
+
+减少 LLM 编码错误的行为准则：编码前先思考、最小化实现、外科式修改、目标驱动执行
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

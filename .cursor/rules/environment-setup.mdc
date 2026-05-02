@@ -1,0 +1,13 @@
+---
+id: environment-setup
+name: 环境管理规范
+summary: "开发/测试/生产三环境隔离：配置管理、密钥安全、环境一致性"
+tags: [ops, environment, config, security]
+load_policy: free
+---
+
+# 环境管理规范
+
+开发/测试/生产三环境隔离：配置管理、密钥安全、环境一致性
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

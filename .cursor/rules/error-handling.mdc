@@ -1,0 +1,13 @@
+---
+id: error-handling
+name: 错误处理规范
+summary: "分层错误处理：业务错误 vs 技术错误，不吞异常，不过度防御"
+tags: [coding, error, reliability]
+load_policy: free
+---
+
+# 错误处理规范
+
+分层错误处理：业务错误 vs 技术错误，不吞异常，不过度防御
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

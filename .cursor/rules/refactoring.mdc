@@ -1,0 +1,13 @@
+---
+id: refactoring
+name: 安全重构
+summary: "安全重构步骤：小步快走、先写测试、提取函数、消除重复代码"
+tags: [refactor, quality]
+load_policy: free
+---
+
+# 安全重构
+
+安全重构步骤：小步快走、先写测试、提取函数、消除重复代码
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

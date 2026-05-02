@@ -1,0 +1,13 @@
+---
+id: deployment-checklist
+name: 部署检查清单
+summary: "上线前强制检查：功能验证、回滚方案、监控告警、数据库变更顺序"
+tags: [ops, deployment, checklist, production]
+load_policy: free
+---
+
+# 部署检查清单
+
+上线前强制检查：功能验证、回滚方案、监控告警、数据库变更顺序
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

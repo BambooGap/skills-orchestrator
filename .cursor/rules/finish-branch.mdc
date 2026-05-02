@@ -1,0 +1,13 @@
+---
+id: finish-branch
+name: 完成分支清单
+summary: "提 PR 前的完整检查清单：代码质量、测试、commit 历史、PR 描述、文档"
+tags: [git, pr, checklist]
+load_policy: free
+---
+
+# 完成分支清单
+
+提 PR 前的完整检查清单：代码质量、测试、commit 历史、PR 描述、文档
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

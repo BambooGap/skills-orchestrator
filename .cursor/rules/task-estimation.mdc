@@ -1,0 +1,13 @@
+---
+id: task-estimation
+name: 任务估时规范
+summary: "拆解到叶节点再估时，用三点估计，显式列出不确定性"
+tags: [planning, estimation, project]
+load_policy: free
+---
+
+# 任务估时规范
+
+拆解到叶节点再估时，用三点估计，显式列出不确定性
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

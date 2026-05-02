@@ -1,0 +1,13 @@
+---
+id: api-design
+name: API 设计规范
+summary: "REST API 设计：资源命名、状态码、版本控制、错误格式统一"
+tags: [coding, api, design, rest]
+load_policy: free
+---
+
+# API 设计规范
+
+REST API 设计：资源命名、状态码、版本控制、错误格式统一
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

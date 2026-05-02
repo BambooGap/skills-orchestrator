@@ -496,6 +496,56 @@ class SyncEngine:
         return target.finalize()
 
 
+# ═══════════════════════════ Cursor Target ═══════════════════════════
+
+
+class CursorTarget(SyncTarget):
+    """Cursor rules 同步
+
+    格式：项目根目录下 .cursor/rules/*.mdc
+    - 分散型：每个 skill 对应一个文件
+    - .mdc 格式支持 YAML frontmatter
+    - Cursor 自动扫描 .cursor/rules/ 目录下的 .mdc 文件
+    """
+
+    def __init__(self, output_dir: str = "."):
+        self.output_dir = Path(output_dir)
+        self.rules_dir = self.output_dir / ".cursor" / "rules"
+        self._count = 0
+
+    @property
+    def name(self) -> str:
+        return f"Cursor ({self.rules_dir})"
+
+    def prepare(self) -> None:
+        """创建 .cursor/rules/ 目录"""
+        self.rules_dir.mkdir(parents=True, exist_ok=True)
+
+    def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
+        """写入单个 skill 文件"""
+        rule_file = self.rules_dir / f"{skill_id}.mdc"
+        
+        # 确保 content 有 frontmatter
+        if not content.startswith("---"):
+            # 没有 frontmatter，添加最基本的描述
+            frontmatter = {
+                "name": meta.get("name", skill_id),
+            }
+            if meta.get("summary"):
+                frontmatter["description"] = meta["summary"]
+            fm_yaml = yaml.dump(
+                frontmatter, allow_unicode=True, default_flow_style=False, sort_keys=False
+            )
+            content = f"---\n{fm_yaml}---\n\n{content}"
+        
+        rule_file.write_text(content, encoding="utf-8")
+        self._count += 1
+
+    def finalize(self) -> int:
+        """返回写入的文件数量"""
+        return self._count
+
+
 # ═══════════════════════════ Target Registry ═══════════════════════════
 
 
@@ -504,6 +554,7 @@ TARGET_REGISTRY: Dict[str, type] = {
     "openclaw": OpenClawTarget,
     "copilot": CopilotTarget,
     "agents-md": AgentsMdTarget,
+    "cursor": CursorTarget,
 }
 
 

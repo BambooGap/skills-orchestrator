@@ -1,0 +1,13 @@
+---
+id: documentation
+name: 写文档
+summary: "README 规范、代码注释时机、API 文档格式、迁移文档模板"
+tags: [docs, readme, api]
+load_policy: free
+---
+
+# 写文档
+
+README 规范、代码注释时机、API 文档格式、迁移文档模板
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

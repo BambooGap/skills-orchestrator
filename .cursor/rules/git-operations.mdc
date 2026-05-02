@@ -1,0 +1,13 @@
+---
+id: git-operations
+name: Git 操作规范
+summary: "常用 git 操作规范：提交信息格式、分支命名约定、PR 描述模板"
+tags: [git, base]
+load_policy: free
+---
+
+# Git 操作规范
+
+常用 git 操作规范：提交信息格式、分支命名约定、PR 描述模板
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

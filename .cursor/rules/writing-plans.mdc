@@ -1,0 +1,13 @@
+---
+id: writing-plans
+name: 写实现计划
+summary: "编码前制定实现计划：影响范围、步骤拆解、测试计划、风险评估"
+tags: [planning, process]
+load_policy: free
+---
+
+# 写实现计划
+
+编码前制定实现计划：影响范围、步骤拆解、测试计划、风险评估
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

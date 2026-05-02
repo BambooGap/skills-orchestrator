@@ -1,0 +1,13 @@
+---
+id: systematic-debugging
+name: 系统化调试
+summary: "用于调试 bug、测试失败、异常排查，提供结构化的排查步骤"
+tags: [debug, error, testing]
+load_policy: free
+---
+
+# 系统化调试
+
+用于调试 bug、测试失败、异常排查，提供结构化的排查步骤
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

@@ -1,0 +1,13 @@
+---
+id: tdd
+name: 测试驱动开发
+summary: "Red-Green-Refactor 循环：先写失败测试，再写最小实现，再重构"
+tags: [testing, coding, tdd, quality]
+load_policy: free
+---
+
+# 测试驱动开发
+
+Red-Green-Refactor 循环：先写失败测试，再写最小实现，再重构
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

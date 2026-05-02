@@ -1,0 +1,13 @@
+---
+id: performance-optimization
+name: 性能优化方法论
+summary: "先测量再优化：profiling 定位瓶颈，避免过早优化，量化改进效果"
+tags: [quality, performance, profiling, optimization]
+load_policy: free
+---
+
+# 性能优化方法论
+
+先测量再优化：profiling 定位瓶颈，避免过早优化，量化改进效果
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

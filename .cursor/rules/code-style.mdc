@@ -1,0 +1,13 @@
+---
+id: code-style
+name: 代码风格规范
+summary: "命名、函数大小、注释时机：让代码自解释，减少认知负担"
+tags: [coding, style, naming, readability]
+load_policy: free
+---
+
+# 代码风格规范
+
+命名、函数大小、注释时机：让代码自解释，减少认知负担
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出

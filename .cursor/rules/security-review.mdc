@@ -1,0 +1,13 @@
+---
+id: security-review
+name: 安全代码审查
+summary: "OWASP Top 10 快速核查：输入验证、认证、注入、敏感数据暴露"
+tags: [review, security, owasp]
+load_policy: free
+---
+
+# 安全代码审查
+
+OWASP Top 10 快速核查：输入验证、认证、注入、敏感数据暴露
+
+> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出
