@@ -909,8 +909,13 @@ def pipeline():
 
 
 @pipeline.command("list")
-def pipeline_list():
-    """列出可用的 Pipeline"""
+@click.option("--detail", "-d", is_flag=True, help="显示详细版列表（带分类和预览）")
+@click.option("--compact", "-c", is_flag=True, help="显示紧凑版列表（适合窄终端）")
+def pipeline_list(detail: bool, compact: bool):
+    """列出可用的 Pipeline
+    
+    默认显示简洁版，使用 --detail 查看详细版，--compact 查看紧凑版
+    """
     pipelines_dir = os.path.join(os.path.dirname(__file__), "..", "config", "pipelines")
     pipelines_dir = os.path.normpath(pipelines_dir)
 
@@ -922,7 +927,106 @@ def pipeline_list():
     if not yaml_files:
         click.echo(_warn("没有可用的 Pipeline"))
         return
-
+    
+    # 紧凑版显示
+    if compact:
+        click.echo(f"\n可用 Pipeline ({len(yaml_files)}个):\n")
+        for f in yaml_files:
+            pipeline_id = f.replace(".yaml", "")
+            filepath = os.path.join(pipelines_dir, f)
+            try:
+                with open(filepath, encoding="utf-8") as fh:
+                    data = yaml.safe_load(fh)
+                name = data.get("name", pipeline_id)
+                steps = data.get("steps", [])
+                step_count = len(steps)
+                
+                # 简单的分类图标
+                if step_count <= 2:
+                    icon = "⚡"
+                elif step_count <= 4:
+                    icon = "🛠️"
+                else:
+                    icon = "📋"
+                
+                click.echo(f"  {icon} {click.style(pipeline_id, bold=True):20} {name:30} ({step_count}步)")
+            except Exception:
+                click.echo(f"  ❌ {click.style(pipeline_id, bold=True):20} (解析失败)")
+        return
+    
+    # 详细版显示
+    if detail:
+        click.echo("\n" + "="*60)
+        click.echo("📋 可用的 Pipeline 模板".center(60))
+        click.echo("="*60)
+        
+        for f in yaml_files:
+            pipeline_id = f.replace(".yaml", "")
+            filepath = os.path.join(pipelines_dir, f)
+            
+            try:
+                with open(filepath, encoding="utf-8") as fh:
+                    data = yaml.safe_load(fh)
+                
+                name = data.get("name", pipeline_id)
+                desc = data.get("description", "")
+                steps = data.get("steps", [])
+                step_count = len(steps)
+                
+                # 分类信息
+                if step_count <= 2:
+                    length_category, length_icon = "短流程", "🟢"
+                elif step_count <= 4:
+                    length_category, length_icon = "中流程", "🟡"
+                else:
+                    length_category, length_icon = "长流程", "🔴"
+                
+                # 使用场景分类
+                scenario_map = {
+                    "bug-fix": "bug修复",
+                    "full-dev": "完整开发",
+                    "quick-fix": "快速修复",
+                    "review-only": "代码审查",
+                    "security-audit": "安全审查"
+                }
+                scenario_category = scenario_map.get(pipeline_id, "其他")
+                
+                # 步骤摘要
+                step_names = []
+                for step in steps:
+                    step_id = step.get("id", "unknown")
+                    step_skill = step.get("skill", "unknown")
+                    step_names.append(f"{step_id}({step_skill})")
+                
+                # 输出格式
+                click.echo(f"\n🔷 {name}")
+                click.echo(f"   ID: {pipeline_id}")
+                click.echo(f"   📝 {desc}")
+                click.echo(f"   📊 {length_icon} {length_category} | {step_count} 个步骤")
+                click.echo(f"   🎯 使用场景: {scenario_category}")
+                click.echo(f"   🚀 启动命令: skills-orchestrator pipeline start {pipeline_id}")
+                
+                # 步骤预览（最多显示3个）
+                if step_names:
+                    preview = " → ".join(step_names[:3])
+                    if len(step_names) > 3:
+                        preview += f" → ... (共{step_count}步)"
+                    click.echo(f"   🛣️  流程预览: {preview}")
+                
+                click.echo(f"   {"─"*50}")
+                
+            except Exception as e:
+                click.echo(f"\n❌ 加载 {pipeline_id} 时出错: {e}")
+        
+        click.echo("\n" + "="*60)
+        click.echo("💡 使用提示:")
+        click.echo("  • 使用 'skills-orchestrator pipeline start <ID>' 启动")
+        click.echo("  • 添加 '--context @文件.json' 传递上下文")
+        click.echo("  • 使用 '--context \"{\\\"key\\\": \\\"value\\\"}\"' 传递简单上下文")
+        click.echo("="*60)
+        return
+    
+    # 默认简洁版
     click.echo(f"\n可用的 Pipeline（{len(yaml_files)} 个）：\n")
     for f in yaml_files:
         pipeline_id = f.replace(".yaml", "")

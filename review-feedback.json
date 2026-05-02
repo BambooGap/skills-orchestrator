@@ -1,3 +1,0 @@
-{
-  "review_feedback": "## Security Audit Review for Authentication System\n\n### Blocking Issues:\n1. **密码明文存储** - 发现代码中密码未进行哈希处理，直接存储\n2. **缺少密码强度策略** - 未强制要求复杂密码\n3. **会话过期时间过长** - 会话 cookie 设置为30天，安全风险高\n4. **CORS配置过于宽松** - 允许所有来源，应限制为可信域名\n\n### Suggestions:\n1. 建议使用 bcrypt 或 Argon2 进行密码哈希\n2. 添加密码复杂度检查（大小写、数字、特殊字符）\n3. 会话过期时间建议调整为24小时\n4. 实现密码重置 token 的过期机制\n\n### Questions:\n1. 用户数据是否有加密存储要求？\n2. 是否有审计日志记录登录尝试？\n\n### Security Score: 5/10 - 需要立即修复基础安全问题"
-}
