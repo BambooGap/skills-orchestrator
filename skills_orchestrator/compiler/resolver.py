@@ -84,13 +84,12 @@ class Resolver:
     def _detect_conflicts(
         self, skills: List[SkillMeta], zone: Optional[Zone] = None
     ) -> tuple[List[SkillMeta], List[SkillMeta], List[SkillMeta], dict]:
-        """检测冲突并分类，返回 (forced, passive, blocked, block_reasons)
+        """检测冲突并分类，返回
 
         Zone load_policy 语义：
         - zone require 时，zone 内 free skill 自动升级为 forced
           （企业强制区 = 所有 skill 都强制加载）
         - skill 的 require 始终是 forced，不受 zone 影响
-        - skill 可以通过 overrides 中显式声明 load_policy: free 来拒绝升级
         """
         zone_forces_all = zone is not None and zone.load_policy == "require"
         forced = []

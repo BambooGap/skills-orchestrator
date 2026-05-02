@@ -349,3 +349,88 @@ skill_dirs:
             < content.index("# B Content")
             < content.index("# A Content")
         )
+
+
+class TestSkillRegistryZoneIsolation:
+    """测试 Zone 隔离：get_content 不能绕过 Zone 读取隐藏 skill"""
+
+    def _make_registry_with_zone(
+        self, tmp_path, skills: dict[str, str], zone_skills: list[str], zone_id: str = "enterprise"
+    ) -> SkillRegistry:
+        """创建带 zone 的 Registry（使用 skill_dirs）
+
+        Args:
+            tmp_path: 临时目录
+            skills: {filename: content} 文件内容映射
+            zone_skills: 该 zone 可见的 skill id 列表
+            zone_id: zone id
+        """
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        for filename, content in skills.items():
+            (skills_dir / filename).write_text(content)
+
+        # 生成 skills.yaml（使用 skill_dirs）
+        skills_yaml = tmp_path / "config" / "skills.yaml"
+        skills_yaml.parent.mkdir(parents=True, exist_ok=True)
+
+        zone_skill_ids = '\n'.join([f"      - {sid}" for sid in zone_skills])
+        yaml_content = f"""version: "1.0"
+zones:
+  - id: {zone_id}
+    name: Enterprise Zone
+    load_policy: free
+    priority: 100
+    skills:
+{zone_skill_ids}
+skill_dirs:
+  - {str(skills_dir)}
+"""
+        skills_yaml.write_text(yaml_content)
+
+        return SkillRegistry(str(skills_yaml), zone_id=zone_id)
+
+    def test_get_content_zone_isolation(self, tmp_path):
+        """Zone 隔离：不能读取 zone 外的 skill"""
+        reg = self._make_registry_with_zone(
+            tmp_path,
+            {
+                "tdd.md": "---\nid: tdd\nname: TDD\nsummary: Test-Driven Development\n---\n# TDD",
+                "enterprise.md": "---\nid: enterprise\nname: Enterprise\nsummary: Enterprise Skill\n---\n# Enterprise",
+            },
+            zone_skills=["enterprise"],  # 只有 enterprise 在 zone 内
+        )
+
+        # list_skills 只能看到 enterprise
+        all_skills = reg.all()
+        assert len(all_skills) == 1
+        assert all_skills[0].id == "enterprise"
+
+        # get_meta 只能拿到 enterprise
+        assert reg.get_meta("enterprise") is not None
+        assert reg.get_meta("tdd") is None
+
+        # get_content 只能拿到 enterprise
+        assert reg.get_content("enterprise") is not None
+        assert reg.get_content("tdd") is None
+
+    def test_base_inheritance_cross_zone(self, tmp_path):
+        """跨 Zone base 继承：enterprise skill 可以继承 default zone 的 base"""
+        reg = self._make_registry_with_zone(
+            tmp_path,
+            {
+                "base.md": "---\nid: base\nname: Base\nsummary: Base Skill\n---\n# Base Content",
+                "child.md": "---\nid: child\nname: Child\nsummary: Child Skill\nbase: base\n---\n# Child Content",
+            },
+            zone_skills=["child"],  # child 在 zone 内，base 不在
+        )
+
+        # get_content("child") 应该能读到 base 的内容（通过内部方法）
+        content = reg.get_content("child")
+        assert content is not None
+        assert "# Base Content" in content
+        assert "# Child Content" in content
+
+        # 但 get_content("base") 应该返回 None（公共入口）
+        assert reg.get_content("base") is None
+

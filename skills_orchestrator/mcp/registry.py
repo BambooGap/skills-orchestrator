@@ -83,16 +83,35 @@ class SkillRegistry:
         base = getattr(self, "_base_dir", None) or str(Path(self._config_path).parent)
         return (Path(base) / p).resolve()
 
-    def get_content(self, skill_id: str, _chain: tuple[str, ...] = ()) -> Optional[str]:
+    def get_content(self, skill_id: str) -> Optional[str]:
         """返回 skill 完整 .md 内容（带缓存）。
 
-        若 skill 声明了 base，则将 base 内容与当前内容合并（base 在前）。
-        _chain 用于循环检测，正常调用不需要传入。
+        公共入口：只能读取当前 zone 可见 skill。
+        """
+        if skill_id not in self._skills:
+            return None
+        return self._get_content_internal(skill_id, allow_all_for_base=True)
+
+    def _get_content_internal(
+        self, skill_id: str, _chain: tuple[str, ...] = (), allow_all_for_base: bool = False
+    ) -> Optional[str]:
+        """内部读取方法，支持 base 继承。
+
+        Args:
+            skill_id: skill 唯一标识
+            _chain: 循环继承检测链
+            allow_all_for_base: 是否允许从全量索引读取（用于 base 继承）
         """
         if skill_id in self._content_cache:
             return self._content_cache[skill_id]
 
-        skill = self._skills.get(skill_id) or self._all_skills.get(skill_id)
+        # 先从当前 zone 查找
+        skill = self._skills.get(skill_id)
+
+        # 如果允许访问全量索引（用于 base 继承）
+        if skill is None and allow_all_for_base:
+            skill = self._all_skills.get(skill_id)
+
         if skill is None:
             return None
 
@@ -107,7 +126,9 @@ class SkillRegistry:
                 # 循环继承保护：直接返回原始内容
                 content = raw
             else:
-                base_content = self.get_content(skill.base, _chain + (skill_id,))
+                base_content = self._get_content_internal(
+                    skill.base, _chain + (skill_id,), allow_all_for_base=True
+                )
                 if base_content:
                     body = self._strip_frontmatter(raw)
                     content = base_content + "\n\n---\n\n" + body
@@ -130,4 +151,4 @@ class SkillRegistry:
         return content[end + 4 :].lstrip()
 
     def _warm(self, skill: SkillMeta) -> None:
-        self.get_content(skill.id)
+        self._get_content_internal(skill.id, allow_all_for_base=True)
