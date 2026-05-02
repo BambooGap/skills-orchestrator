@@ -23,7 +23,10 @@ def test_detect_zone_by_glob():
     cfg = _make_config([zone, default])
     enforcer = Enforcer(cfg, Manifest())
 
-    with patch("skills_orchestrator.enforcer.Path.resolve", return_value=Path("/home/user/projects/work/app")):
+    with patch(
+        "skills_orchestrator.enforcer.Path.resolve",
+        return_value=Path("/home/user/projects/work/app"),
+    ):
         result = enforcer.detect_zone("/home/user/projects/work/app")
 
     assert result.id == "work"
@@ -66,7 +69,9 @@ def test_detect_zone_priority_order():
     cfg = _make_config([low, high, default])
     enforcer = Enforcer(cfg, Manifest())
 
-    with patch("skills_orchestrator.enforcer.Path.resolve", return_value=Path("/home/user/projects/foo")):
+    with patch(
+        "skills_orchestrator.enforcer.Path.resolve", return_value=Path("/home/user/projects/foo")
+    ):
         result = enforcer.detect_zone("/home/user/projects/foo")
 
     assert result.id == "high"

@@ -637,7 +637,7 @@ class ToolExecutor:
                 last_record = state.step_history[-1]
                 if last_record.get("status") == "failed":
                     lines.append(f"失败原因: {last_record.get('reason', '未知')}")
-            
+
             lines.append("")
             lines.append("💡 建议：检查产出是否符合门禁要求，或使用其他 pipeline")
             return [types.TextContent(type="text", text="\n".join(lines))]

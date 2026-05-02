@@ -23,9 +23,7 @@ class Resolver:
         self._validate_bases(zone_skills)
 
         # 检测冲突（传入 active_zone 以支持 zone 级 load_policy 覆盖）
-        forced, passive, blocked, block_reasons = self._detect_conflicts(
-            zone_skills, active_zone
-        )
+        forced, passive, blocked, block_reasons = self._detect_conflicts(zone_skills, active_zone)
 
         return ResolvedConfig(
             forced_skills=forced,

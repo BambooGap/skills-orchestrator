@@ -157,7 +157,9 @@ class SkillsLock:
                 p = (Path(_base_dir) / p).resolve()
             current_hash = SkillsLock._hash_file(p)
             if current_hash != entry.get("content_hash", ""):
-                issues.append(f"~ {skill.id}: 内容已变化（hash {entry['content_hash']} → {current_hash}）")
+                issues.append(
+                    f"~ {skill.id}: 内容已变化（hash {entry['content_hash']} → {current_hash}）"
+                )
 
             # 检查 load_policy 变化
             if skill.load_policy != entry.get("load_policy"):

@@ -75,7 +75,7 @@ class PipelineEngine:
 
     def complete_and_advance(self, state: RunState) -> RunState:
         """完成当前步骤并推进到下一步（带 gate 检查和分支逻辑）
-        
+
         这是推荐使用的推进方法，会：
         1. 检查 gate 是否通过
         2. 根据结果标记步骤状态（completed/failed）
@@ -97,14 +97,14 @@ class PipelineEngine:
         if not gate_passed:
             # Gate 失败
             state.fail_current(reason=gate_reason)
-            
+
             # 检查是否有失败分支
             next_step_id = None
             if current.gate and current.gate.on_failure:
                 next_step_id = current.gate.on_failure
             elif current.on_gate_failure:
                 next_step_id = current.on_gate_failure
-            
+
             if next_step_id:
                 # 跳转到失败分支
                 next_step = self.pipeline.get_step(next_step_id)
@@ -112,7 +112,7 @@ class PipelineEngine:
                     state.status = "running"  # 重置状态
                     state.advance_to(next_step_id)
                     return self._auto_skip(state)
-            
+
             # 没有失败分支，停在失败状态
             return state
 

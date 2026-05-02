@@ -30,24 +30,31 @@ class TestSkillContentResolverDirectRead:
 
     def test_read_missing_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            skill = SkillMeta(id="missing", name="Missing", path="/nonexistent.md", summary="Missing")
+            skill = SkillMeta(
+                id="missing", name="Missing", path="/nonexistent.md", summary="Missing"
+            )
             resolver = SkillContentResolver(base_dir=str(tmpdir))
             content = resolver.read(skill)
             assert "文件不存在" in content
 
     def test_read_with_base_inheritance(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            base_path = _make_skill_file(tmpdir, "base-skill", "---\nid: base-skill\n---\n# Base Content\n\nBase rules here.")
-            child_path = _make_skill_file(tmpdir, "child-skill", "---\nid: child-skill\nbase: base-skill\n---\n# Child Addition")
+            base_path = _make_skill_file(
+                tmpdir, "base-skill", "---\nid: base-skill\n---\n# Base Content\n\nBase rules here."
+            )
+            child_path = _make_skill_file(
+                tmpdir,
+                "child-skill",
+                "---\nid: child-skill\nbase: base-skill\n---\n# Child Addition",
+            )
 
             base_skill = SkillMeta(id="base-skill", name="Base", path=base_path, summary="Base")
-            child_skill = SkillMeta(id="child-skill", name="Child", path=child_path, summary="Child", base="base-skill")
+            child_skill = SkillMeta(
+                id="child-skill", name="Child", path=child_path, summary="Child", base="base-skill"
+            )
 
             # 传入 skills 列表，让 resolver 能找到 base skill
-            resolver = SkillContentResolver(
-                base_dir=str(tmpdir),
-                skills=[base_skill, child_skill]
-            )
+            resolver = SkillContentResolver(base_dir=str(tmpdir), skills=[base_skill, child_skill])
 
             # 先读 base，缓存它
             base_content = resolver.read(base_skill)
@@ -82,7 +89,9 @@ class TestSkillContentResolverDirectRead:
             skill_file = skill_dir / "my-skill.md"
             skill_file.write_text("---\nid: my-skill\n---\n# My Skill", encoding="utf-8")
 
-            skill = SkillMeta(id="my-skill", name="My Skill", path="skills/my-skill.md", summary="My")
+            skill = SkillMeta(
+                id="my-skill", name="My Skill", path="skills/my-skill.md", summary="My"
+            )
             resolver = SkillContentResolver(base_dir=str(tmpdir))
             content = resolver.read(skill)
             assert "# My Skill" in content
@@ -91,9 +100,13 @@ class TestSkillContentResolverDirectRead:
         """无 registry 也无 skills 列表时，base 继承降级为返回原始内容（不崩溃）"""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
-            child_path = _make_skill_file(tmpdir, "orphan", "---\nid: orphan\nbase: unknown-base\n---\n# Orphan")
+            child_path = _make_skill_file(
+                tmpdir, "orphan", "---\nid: orphan\nbase: unknown-base\n---\n# Orphan"
+            )
 
-            skill = SkillMeta(id="orphan", name="Orphan", path=child_path, summary="Orphan", base="unknown-base")
+            skill = SkillMeta(
+                id="orphan", name="Orphan", path=child_path, summary="Orphan", base="unknown-base"
+            )
             resolver = SkillContentResolver(base_dir=str(tmpdir))
             content = resolver.read(skill)
             # 应返回原始内容（不合并 base，因为找不到 base skill）

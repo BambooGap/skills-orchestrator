@@ -27,7 +27,12 @@ class SkillContentResolver:
     2. 否则直接读文件，并自行处理 base 继承合并
     """
 
-    def __init__(self, base_dir: str, registry: Optional[SkillRegistry] = None, skills: Optional[list[SkillMeta]] = None):
+    def __init__(
+        self,
+        base_dir: str,
+        registry: Optional[SkillRegistry] = None,
+        skills: Optional[list[SkillMeta]] = None,
+    ):
         """
         Args:
             base_dir: 项目根目录，用于解析相对 skill 路径
@@ -127,4 +132,4 @@ class SkillContentResolver:
         end = content.find("\n---", 3)
         if end == -1:
             return content
-        return content[end + 4:].lstrip()
+        return content[end + 4 :].lstrip()

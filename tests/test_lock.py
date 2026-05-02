@@ -56,8 +56,24 @@ class TestSkillsLock:
             )
 
             skills = [
-                SkillMeta(id="tdd", name="TDD", path=path1, summary="TDD", load_policy="free", priority=90, zones=["default"]),
-                SkillMeta(id="review", name="Review", path=path2, summary="Review", load_policy="require", priority=100, zones=["default"]),
+                SkillMeta(
+                    id="tdd",
+                    name="TDD",
+                    path=path1,
+                    summary="TDD",
+                    load_policy="free",
+                    priority=90,
+                    zones=["default"],
+                ),
+                SkillMeta(
+                    id="review",
+                    name="Review",
+                    path=path2,
+                    summary="Review",
+                    load_policy="require",
+                    priority=100,
+                    zones=["default"],
+                ),
             ]
             resolved = _make_resolved(tmpdir, skills)
 
@@ -80,7 +96,15 @@ class TestSkillsLock:
             path1 = _make_skill_file(tmpdir, "tdd", "---\nid: tdd\n---\n# TDD Content")
 
             skills = [
-                SkillMeta(id="tdd", name="TDD", path=path1, summary="TDD", load_policy="free", priority=90, zones=["default"]),
+                SkillMeta(
+                    id="tdd",
+                    name="TDD",
+                    path=path1,
+                    summary="TDD",
+                    load_policy="free",
+                    priority=90,
+                    zones=["default"],
+                ),
             ]
             resolved = _make_resolved(tmpdir, skills)
 
@@ -97,7 +121,15 @@ class TestSkillsLock:
             path1 = _make_skill_file(tmpdir, "tdd", "---\nid: tdd\n---\n# TDD Original")
 
             skills = [
-                SkillMeta(id="tdd", name="TDD", path=path1, summary="TDD", load_policy="free", priority=90, zones=["default"]),
+                SkillMeta(
+                    id="tdd",
+                    name="TDD",
+                    path=path1,
+                    summary="TDD",
+                    load_policy="free",
+                    priority=90,
+                    zones=["default"],
+                ),
             ]
             resolved = _make_resolved(tmpdir, skills)
 
@@ -117,7 +149,15 @@ class TestSkillsLock:
             path1 = _make_skill_file(tmpdir, "tdd", "---\nid: tdd\n---\n# TDD")
 
             skills1 = [
-                SkillMeta(id="tdd", name="TDD", path=path1, summary="TDD", load_policy="free", priority=90, zones=["default"]),
+                SkillMeta(
+                    id="tdd",
+                    name="TDD",
+                    path=path1,
+                    summary="TDD",
+                    load_policy="free",
+                    priority=90,
+                    zones=["default"],
+                ),
             ]
             resolved1 = _make_resolved(tmpdir, skills1)
             lock = SkillsLock(resolved1)
@@ -126,7 +166,15 @@ class TestSkillsLock:
             # 新增一个 skill
             path2 = _make_skill_file(tmpdir, "review", "---\nid: review\n---\n# Review")
             skills2 = skills1 + [
-                SkillMeta(id="review", name="Review", path=path2, summary="Review", load_policy="free", priority=80, zones=["default"]),
+                SkillMeta(
+                    id="review",
+                    name="Review",
+                    path=path2,
+                    summary="Review",
+                    load_policy="free",
+                    priority=80,
+                    zones=["default"],
+                ),
             ]
             resolved2 = _make_resolved(tmpdir, skills2)
 
@@ -141,8 +189,24 @@ class TestSkillsLock:
             path2 = _make_skill_file(tmpdir, "review", "---\nid: review\n---\n# Review")
 
             skills1 = [
-                SkillMeta(id="tdd", name="TDD", path=path1, summary="TDD", load_policy="free", priority=90, zones=["default"]),
-                SkillMeta(id="review", name="Review", path=path2, summary="Review", load_policy="free", priority=80, zones=["default"]),
+                SkillMeta(
+                    id="tdd",
+                    name="TDD",
+                    path=path1,
+                    summary="TDD",
+                    load_policy="free",
+                    priority=90,
+                    zones=["default"],
+                ),
+                SkillMeta(
+                    id="review",
+                    name="Review",
+                    path=path2,
+                    summary="Review",
+                    load_policy="free",
+                    priority=80,
+                    zones=["default"],
+                ),
             ]
             resolved1 = _make_resolved(tmpdir, skills1)
             lock = SkillsLock(resolved1)
@@ -162,7 +226,15 @@ class TestSkillsLock:
             path1 = _make_skill_file(tmpdir, "tdd", "---\nid: tdd\n---\n# TDD")
 
             skills1 = [
-                SkillMeta(id="tdd", name="TDD", path=path1, summary="TDD", load_policy="free", priority=90, zones=["default"]),
+                SkillMeta(
+                    id="tdd",
+                    name="TDD",
+                    path=path1,
+                    summary="TDD",
+                    load_policy="free",
+                    priority=90,
+                    zones=["default"],
+                ),
             ]
             resolved1 = _make_resolved(tmpdir, skills1)
             lock = SkillsLock(resolved1)
@@ -170,7 +242,15 @@ class TestSkillsLock:
 
             # load_policy 变了
             skills2 = [
-                SkillMeta(id="tdd", name="TDD", path=path1, summary="TDD", load_policy="require", priority=90, zones=["default"]),
+                SkillMeta(
+                    id="tdd",
+                    name="TDD",
+                    path=path1,
+                    summary="TDD",
+                    load_policy="require",
+                    priority=90,
+                    zones=["default"],
+                ),
             ]
             resolved2 = _make_resolved(tmpdir, skills2)
 

@@ -52,7 +52,7 @@ class Step:
     def is_terminal(self) -> bool:
         """是否终止步骤"""
         return len(self.next) == 0
-    
+
     @property
     def has_branch(self) -> bool:
         """是否有条件分支"""
