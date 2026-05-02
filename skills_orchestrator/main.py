@@ -388,6 +388,8 @@ def validate(config: str, zone: Optional[str], check_lock: Optional[str]):
                     )
                     for issue in issues:
                         click.echo(f"  {issue}")
+                    # 有差异时退出码为 1（用于 CI）
+                    raise SystemExit(1)
                 else:
                     click.echo(_ok("Lock 校验通过: 所有 skill 与 lock 一致"))
 
@@ -1279,7 +1281,9 @@ def pipeline_resume(run_id: Optional[str], pipeline_id: Optional[str]):
                 lines.append(f"  最小长度: {step.gate.min_length} 字符")
 
         lines.append("")
-        lines.append("使用 pipeline advance <run_id> <pipeline_id> 推进下一步。")
+        lines.append(
+            "使用 skills-orchestrator pipeline advance <pipeline_id> --run-id <run_id> 推进下一步。"
+        )
         click.echo("\n".join(lines))
     except Exception as e:
         click.echo(_err(str(e)), err=True)

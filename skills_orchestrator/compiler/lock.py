@@ -202,8 +202,7 @@ class SkillsLock:
             old_policy = entry.get("source_load_policy") or entry.get("load_policy")
             if skill.load_policy != old_policy:
                 issues.append(
-                    f"~ {skill.id}: load_policy 变化"
-                    f"（{old_policy} → {skill.load_policy}）"
+                    f"~ {skill.id}: load_policy 变化（{old_policy} → {skill.load_policy}）"
                 )
 
             # 检查 effective_load_policy 变化（仅当 lock 版本 >= 1.1）
