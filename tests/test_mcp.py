@@ -374,7 +374,7 @@ class TestSkillRegistryZoneIsolation:
         skills_yaml = tmp_path / "config" / "skills.yaml"
         skills_yaml.parent.mkdir(parents=True, exist_ok=True)
 
-        zone_skill_ids = '\n'.join([f"      - {sid}" for sid in zone_skills])
+        zone_skill_ids = "\n".join([f"      - {sid}" for sid in zone_skills])
         yaml_content = f"""version: "1.0"
 zones:
   - id: {zone_id}
@@ -433,4 +433,3 @@ skill_dirs:
 
         # 但 get_content("base") 应该返回 None（公共入口）
         assert reg.get_content("base") is None
-
