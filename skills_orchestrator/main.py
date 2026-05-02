@@ -864,7 +864,7 @@ def serve(config: str, zone: str | None):
     try:
         from .mcp.registry import SkillRegistry
 
-        reg = SkillRegistry(config_path)
+        reg = SkillRegistry(config_path, zone_id=zone)
         click.echo(_ok(f"已加载 {len(reg.all())} 个 skill"), err=True)
     except Exception as e:
         click.echo(_err(f"加载失败: {e}"), err=True)
