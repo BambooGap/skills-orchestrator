@@ -5,8 +5,7 @@ import tempfile
 from pathlib import Path
 
 from skills_orchestrator.compiler.lock import SkillsLock, LockEntry
-from skills_orchestrator.compiler.resolver import Resolver
-from skills_orchestrator.models import Zone, SkillMeta, Config, ResolvedConfig
+from skills_orchestrator.models import Zone, SkillMeta, ResolvedConfig
 
 
 def _make_skill_file(tmpdir: Path, skill_id: str, content: str) -> str:

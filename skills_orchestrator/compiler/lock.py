@@ -10,12 +10,10 @@ validate 时检查 lock 是否过期，防止 Skill 更新导致行为变化。
 
 import hashlib
 import json
-from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
-from skills_orchestrator.models import ResolvedConfig, SkillMeta
+from skills_orchestrator.models import ResolvedConfig
 
 
 class LockEntry:

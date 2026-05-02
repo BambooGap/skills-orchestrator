@@ -1,0 +1,12 @@
+{
+  "code_to_review": "一个用户认证系统的 Python Flask 应用",
+  "code_url": "https://github.com/example/auth-system",
+  "review_focus": [
+    "密码存储安全性",
+    "会话管理",
+    "CORS配置",
+    "输入验证",
+    "SQL注入防护"
+  ],
+  "known_issues": "用户报告密码重置功能有安全隐患"
+}
