@@ -182,6 +182,9 @@ skills-orchestrator sync openclaw
 # 同步到 AGENTS.md（摘要模式，默认）
 skills-orchestrator sync agents-md
 
+# 同步到 Cursor（摘要模式，默认）
+skills-orchestrator sync cursor
+
 # 同步到 Copilot（摘要模式，默认）
 skills-orchestrator sync copilot
 
@@ -194,6 +197,7 @@ skills-orchestrator sync agents-md --full -o AGENTS.md
 | `hermes` | 全量 | 写入 `~/.hermes/skills/` 目录 |
 | `openclaw` | 全量 | 写入 `~/.openclaw/workspace/skills/` 目录 |
 | `agents-md` | 摘要 | 生成 `AGENTS.md`，Required Skills 完整内容 + Available Skills 表格 |
+| `cursor` | 摘要 | 生成 `.cursor/rules/*.mdc`，每个 Skill 对应一个文件 |
 | `copilot` | 摘要 | 生成 `.github/copilot-instructions.md` |
 
 AGENTS.md 输出格式：
@@ -319,6 +323,7 @@ skills-orchestrator pipeline resume                      # 恢复中断的工作
 skills-orchestrator sync hermes                          # 同步到 Hermes Agent
 skills-orchestrator sync openclaw                        # 同步到 OpenClaw
 skills-orchestrator sync agents-md [-o FILE]             # 同步到 AGENTS.md
+skills-orchestrator sync cursor                          # 同步到 Cursor (.cursor/rules/*.mdc)
 skills-orchestrator sync copilot [-o FILE]               # 同步到 Copilot
 
 # Lock 可复现性
