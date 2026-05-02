@@ -2,7 +2,6 @@
 
 from fnmatch import fnmatch
 from pathlib import Path
-from typing import Optional
 
 from src.models import Zone, Config, Manifest, LoadPlan
 
@@ -50,9 +49,12 @@ class Enforcer:
         # 找 git 仓库根目录
         try:
             import subprocess
+
             result = subprocess.run(
                 ["git", "rev-parse", "--show-toplevel"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
                 cwd=str(workdir),
             )
             if result.returncode != 0:
@@ -64,7 +66,9 @@ class Enforcer:
             # 获取 remote URL 列表
             result = subprocess.run(
                 ["git", "remote", "-v"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
                 cwd=git_root,
             )
             if result.returncode == 0 and target in result.stdout:
@@ -73,7 +77,9 @@ class Enforcer:
             # 也检查 .gitconfig 中的用户/组织信息
             result = subprocess.run(
                 ["git", "config", "--list", "--local"],
-                capture_output=True, text=True, timeout=5,
+                capture_output=True,
+                text=True,
+                timeout=5,
                 cwd=git_root,
             )
             if result.returncode == 0 and target in result.stdout:

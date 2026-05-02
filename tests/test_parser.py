@@ -1,7 +1,5 @@
 import pytest
-from pathlib import Path
 import tempfile
-import os
 
 from src.compiler.parser import Parser
 from src.compiler.resolver import Resolver
@@ -95,7 +93,7 @@ def test_exclusive_zone_filters_skills():
         rules=[Rule(pattern="*/enterprise/*")],
         allow_base_skills=["base-skill"],
     )
-    
+
     zone_default = Zone(
         id="default",
         name="默认区",
@@ -103,7 +101,7 @@ def test_exclusive_zone_filters_skills():
         priority=0,
         rules=[],
     )
-    
+
     skill_enterprise = SkillMeta(
         id="enterprise-skill",
         name="企业技能",
@@ -113,7 +111,7 @@ def test_exclusive_zone_filters_skills():
         load_policy="require",
         priority=100,
     )
-    
+
     skill_base = SkillMeta(
         id="base-skill",
         name="基础技能",
@@ -123,7 +121,7 @@ def test_exclusive_zone_filters_skills():
         load_policy="free",
         priority=50,
     )
-    
+
     skill_other = SkillMeta(
         id="other-skill",
         name="其他技能",
@@ -133,24 +131,24 @@ def test_exclusive_zone_filters_skills():
         load_policy="free",
         priority=10,
     )
-    
+
     config = Config(
         zones=[zone_enterprise, zone_default],
         skills=[skill_enterprise, skill_base, skill_other],
         default_zone=zone_default,
     )
-    
+
     resolver = Resolver(config)
     resolved = resolver.resolve(zone_enterprise)
-    
+
     # enterprise-skill 应该在 forced 中
     forced_ids = {s.id for s in resolved.forced_skills}
     assert "enterprise-skill" in forced_ids
-    
+
     # base-skill 应该在 passive 中（白名单）
     passive_ids = {s.id for s in resolved.passive_skills}
     assert "base-skill" in passive_ids
-    
+
     # other-skill 不应该在结果中
     all_ids = forced_ids | passive_ids | {s.id for s in resolved.blocked_skills}
     assert "other-skill" not in all_ids
@@ -250,7 +248,7 @@ def test_exclusive_zone_no_skills_fallback():
         rules=[Rule(pattern="*/empty/*")],
         allow_base_skills=[],
     )
-    
+
     zone_default = Zone(
         id="default",
         name="默认区",
@@ -258,7 +256,7 @@ def test_exclusive_zone_no_skills_fallback():
         priority=0,
         rules=[],
     )
-    
+
     skill = SkillMeta(
         id="default-skill",
         name="默认技能",
@@ -268,18 +266,18 @@ def test_exclusive_zone_no_skills_fallback():
         load_policy="free",
         priority=10,
     )
-    
+
     config = Config(
         zones=[zone_empty, zone_default],
         skills=[skill],
         default_zone=zone_default,
     )
-    
+
     resolver = Resolver(config)
-    
+
     # 当 exclusive Zone 无 skill 时，应该回退到 default
     resolved = resolver.resolve(zone_empty)
-    
+
     # 应该使用 default zone
     assert resolved.active_zone == zone_empty
     # 但 skills 应该来自 default

@@ -2,7 +2,6 @@
 
 import os
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
@@ -60,8 +59,13 @@ class Parser:
             (z for z in zones if not z.rules), None
         )
 
-        return Config(zones=zones, skills=skills, combos=combos, default_zone=default_zone,
-                      base_dir=str(project_root))
+        return Config(
+            zones=zones,
+            skills=skills,
+            combos=combos,
+            default_zone=default_zone,
+            base_dir=str(project_root),
+        )
 
     # ── Auto-Discovery ───────────────────────────────────────────
 
@@ -144,9 +148,7 @@ class Parser:
         except yaml.YAMLError:
             return {}
 
-    def _apply_overrides(
-        self, skills: list[SkillMeta], overrides: list[dict]
-    ) -> list[SkillMeta]:
+    def _apply_overrides(self, skills: list[SkillMeta], overrides: list[dict]) -> list[SkillMeta]:
         """用 yaml overrides 段覆盖自动发现的字段（只写例外，不写所有人）。"""
         override_map = {o["id"]: o for o in overrides if "id" in o}
         result = []
@@ -155,18 +157,20 @@ class Parser:
                 result.append(skill)
                 continue
             o = override_map[skill.id]
-            result.append(SkillMeta(
-                id=skill.id,
-                name=o.get("name", skill.name),
-                path=skill.path,
-                summary=o.get("summary", skill.summary),
-                tags=o.get("tags", skill.tags),
-                load_policy=o.get("load_policy", skill.load_policy),
-                priority=o.get("priority", skill.priority),
-                zones=o.get("zones", skill.zones),
-                conflict_with=o.get("conflict_with", skill.conflict_with),
-                base=skill.base,  # base 只从文件 frontmatter 读取，不可被 overrides 覆盖
-            ))
+            result.append(
+                SkillMeta(
+                    id=skill.id,
+                    name=o.get("name", skill.name),
+                    path=skill.path,
+                    summary=o.get("summary", skill.summary),
+                    tags=o.get("tags", skill.tags),
+                    load_policy=o.get("load_policy", skill.load_policy),
+                    priority=o.get("priority", skill.priority),
+                    zones=o.get("zones", skill.zones),
+                    conflict_with=o.get("conflict_with", skill.conflict_with),
+                    base=skill.base,  # base 只从文件 frontmatter 读取，不可被 overrides 覆盖
+                )
+            )
         return result
 
     # ── 旧格式解析（向后兼容）───────────────────────────────────
@@ -181,33 +185,37 @@ class Parser:
                 )
                 for r in raw.get("rules", [])
             ]
-            zones.append(Zone(
-                id=raw["id"],
-                name=raw["name"],
-                load_policy=raw["load_policy"],
-                priority=raw["priority"],
-                rules=rules,
-                skills=raw.get("skills", []),
-                allow_base_skills=raw.get("allow_base_skills", []),
-            ))
+            zones.append(
+                Zone(
+                    id=raw["id"],
+                    name=raw["name"],
+                    load_policy=raw["load_policy"],
+                    priority=raw["priority"],
+                    rules=rules,
+                    skills=raw.get("skills", []),
+                    allow_base_skills=raw.get("allow_base_skills", []),
+                )
+            )
         return zones
 
     def _parse_skills(self, raw_skills: list) -> list[SkillMeta]:
         skills = []
         for raw in raw_skills:
             path = self._expand_path(raw["path"])
-            skills.append(SkillMeta(
-                id=raw["id"],
-                name=raw["name"],
-                path=path,
-                summary=raw["summary"],
-                tags=raw.get("tags", []),
-                load_policy=raw.get("load_policy", "free"),
-                priority=raw.get("priority", 0),
-                zones=raw.get("zones", []),
-                conflict_with=raw.get("conflict_with", []),
-                base=raw.get("base", ""),
-            ))
+            skills.append(
+                SkillMeta(
+                    id=raw["id"],
+                    name=raw["name"],
+                    path=path,
+                    summary=raw["summary"],
+                    tags=raw.get("tags", []),
+                    load_policy=raw.get("load_policy", "free"),
+                    priority=raw.get("priority", 0),
+                    zones=raw.get("zones", []),
+                    conflict_with=raw.get("conflict_with", []),
+                    base=raw.get("base", ""),
+                )
+            )
         return skills
 
     def _parse_combos(self, raw_combos: list) -> list[Combo]:
@@ -260,14 +268,10 @@ class Parser:
 
         return Path(*common)
 
-    def _expand_combos(
-        self, skills: list[SkillMeta], combos: list[Combo]
-    ) -> list[SkillMeta]:
+    def _expand_combos(self, skills: list[SkillMeta], combos: list[Combo]) -> list[SkillMeta]:
         skill_ids = {s.id for s in skills}
         for combo in combos:
             for skill_id in combo.members:
                 if skill_id not in skill_ids:
-                    raise ValueError(
-                        f"Combo '{combo.id}' 引用了不存在的 skill: {skill_id}"
-                    )
+                    raise ValueError(f"Combo '{combo.id}' 引用了不存在的 skill: {skill_id}")
         return skills

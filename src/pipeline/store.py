@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -82,14 +81,16 @@ class RunStateStore:
                 continue
             if pipeline_id and state.pipeline_id != pipeline_id:
                 continue
-            results.append({
-                "pipeline_id": state.pipeline_id,
-                "run_id": state.run_id,
-                "status": state.status,
-                "current_step": state.current_step,
-                "started_at": state.started_at,
-                "updated_at": state.updated_at,
-            })
+            results.append(
+                {
+                    "pipeline_id": state.pipeline_id,
+                    "run_id": state.run_id,
+                    "status": state.status,
+                    "current_step": state.current_step,
+                    "started_at": state.started_at,
+                    "updated_at": state.updated_at,
+                }
+            )
         return results
 
     def delete(self, pipeline_id: str, run_id: str) -> bool:

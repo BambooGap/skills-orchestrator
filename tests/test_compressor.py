@@ -1,12 +1,10 @@
-import pytest
 from pathlib import Path
-import tempfile
 import os
 
 from src.compiler.parser import Parser
 from src.compiler.resolver import Resolver
 from src.compiler.compressor import Compressor
-from src.models import Config, ResolvedConfig, Manifest
+from src.models import Manifest
 
 
 def test_compressor_generates_manifest():

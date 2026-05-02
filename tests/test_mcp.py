@@ -3,43 +3,66 @@
 from pathlib import Path
 import pytest
 
-from src.models import SkillMeta, Zone, Config
-from src.mcp.search import KeywordSearcher, SearchResult
+from src.models import SkillMeta
+from src.mcp.search import KeywordSearcher
 from src.mcp.registry import SkillRegistry
 from src.mcp.tools import ToolExecutor
 
 
 # ── 测试 fixtures ────────────────────────────────────────────────
 
+
 def _make_skill(id, name, summary, tags, priority=50):
     return SkillMeta(
-        id=id, name=name, path=f"/fake/{id}.md",
-        summary=summary, tags=tags,
-        load_policy="free", priority=priority,
-        zones=["default"], conflict_with=[],
+        id=id,
+        name=name,
+        path=f"/fake/{id}.md",
+        summary=summary,
+        tags=tags,
+        load_policy="free",
+        priority=priority,
+        zones=["default"],
+        conflict_with=[],
     )
 
 
 SAMPLE_SKILLS = [
-    _make_skill("git-worktrees", "Git Worktrees 工作流",
-                "同时在多个分支工作，无需 stash 或切换分支",
-                ["git", "workflow", "parallel"], 80),
-    _make_skill("git-operations", "Git 操作规范",
-                "提交信息格式、分支命名约定",
-                ["git", "base"], 50),
-    _make_skill("karpathy-guidelines", "Karpathy Guidelines",
-                "减少 LLM 编码错误：简洁、外科式修改、目标驱动",
-                ["coding", "quality", "mindset"], 150),
-    _make_skill("brainstorming", "结构化头脑风暴",
-                "发散收敛，避免过早收敛到第一个方案",
-                ["planning", "design"], 70),
-    _make_skill("finish-branch", "完成分支清单",
-                "提 PR 前的检查清单：代码、测试、commit、文档",
-                ["git", "pr", "checklist"], 80),
+    _make_skill(
+        "git-worktrees",
+        "Git Worktrees 工作流",
+        "同时在多个分支工作，无需 stash 或切换分支",
+        ["git", "workflow", "parallel"],
+        80,
+    ),
+    _make_skill(
+        "git-operations", "Git 操作规范", "提交信息格式、分支命名约定", ["git", "base"], 50
+    ),
+    _make_skill(
+        "karpathy-guidelines",
+        "Karpathy Guidelines",
+        "减少 LLM 编码错误：简洁、外科式修改、目标驱动",
+        ["coding", "quality", "mindset"],
+        150,
+    ),
+    _make_skill(
+        "brainstorming",
+        "结构化头脑风暴",
+        "发散收敛，避免过早收敛到第一个方案",
+        ["planning", "design"],
+        70,
+    ),
+    _make_skill(
+        "finish-branch",
+        "完成分支清单",
+        "提 PR 前的检查清单：代码、测试、commit、文档",
+        ["git", "pr", "checklist"],
+        80,
+    ),
 ]
 
 
 # ── KeywordSearcher 测试 ─────────────────────────────────────────
+
 
 class TestKeywordSearcher:
     def setup_method(self):
@@ -85,17 +108,23 @@ class TestKeywordSearcher:
 
 # ── ToolExecutor 测试 ────────────────────────────────────────────
 
+
 class MockRegistry:
     """不依赖文件系统的 Registry mock"""
+
     def all(self):
         return SAMPLE_SKILLS
 
     def combos(self):
         from src.models import Combo
+
         return [
-            Combo(id="git-workflow", name="Git 工作流套件",
-                  members=["git-operations", "git-worktrees", "finish-branch"],
-                  description="Git 基础操作 + Worktrees + 完成分支清单"),
+            Combo(
+                id="git-workflow",
+                name="Git 工作流套件",
+                members=["git-operations", "git-worktrees", "finish-branch"],
+                description="Git 基础操作 + Worktrees + 完成分支清单",
+            ),
         ]
 
     def get_meta(self, skill_id):
@@ -166,8 +195,7 @@ class TestToolExecutor:
     # suggest_combo
     def test_suggest_combo_returns_plans(self):
         results = self.executor.execute(
-            "suggest_combo",
-            {"requirement": "部署微服务，需要 git 工作流和代码审查"}
+            "suggest_combo", {"requirement": "部署微服务，需要 git 工作流和代码审查"}
         )
         text = self._text(results)
         assert "方案" in text
@@ -186,6 +214,7 @@ class TestToolExecutor:
 
 
 # ── SkillRegistry 集成测试（真实文件）───────────────────────────
+
 
 class TestSkillRegistryIntegration:
     @pytest.fixture
@@ -222,6 +251,7 @@ class TestSkillRegistryIntegration:
 
 # ── SkillRegistry 继承 (base skill) 单元测试 ────────────────────
 
+
 class TestSkillRegistryInheritance:
     """get_content 对 base 字段的合并行为"""
 
@@ -246,18 +276,24 @@ skill_dirs:
         return SkillRegistry(str(config_file))
 
     def test_no_base_returns_raw_content(self, tmp_path):
-        reg = self._make_registry_with_skills(tmp_path, {
-            "plain.md": "---\nid: plain\nname: Plain\nsummary: s\n---\n# Plain Content\n",
-        })
+        reg = self._make_registry_with_skills(
+            tmp_path,
+            {
+                "plain.md": "---\nid: plain\nname: Plain\nsummary: s\n---\n# Plain Content\n",
+            },
+        )
         content = reg.get_content("plain")
         assert "# Plain Content" in content
 
     def test_base_content_prepended(self, tmp_path):
         """derived skill 的内容应拼接在 base 内容后面"""
-        reg = self._make_registry_with_skills(tmp_path, {
-            "base.md": "---\nid: base\nname: Base\nsummary: s\n---\n# Base Rules\n",
-            "derived.md": "---\nid: derived\nname: Derived\nsummary: s\nbase: base\n---\n# Derived Extensions\n",
-        })
+        reg = self._make_registry_with_skills(
+            tmp_path,
+            {
+                "base.md": "---\nid: base\nname: Base\nsummary: s\n---\n# Base Rules\n",
+                "derived.md": "---\nid: derived\nname: Derived\nsummary: s\nbase: base\n---\n# Derived Extensions\n",
+            },
+        )
         content = reg.get_content("derived")
         assert "# Base Rules" in content
         assert "# Derived Extensions" in content
@@ -266,23 +302,29 @@ skill_dirs:
 
     def test_base_frontmatter_not_duplicated(self, tmp_path):
         """base 的 frontmatter 出现一次，derived 的 frontmatter 被剥离"""
-        reg = self._make_registry_with_skills(tmp_path, {
-            "base.md": "---\nid: base\nname: Base\nsummary: s\n---\n# Base\n",
-            "derived.md": "---\nid: derived\nname: Derived\nsummary: s\nbase: base\n---\n# Derived\n",
-        })
+        reg = self._make_registry_with_skills(
+            tmp_path,
+            {
+                "base.md": "---\nid: base\nname: Base\nsummary: s\n---\n# Base\n",
+                "derived.md": "---\nid: derived\nname: Derived\nsummary: s\nbase: base\n---\n# Derived\n",
+            },
+        )
         content = reg.get_content("derived")
         # derived 的 frontmatter 应被剥离（不应出现两个 "id: derived"）
         assert content.count("id: derived") == 0
 
     def test_warm_cache_respects_base(self, tmp_path):
         """forced skill (load_policy: require) 有 base 时，预热缓存不应绕过合并逻辑"""
-        reg = self._make_registry_with_skills(tmp_path, {
-            "base.md": "---\nid: base\nname: Base\nsummary: s\n---\n# Base Rules\n",
-            "forced.md": (
-                "---\nid: forced\nname: Forced\nsummary: s\n"
-                "load_policy: require\nbase: base\n---\n# Forced Extensions\n"
-            ),
-        })
+        reg = self._make_registry_with_skills(
+            tmp_path,
+            {
+                "base.md": "---\nid: base\nname: Base\nsummary: s\n---\n# Base Rules\n",
+                "forced.md": (
+                    "---\nid: forced\nname: Forced\nsummary: s\n"
+                    "load_policy: require\nbase: base\n---\n# Forced Extensions\n"
+                ),
+            },
+        )
         # forced skill 在 _load() 时被 _warm() 预热，get_content 命中缓存后应仍包含 base 内容
         content = reg.get_content("forced")
         assert "# Base Rules" in content
@@ -290,13 +332,20 @@ skill_dirs:
 
     def test_chain_inheritance(self, tmp_path):
         """三级继承：A → B → C，内容正确合并"""
-        reg = self._make_registry_with_skills(tmp_path, {
-            "c.md": "---\nid: c\nname: C\nsummary: s\n---\n# C Content\n",
-            "b.md": "---\nid: b\nname: B\nsummary: s\nbase: c\n---\n# B Content\n",
-            "a.md": "---\nid: a\nname: A\nsummary: s\nbase: b\n---\n# A Content\n",
-        })
+        reg = self._make_registry_with_skills(
+            tmp_path,
+            {
+                "c.md": "---\nid: c\nname: C\nsummary: s\n---\n# C Content\n",
+                "b.md": "---\nid: b\nname: B\nsummary: s\nbase: c\n---\n# B Content\n",
+                "a.md": "---\nid: a\nname: A\nsummary: s\nbase: b\n---\n# A Content\n",
+            },
+        )
         content = reg.get_content("a")
         assert "# C Content" in content
         assert "# B Content" in content
         assert "# A Content" in content
-        assert content.index("# C Content") < content.index("# B Content") < content.index("# A Content")
+        assert (
+            content.index("# C Content")
+            < content.index("# B Content")
+            < content.index("# A Content")
+        )

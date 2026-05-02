@@ -107,7 +107,7 @@ def test_priority_wins_on_same_policy():
     passive_ids = {s.id for s in resolved.passive_skills}
     assert "high-priority" in passive_ids
     assert "low-priority" not in passive_ids
-    
+
     # 低优先级应该在 blocked 中
     blocked_ids = {s.id for s in resolved.blocked_skills}
     assert "low-priority" in blocked_ids
@@ -158,7 +158,7 @@ def test_exclusive_zone_with_whitelist():
         zones=[zone_exclusive],
         skills=[skill_exclusive, skill_base, skill_other],
     )
-    
+
     resolver = Resolver(config)
     resolved = resolver.resolve(zone_exclusive)
 

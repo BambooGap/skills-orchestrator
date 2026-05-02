@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from src.models import Zone, SkillMeta, Combo, Config, ResolvedConfig
+from src.models import Zone, SkillMeta, Config, ResolvedConfig
 
 
 class Resolver:
@@ -58,9 +58,7 @@ class Resolver:
 
         for skill_id in base_map:
             if has_cycle(skill_id, set()):
-                raise ValueError(
-                    f"skill '{skill_id}' 存在循环继承，请检查 base 引用链。"
-                )
+                raise ValueError(f"skill '{skill_id}' 存在循环继承，请检查 base 引用链。")
 
     def _filter_by_zone(self, zone: Optional[Zone]) -> List[SkillMeta]:
         """按 Zone 过滤 skills"""
@@ -78,11 +76,7 @@ class Resolver:
         # exclusive Zone：只保留该 Zone skills + 白名单
         if zone.load_policy == "exclusive":
             allowed_ids = set(zone.allow_base_skills)
-            return [
-                s
-                for s in self.config.skills
-                if zone.id in s.zones or s.id in allowed_ids
-            ]
+            return [s for s in self.config.skills if zone.id in s.zones or s.id in allowed_ids]
 
         # 其他 Zone：保留属于该 Zone 的 skills 或未指定 Zone 的 skills
         return [s for s in self.config.skills if zone.id in s.zones or not s.zones]
@@ -151,9 +145,7 @@ class Resolver:
 
         return forced, passive, blocked, block_reasons
 
-    def _resolve_conflict(
-        self, skill1: SkillMeta, skill2: SkillMeta
-    ) -> Optional[SkillMeta]:
+    def _resolve_conflict(self, skill1: SkillMeta, skill2: SkillMeta) -> Optional[SkillMeta]:
         """解决两个 skill 之间的冲突，返回胜者；若无法决定返回 None"""
         # load_policy 权重
         policy_weight = {"require": 2, "free": 1}

@@ -1,7 +1,5 @@
 """集成测试 - 端到端场景验证"""
 
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -25,10 +23,10 @@ def test_build_generates_valid_agents_md(tmp_path):
     # 创建测试 skill 文件
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
-    
+
     skill_file = skills_dir / "test-skill.md"
     skill_file.write_text("# Test Skill\n\n测试内容", encoding="utf-8")
-    
+
     # 创建配置
     skills = [
         SkillMeta(
@@ -43,17 +41,17 @@ def test_build_generates_valid_agents_md(tmp_path):
             conflict_with=[],
         )
     ]
-    
+
     config = _make_config_with_skills(skills)
-    
+
     # 解析和生成
     resolver = Resolver(config)
     resolved = resolver.resolve()
-    
+
     compressor = Compressor(resolved)
     manifest = compressor.compress()
     agents_md = compressor.generate_agents_md(manifest, resolved.active_zone)
-    
+
     # 验证输出
     assert "## Required Skills" in agents_md
     assert "## Available Skills" in agents_md
@@ -67,13 +65,13 @@ def test_build_with_zone_flag(tmp_path):
     # 创建测试 skill 文件
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
-    
+
     enterprise_skill = skills_dir / "enterprise-skill.md"
     enterprise_skill.write_text("# Enterprise Skill\n\n企业专属内容", encoding="utf-8")
-    
+
     default_skill = skills_dir / "default-skill.md"
     default_skill.write_text("# Default Skill\n\n默认内容", encoding="utf-8")
-    
+
     # 创建 Zone
     enterprise_zone = Zone(
         id="enterprise",
@@ -89,7 +87,7 @@ def test_build_with_zone_flag(tmp_path):
         load_policy="free",
         rules=[],
     )
-    
+
     # 创建 skills
     skills = [
         SkillMeta(
@@ -115,22 +113,22 @@ def test_build_with_zone_flag(tmp_path):
             conflict_with=[],
         ),
     ]
-    
+
     config = Config(
         zones=[enterprise_zone, default_zone],
         default_zone=default_zone,
         skills=skills,
         combos=[],
     )
-    
+
     # 使用 enterprise zone
     resolver = Resolver(config)
     resolved = resolver.resolve(enterprise_zone)
-    
+
     compressor = Compressor(resolved)
     manifest = compressor.compress()
     agents_md = compressor.generate_agents_md(manifest, enterprise_zone)
-    
+
     # 验证 Zone header
     assert "Zone: enterprise" in agents_md
     # 验证企业 skill 被加载（require skill 显示完整内容）
@@ -152,7 +150,7 @@ def test_validate_catches_require_conflict():
         zones=["default"],
         conflict_with=["skill-b"],
     )
-    
+
     skill2 = SkillMeta(
         id="skill-b",
         name="技能B",
@@ -164,11 +162,11 @@ def test_validate_catches_require_conflict():
         zones=["default"],
         conflict_with=["skill-a"],
     )
-    
+
     config = _make_config_with_skills([skill1, skill2])
-    
+
     resolver = Resolver(config)
-    
+
     # 应该抛出 ValueError
     with pytest.raises(ValueError, match="互相冲突"):
         resolver.resolve()
@@ -339,15 +337,15 @@ def test_auto_discovery_no_frontmatter(tmp_path):
 
     assert len(config.skills) == 1
     skill = config.skills[0]
-    assert skill.id == "plain-skill"          # 从文件名推断
-    assert skill.load_policy == "free"        # 默认值
+    assert skill.id == "plain-skill"  # 从文件名推断
+    assert skill.load_policy == "free"  # 默认值
 
 
 def test_enforcer_detect_zone_with_marker_file(tmp_path):
     """Enforcer 正确检测 marker 文件"""
     # 创建 marker 文件
     (tmp_path / ".enterprise").write_text("", encoding="utf-8")
-    
+
     enterprise_zone = Zone(
         id="enterprise",
         name="企业区",
@@ -362,15 +360,15 @@ def test_enforcer_detect_zone_with_marker_file(tmp_path):
         load_policy="free",
         rules=[],
     )
-    
+
     config = Config(
         zones=[enterprise_zone, default_zone],
         default_zone=default_zone,
         skills=[],
         combos=[],
     )
-    
+
     enforcer = Enforcer(config, Manifest())
     detected = enforcer.detect_zone(str(tmp_path))
-    
+
     assert detected.id == "enterprise"

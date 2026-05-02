@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.models import ResolvedConfig, SkillMeta, Zone
+from src.models import ResolvedConfig, SkillMeta
 from src.sync.targets import (
     SyncTarget,
     HermesTarget,
@@ -21,13 +21,18 @@ from src.sync.targets import (
 
 # ── helpers ──────────────────────────────────────────────────────
 
+
 def _make_skill(id, name, summary, tags, path=None, load_policy="free", priority=50):
     return SkillMeta(
-        id=id, name=name,
+        id=id,
+        name=name,
         path=path or f"/fake/{id}.md",
-        summary=summary, tags=tags,
-        load_policy=load_policy, priority=priority,
-        zones=["default"], conflict_with=[],
+        summary=summary,
+        tags=tags,
+        load_policy=load_policy,
+        priority=priority,
+        zones=["default"],
+        conflict_with=[],
     )
 
 
@@ -64,6 +69,7 @@ SAMPLE_SKILL_NO_FM = """# 代码风格规范
 
 # ── TARGET_REGISTRY 测试 ────────────────────────────────────────
 
+
 class TestTargetRegistry:
     def test_all_targets_registered(self):
         assert "hermes" in TARGET_REGISTRY
@@ -97,6 +103,7 @@ class TestTargetRegistry:
 
 
 # ── HermesTarget 测试 ────────────────────────────────────────────
+
 
 class TestHermesTarget:
     def test_write_skill_with_frontmatter(self, tmp_path):
@@ -169,6 +176,7 @@ class TestHermesTarget:
 
 
 # ── OpenClawTarget 测试 ──────────────────────────────────────────
+
 
 class TestOpenClawTarget:
     def test_write_skill_with_frontmatter(self, tmp_path):
@@ -245,6 +253,7 @@ summary: 这是个摘要
 
 # ── CopilotTarget 测试 ───────────────────────────────────────────
 
+
 class TestCopilotTarget:
     def test_write_and_finalize(self, tmp_path):
         out = tmp_path / ".github" / "copilot-instructions.md"
@@ -289,6 +298,7 @@ class TestCopilotTarget:
 
 # ── AgentsMdTarget 测试 ──────────────────────────────────────────
 
+
 class TestAgentsMdTarget:
     def test_write_and_finalize(self, tmp_path):
         out = tmp_path / "AGENTS.md"
@@ -331,6 +341,7 @@ class TestAgentsMdTarget:
 
 # ── SyncEngine 测试 ──────────────────────────────────────────────
 
+
 class TestSyncEngine:
     def test_default_mode_forced_full_passive_summary(self, tmp_path):
         """默认模式：forced 完整内容 + passive 摘要"""
@@ -338,21 +349,28 @@ class TestSyncEngine:
         skill_file = tmp_path / "tdd.md"
         skill_file.write_text(SAMPLE_SKILL_CONTENT, encoding="utf-8")
 
-        forced = [_make_skill("tdd", "TDD", "测试驱动", ["testing"],
-                              path=str(skill_file), load_policy="require")]
-        passive = [_make_skill("code-style", "风格", "命名约定", ["style"],
-                               load_policy="free")]
+        forced = [
+            _make_skill(
+                "tdd", "TDD", "测试驱动", ["testing"], path=str(skill_file), load_policy="require"
+            )
+        ]
+        passive = [_make_skill("code-style", "风格", "命名约定", ["style"], load_policy="free")]
         resolved = _make_resolved(forced=forced, passive=passive)
 
         # 用 mock target 记录写入
         class MockTarget(SyncTarget):
             def __init__(self):
                 self.writes = []
+
             @property
-            def name(self): return "mock"
+            def name(self):
+                return "mock"
+
             def write(self, skill_id, content, meta):
                 self.writes.append((skill_id, content, meta))
-            def finalize(self): return len(self.writes)
+
+            def finalize(self):
+                return len(self.writes)
 
         target = MockTarget()
         engine = SyncEngine(resolved, full=False)
@@ -368,20 +386,27 @@ class TestSyncEngine:
         skill_file = tmp_path / "tdd.md"
         skill_file.write_text(SAMPLE_SKILL_CONTENT, encoding="utf-8")
 
-        forced = [_make_skill("tdd", "TDD", "测试驱动", ["testing"],
-                              path=str(skill_file), load_policy="require")]
-        passive = [_make_skill("code-style", "风格", "命名约定", ["style"],
-                               load_policy="free")]
+        forced = [
+            _make_skill(
+                "tdd", "TDD", "测试驱动", ["testing"], path=str(skill_file), load_policy="require"
+            )
+        ]
+        passive = [_make_skill("code-style", "风格", "命名约定", ["style"], load_policy="free")]
         resolved = _make_resolved(forced=forced, passive=passive)
 
         class MockTarget(SyncTarget):
             def __init__(self):
                 self.writes = []
+
             @property
-            def name(self): return "mock"
+            def name(self):
+                return "mock"
+
             def write(self, skill_id, content, meta):
                 self.writes.append((skill_id, content, meta))
-            def finalize(self): return len(self.writes)
+
+            def finalize(self):
+                return len(self.writes)
 
         target = MockTarget()
         engine = SyncEngine(resolved, full=True)
@@ -392,18 +417,31 @@ class TestSyncEngine:
 
     def test_missing_skill_file_graceful(self):
         """skill 文件不存在时不崩溃"""
-        forced = [_make_skill("missing", "Missing", "不存在", ["test"],
-                              path="/nonexistent/skill.md", load_policy="require")]
+        forced = [
+            _make_skill(
+                "missing",
+                "Missing",
+                "不存在",
+                ["test"],
+                path="/nonexistent/skill.md",
+                load_policy="require",
+            )
+        ]
         resolved = _make_resolved(forced=forced)
 
         class MockTarget(SyncTarget):
             def __init__(self):
                 self.writes = []
+
             @property
-            def name(self): return "mock"
+            def name(self):
+                return "mock"
+
             def write(self, skill_id, content, meta):
                 self.writes.append((skill_id, content, meta))
-            def finalize(self): return len(self.writes)
+
+            def finalize(self):
+                return len(self.writes)
 
         target = MockTarget()
         engine = SyncEngine(resolved, full=False)
@@ -420,11 +458,16 @@ class TestSyncEngine:
         class MockTarget(SyncTarget):
             def __init__(self):
                 self.writes = []
+
             @property
-            def name(self): return "mock"
+            def name(self):
+                return "mock"
+
             def write(self, skill_id, content, meta):
                 self.writes.append((skill_id, content, meta))
-            def finalize(self): return len(self.writes)
+
+            def finalize(self):
+                return len(self.writes)
 
         target = MockTarget()
         engine = SyncEngine(resolved, full=False)
@@ -441,12 +484,20 @@ class TestSyncEngine:
         resolved = _make_resolved(forced=forced, base_dir=str(tmp_path))
 
         call_order = []
+
         class MockTarget(SyncTarget):
             @property
-            def name(self): return "mock"
-            def prepare(self): call_order.append("prepare")
-            def write(self, skill_id, content, meta): call_order.append("write")
-            def finalize(self): return 1
+            def name(self):
+                return "mock"
+
+            def prepare(self):
+                call_order.append("prepare")
+
+            def write(self, skill_id, content, meta):
+                call_order.append("write")
+
+            def finalize(self):
+                return 1
 
         target = MockTarget()
         engine = SyncEngine(resolved)
@@ -457,40 +508,53 @@ class TestSyncEngine:
 
 # ── CLI 集成测试（dry-run 模式，不写文件）──────────────────────
 
+
 class TestSyncCLI:
     def test_sync_dry_run_hermes(self):
         """dry-run 不应创建任何文件"""
         import subprocess
+
         result = subprocess.run(
             ["skills-orchestrator", "sync", "hermes", "--dry-run"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         assert result.returncode == 0
         assert "[dry-run]" in result.stdout
 
     def test_sync_dry_run_openclaw(self):
         import subprocess
+
         result = subprocess.run(
             ["skills-orchestrator", "sync", "openclaw", "--dry-run"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         assert result.returncode == 0
         assert "[dry-run]" in result.stdout
 
     def test_sync_dry_run_copilot(self):
         import subprocess
+
         result = subprocess.run(
             ["skills-orchestrator", "sync", "copilot", "--dry-run"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         assert result.returncode == 0
         assert "[dry-run]" in result.stdout
 
     def test_sync_unknown_target_fails(self):
         import subprocess
+
         result = subprocess.run(
             ["skills-orchestrator", "sync", "nonexistent"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         assert result.returncode != 0
 
@@ -502,16 +566,17 @@ class TestSyncEngineInheritance:
         """有 registry 时，_read_skill_content 应返回合并后的内容"""
         from unittest.mock import MagicMock
 
-        parent = _make_skill("parent", "Parent", "parent summary", ["core"],
-                             path=str(tmp_path / "parent.md"))
-        child = _make_skill("child", "Child", "child summary", ["core"],
-                            path=str(tmp_path / "child.md"))
+        child = _make_skill(
+            "child", "Child", "child summary", ["core"], path=str(tmp_path / "child.md")
+        )
 
         resolved = _make_resolved([child], [], [])
 
         # mock registry: get_content("child") 返回合并后的内容
         registry = MagicMock()
-        registry.get_content.return_value = "---\nid: parent\n---\n\nParent body\n\n---\n\nChild body"
+        registry.get_content.return_value = (
+            "---\nid: parent\n---\n\nParent body\n\n---\n\nChild body"
+        )
 
         engine = SyncEngine(resolved, registry=registry)
         content = engine._read_skill_content(child)
@@ -525,8 +590,7 @@ class TestSyncEngineInheritance:
         skill_file = tmp_path / "test.md"
         skill_file.write_text("---\nid: test\n---\n\nRaw content")
 
-        skill = _make_skill("test", "Test", "test", ["core"],
-                            path=str(skill_file))
+        skill = _make_skill("test", "Test", "test", ["core"], path=str(skill_file))
         resolved = _make_resolved([skill], [], [])
 
         engine = SyncEngine(resolved)  # 不传 registry
@@ -541,8 +605,7 @@ class TestSyncEngineInheritance:
         skill_file = tmp_path / "test.md"
         skill_file.write_text("---\nid: test\n---\n\nFallback content")
 
-        skill = _make_skill("test", "Test", "test", ["core"],
-                            path=str(skill_file))
+        skill = _make_skill("test", "Test", "test", ["core"], path=str(skill_file))
         resolved = _make_resolved([skill], [], [])
 
         registry = MagicMock()

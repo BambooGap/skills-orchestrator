@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-import json
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from mcp import types
 
 from .registry import SkillRegistry
 from .search import KeywordSearcher
+
+if TYPE_CHECKING:
+    from src.pipeline.loader import Pipeline
+    from src.pipeline.store import RunStateStore
 
 
 # ── Tool Schema 定义 ──────────────────────────────────────────────
@@ -16,8 +19,7 @@ from .search import KeywordSearcher
 TOOL_LIST_SKILLS = types.Tool(
     name="list_skills",
     description=(
-        "列出所有可用的 skill。返回 id、名称、摘要、标签。"
-        "用于了解有哪些技能可用，不加载完整内容。"
+        "列出所有可用的 skill。返回 id、名称、摘要、标签。用于了解有哪些技能可用，不加载完整内容。"
     ),
     inputSchema={
         "type": "object",
@@ -112,7 +114,7 @@ TOOL_PIPELINE_START = types.Tool(
             },
             "context": {
                 "type": "object",
-                "description": "初始上下文，键值对。例如 {\"scope_is_trivial\": true} 可跳过构思阶段",
+                "description": '初始上下文，键值对。例如 {"scope_is_trivial": true} 可跳过构思阶段',
                 "additionalProperties": True,
             },
         },
@@ -144,8 +146,7 @@ TOOL_PIPELINE_STATUS = types.Tool(
 TOOL_PIPELINE_ADVANCE = types.Tool(
     name="pipeline_advance",
     description=(
-        "推进 Pipeline 到下一步。当前步骤完成或跳过后调用。"
-        "会自动执行门禁检查和质量验证。"
+        "推进 Pipeline 到下一步。当前步骤完成或跳过后调用。会自动执行门禁检查和质量验证。"
     ),
     inputSchema={
         "type": "object",
@@ -195,31 +196,38 @@ TOOL_PIPELINE_RESUME = types.Tool(
 )
 
 ALL_TOOLS = [
-    TOOL_LIST_SKILLS, TOOL_SEARCH_SKILLS, TOOL_GET_SKILL, TOOL_SUGGEST_COMBO,
-    TOOL_PIPELINE_START, TOOL_PIPELINE_STATUS, TOOL_PIPELINE_ADVANCE, TOOL_PIPELINE_RESUME,
+    TOOL_LIST_SKILLS,
+    TOOL_SEARCH_SKILLS,
+    TOOL_GET_SKILL,
+    TOOL_SUGGEST_COMBO,
+    TOOL_PIPELINE_START,
+    TOOL_PIPELINE_STATUS,
+    TOOL_PIPELINE_ADVANCE,
+    TOOL_PIPELINE_RESUME,
 ]
 
 
 # ── Tool 执行器 ───────────────────────────────────────────────────
+
 
 class ToolExecutor:
     def __init__(self, registry: SkillRegistry, pipelines_dir: str | None = None):
         self._registry = registry
         self._searcher = KeywordSearcher()
         self._pipelines_dir = pipelines_dir
-        self._pipelines: dict[str, "Pipeline"] = {}
-        self._store: "RunStateStore | None" = None
+        self._pipelines: dict[str, Pipeline] = {}
+        self._store: RunStateStore | None = None
 
-    def _get_store(self) -> "RunStateStore":
+    def _get_store(self) -> RunStateStore:
         from src.pipeline.store import RunStateStore
+
         if self._store is None:
             self._store = RunStateStore()
         return self._store
 
-    def _get_pipeline(self, pipeline_id: str) -> "Pipeline | None":
+    def _get_pipeline(self, pipeline_id: str) -> Pipeline | None:
         import os
         from src.pipeline.loader import PipelineLoader
-        from src.pipeline.models import Pipeline
 
         if pipeline_id in self._pipelines:
             return self._pipelines[pipeline_id]
@@ -229,8 +237,7 @@ class ToolExecutor:
         pipelines_dir = self._pipelines_dir
         if pipelines_dir is None:
             pipelines_dir = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                "config", "pipelines"
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "pipelines"
             )
 
         filepath = os.path.join(pipelines_dir, f"{pipeline_id}.yaml")
@@ -321,10 +328,12 @@ class ToolExecutor:
             all_ids = [s.id for s in self._registry.all()]
             similar = [sid for sid in all_ids if skill_id.lower() in sid.lower()]
             hint = f"\n相似的 skill id: {', '.join(similar)}" if similar else ""
-            return [types.TextContent(
-                type="text",
-                text=f"找不到 skill: '{skill_id}'{hint}\n使用 list_skills 查看所有可用 skill。"
-            )]
+            return [
+                types.TextContent(
+                    type="text",
+                    text=f"找不到 skill: '{skill_id}'{hint}\n使用 list_skills 查看所有可用 skill。",
+                )
+            ]
 
         header = (
             f"# Skill: {meta.name if meta else skill_id}\n"
@@ -350,10 +359,12 @@ class ToolExecutor:
         candidates = self._searcher.search(requirement, self._registry.all(), top_k=10)
 
         if not candidates:
-            return [types.TextContent(
-                type="text",
-                text="未找到与需求相关的 skill，建议先用 search_skills 确认关键词。"
-            )]
+            return [
+                types.TextContent(
+                    type="text",
+                    text="未找到与需求相关的 skill，建议先用 search_skills 确认关键词。",
+                )
+            ]
 
         combos = self._build_combos(candidates, requirement, max_combos, available_ids)
 
@@ -371,10 +382,14 @@ class ToolExecutor:
         return [types.TextContent(type="text", text="\n".join(lines))]
 
     def _build_combos(
-        self, candidates: list, requirement: str, max_combos: int, available_ids: set[str] | None = None
+        self,
+        candidates: list,
+        requirement: str,
+        max_combos: int,
+        available_ids: set[str] | None = None,
     ) -> list[dict]:
         """优先返回匹配的预定义 combo，不足时动态构建补充。
-        
+
         available_ids: 可用 skill id 集合，用于过滤 blocked skills。
         """
         if available_ids is None:
@@ -394,13 +409,20 @@ class ToolExecutor:
 
             overlap = [m for m in valid_members if m in candidate_ids]
             if overlap and len(combos) < max_combos:
-                combos.append({
-                    "name": predefined.name,
-                    "description": predefined.description,
-                    "skills": valid_members,  # 只返回可用成员
-                    "pros": predefined.description or "预定义的经过验证的 skill 组合",
-                    "cons": "按固定组合加载，灵活性较低" + (" (部分成员已被拦截)" if len(valid_members) < len(predefined.members) else ""),
-                })
+                combos.append(
+                    {
+                        "name": predefined.name,
+                        "description": predefined.description,
+                        "skills": valid_members,  # 只返回可用成员
+                        "pros": predefined.description or "预定义的经过验证的 skill 组合",
+                        "cons": "按固定组合加载，灵活性较低"
+                        + (
+                            " (部分成员已被拦截)"
+                            if len(valid_members) < len(predefined.members)
+                            else ""
+                        ),
+                    }
+                )
 
         # 2. 补充：动态构建（不足 max_combos 时）
         if len(combos) < max_combos:
@@ -408,22 +430,26 @@ class ToolExecutor:
             mid = all_skills[3:6] if len(all_skills) > 3 else []
 
             if top and len(combos) < max_combos:
-                combos.append({
-                    "name": "轻量快速版",
-                    "description": "",
-                    "skills": [s.id for s in top[:2]],
-                    "pros": "技能数量少，上手快，适合独立开发者或小团队",
-                    "cons": "覆盖面有限，复杂项目可能需要补充其他 skill",
-                })
+                combos.append(
+                    {
+                        "name": "轻量快速版",
+                        "description": "",
+                        "skills": [s.id for s in top[:2]],
+                        "pros": "技能数量少，上手快，适合独立开发者或小团队",
+                        "cons": "覆盖面有限，复杂项目可能需要补充其他 skill",
+                    }
+                )
 
             if top and mid and len(combos) < max_combos:
-                combos.append({
-                    "name": "完整流程版",
-                    "description": "",
-                    "skills": [s.id for s in (top + mid)[:4]],
-                    "pros": "覆盖从规划到上线的完整流程，减少返工",
-                    "cons": "需要团队成员熟悉多个规范，初期有一定学习成本",
-                })
+                combos.append(
+                    {
+                        "name": "完整流程版",
+                        "description": "",
+                        "skills": [s.id for s in (top + mid)[:4]],
+                        "pros": "覆盖从规划到上线的完整流程，减少返工",
+                        "cons": "需要团队成员熟悉多个规范，初期有一定学习成本",
+                    }
+                )
 
             if len(combos) < max_combos:
                 git_skills = [s for s in all_skills if "git" in s.tags][:2]
@@ -431,13 +457,15 @@ class ToolExecutor:
                 plan_skills = [s for s in all_skills if "planning" in s.tags][:1]
                 balanced = git_skills + review_skills + plan_skills
                 if len(balanced) >= 2:
-                    combos.append({
-                        "name": "均衡领域版",
-                        "description": "",
-                        "skills": [s.id for s in balanced],
-                        "pros": "各领域均衡覆盖：流程规范 + 代码质量 + 工作流管理",
-                        "cons": "通用性强但针对性略弱，可根据实际情况调整",
-                    })
+                    combos.append(
+                        {
+                            "name": "均衡领域版",
+                            "description": "",
+                            "skills": [s.id for s in balanced],
+                            "pros": "各领域均衡覆盖：流程规范 + 代码质量 + 工作流管理",
+                            "cons": "通用性强但针对性略弱，可根据实际情况调整",
+                        }
+                    )
 
         return combos[:max_combos]
 
@@ -453,37 +481,39 @@ class ToolExecutor:
         if not pipeline_id:
             # 列出可用的 pipeline
             pipelines_dir = self._pipelines_dir or os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                "config", "pipelines"
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "pipelines"
             )
             available = []
             if os.path.isdir(pipelines_dir):
                 for f in sorted(os.listdir(pipelines_dir)):
                     if f.endswith(".yaml"):
                         available.append(f.replace(".yaml", ""))
-            return [types.TextContent(
-                type="text",
-                text=f"请提供 pipeline_id。可用的 Pipeline：{', '.join(available) or '无'}"
-            )]
+            return [
+                types.TextContent(
+                    type="text",
+                    text=f"请提供 pipeline_id。可用的 Pipeline：{', '.join(available) or '无'}",
+                )
+            ]
 
         pipeline = self._get_pipeline(pipeline_id)
         if pipeline is None:
-            return [types.TextContent(
-                type="text", text=f"找不到 Pipeline: '{pipeline_id}'"
-            )]
+            return [types.TextContent(type="text", text=f"找不到 Pipeline: '{pipeline_id}'")]
 
         # 校验 pipeline 引用的 skill 是否存在于 registry
         from src.pipeline.loader import PipelineLoader
+
         loader = PipelineLoader()
         known_skills = {s.id for s in self._registry.all()}
         missing = loader.validate_skills(pipeline, known_skills)
         if missing:
-            return [types.TextContent(
-                type="text",
-                text=f"Pipeline '{pipeline_id}' 引用了不存在的 skill: {', '.join(missing)}\n"
-                     f"可用 skill: {', '.join(sorted(known_skills))}\n"
-                     f"请修复 config/pipelines/{pipeline_id}.yaml 中的 skill 引用。"
-            )]
+            return [
+                types.TextContent(
+                    type="text",
+                    text=f"Pipeline '{pipeline_id}' 引用了不存在的 skill: {', '.join(missing)}\n"
+                    f"可用 skill: {', '.join(sorted(known_skills))}\n"
+                    f"请修复 config/pipelines/{pipeline_id}.yaml 中的 skill 引用。",
+                )
+            ]
 
         engine = PipelineEngine(pipeline)
         state = engine.start(context=context)
@@ -504,8 +534,26 @@ class ToolExecutor:
             gate_note = f" [门禁: {s.gate.must_produce}]" if s.gate else ""
             lines.append(f"{marker}{s.id} → {s.skill}{skip_note}{gate_note}")
 
+        # 注入当前步骤的 skill 完整内容到上下文
+        if step and self._registry is not None:
+            skill_content = self._registry.get_content(step.skill)
+            if skill_content:
+                lines.append("")
+                lines.append(f"═══ 当前步骤 Skill: {step.skill} ═══")
+                lines.append(skill_content)
+                lines.append("═══════════════════════════════════")
+
+        # 注入门禁要求提示
+        if step and step.gate:
+            lines.append("")
+            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.must_produce}'")
+            if step.gate.min_length:
+                lines.append(f"  最小长度: {step.gate.min_length} 字符")
+
         lines.append("")
-        lines.append(f"使用 pipeline_advance(run_id='{state.run_id}', pipeline_id='{pipeline_id}') 推进下一步。")
+        lines.append(
+            f"使用 pipeline_advance(run_id='{state.run_id}', pipeline_id='{pipeline_id}') 推进下一步。"
+        )
         return [types.TextContent(type="text", text="\n".join(lines))]
 
     # ── pipeline_status ──────────────────────────────────────────
@@ -583,10 +631,12 @@ class ToolExecutor:
                 passed, reason = engine.check_gate(state, current_step)
                 if not passed:
                     store.save(state)
-                    return [types.TextContent(
-                        type="text",
-                        text=f"门禁未通过: {reason}\n当前步骤: {state.current_step}\n请补充所需产出后重试。"
-                    )]
+                    return [
+                        types.TextContent(
+                            type="text",
+                            text=f"门禁未通过: {reason}\n当前步骤: {state.current_step}\n请补充所需产出后重试。",
+                        )
+                    ]
 
             state.complete_current(artifacts=artifacts)
 
@@ -595,10 +645,12 @@ class ToolExecutor:
         store.save(state)
 
         if state.status == "completed":
-            return [types.TextContent(
-                type="text",
-                text=f"Pipeline '{pipeline.name}' 已完成！\n共 {len(state.step_history)} 个步骤。"
-            )]
+            return [
+                types.TextContent(
+                    type="text",
+                    text=f"Pipeline '{pipeline.name}' 已完成！\n共 {len(state.step_history)} 个步骤。",
+                )
+            ]
 
         next_step = pipeline.get_step(state.current_step) if state.current_step else None
         lines = [
@@ -608,10 +660,30 @@ class ToolExecutor:
         if next_step and next_step.gate:
             lines.append(f"门禁要求: 产出 '{next_step.gate.must_produce}'")
         if next_step and next_step.skip_if:
-            lines.append(f"跳过条件: {next_step.skip_if} = {state.context.get(next_step.skip_if, False)}")
+            lines.append(
+                f"跳过条件: {next_step.skip_if} = {state.context.get(next_step.skip_if, False)}"
+            )
+
+        # 注入当前步骤的 skill 完整内容到上下文
+        if next_step and self._registry is not None:
+            skill_content = self._registry.get_content(next_step.skill)
+            if skill_content:
+                lines.append("")
+                lines.append(f"═══ 当前步骤 Skill: {next_step.skill} ═══")
+                lines.append(skill_content)
+                lines.append("═══════════════════════════════════")
+
+        # 注入门禁要求提示
+        if next_step and next_step.gate:
+            lines.append("")
+            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{next_step.gate.must_produce}'")
+            if next_step.gate.min_length:
+                lines.append(f"  最小长度: {next_step.gate.min_length} 字符")
 
         lines.append("")
-        lines.append(f"使用 pipeline_advance(run_id='{run_id}', pipeline_id='{pipeline_id}') 推进下一步。")
+        lines.append(
+            f"使用 pipeline_advance(run_id='{run_id}', pipeline_id='{pipeline_id}') 推进下一步。"
+        )
         return [types.TextContent(type="text", text="\n".join(lines))]
 
     # ── pipeline_resume ──────────────────────────────────────────
@@ -633,7 +705,11 @@ class ToolExecutor:
             return [types.TextContent(type="text", text="没有找到可恢复的运行记录。")]
 
         if state.status == "completed":
-            return [types.TextContent(type="text", text=f"Pipeline 已完成，无需恢复。Run: {state.run_id}")]
+            return [
+                types.TextContent(
+                    type="text", text=f"Pipeline 已完成，无需恢复。Run: {state.run_id}"
+                )
+            ]
 
         pipeline = self._get_pipeline(state.pipeline_id)
         if pipeline is None:
@@ -650,9 +726,24 @@ class ToolExecutor:
             f"当前步骤: {state.current_step} (skill: {step.skill if step else '?'})",
             f"状态: {state.status}",
         ]
+
+        # 注入当前步骤的 skill 完整内容到上下文
+        if step and self._registry is not None:
+            skill_content = self._registry.get_content(step.skill)
+            if skill_content:
+                lines.append("")
+                lines.append(f"═══ 当前步骤 Skill: {step.skill} ═══")
+                lines.append(skill_content)
+                lines.append("═══════════════════════════════════")
+
         if step and step.gate:
-            lines.append(f"门禁要求: 产出 '{step.gate.must_produce}'")
+            lines.append("")
+            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.must_produce}'")
+            if step.gate.min_length:
+                lines.append(f"  最小长度: {step.gate.min_length} 字符")
 
         lines.append("")
-        lines.append(f"使用 pipeline_advance(run_id='{state.run_id}', pipeline_id='{state.pipeline_id}') 推进下一步。")
+        lines.append(
+            f"使用 pipeline_advance(run_id='{state.run_id}', pipeline_id='{state.pipeline_id}') 推进下一步。"
+        )
         return [types.TextContent(type="text", text="\n".join(lines))]

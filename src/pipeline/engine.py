@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Optional, Tuple
 
-from .models import Gate, Pipeline, RunState, Step
+from .models import Pipeline, RunState, Step
 
 
 class PipelineEngine:

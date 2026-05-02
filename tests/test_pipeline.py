@@ -3,7 +3,6 @@
 import os
 import tempfile
 
-import pytest
 
 from src.pipeline.models import Gate, Pipeline, RunState, Step
 
@@ -61,8 +60,11 @@ class TestStep:
     def test_create_step_full(self):
         gate = Gate(must_produce="plan", min_length=500)
         step = Step(
-            id="plan", skill="writing-plans",
-            next=["develop"], skip_if=None, gate=gate,
+            id="plan",
+            skill="writing-plans",
+            next=["develop"],
+            skip_if=None,
+            gate=gate,
         )
         assert step.next == ["develop"]
         assert step.gate.must_produce == "plan"
@@ -224,9 +226,7 @@ class TestRunState:
 
 class TestPipelineLoader:
     def _pipelines_dir(self):
-        return os.path.join(
-            os.path.dirname(__file__), "..", "config", "pipelines"
-        )
+        return os.path.join(os.path.dirname(__file__), "..", "config", "pipelines")
 
     def test_load_full_dev(self):
         from src.pipeline.loader import PipelineLoader
@@ -335,7 +335,8 @@ steps:
 class TestPipelineEngine:
     def _make_simple_pipeline(self):
         return Pipeline(
-            id="simple", name="简单流程",
+            id="simple",
+            name="简单流程",
             steps=[
                 Step(id="a", skill="s1", next=["b"]),
                 Step(id="b", skill="s2", next=[]),
@@ -379,7 +380,8 @@ class TestPipelineEngine:
         from src.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
-            id="skip-test", name="跳过测试",
+            id="skip-test",
+            name="跳过测试",
             steps=[
                 Step(id="a", skill="s1", next=["b"], skip_if="skip_a"),
                 Step(id="b", skill="s2", next=[]),
@@ -399,7 +401,8 @@ class TestPipelineEngine:
         from src.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
-            id="auto-skip", name="自动跳过测试",
+            id="auto-skip",
+            name="自动跳过测试",
             steps=[
                 Step(id="a", skill="s1", next=["b"], skip_if="skip_a"),
                 Step(id="b", skill="s2", next=[]),
@@ -414,10 +417,10 @@ class TestPipelineEngine:
         from src.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
-            id="gate-test", name="门禁测试",
+            id="gate-test",
+            name="门禁测试",
             steps=[
-                Step(id="a", skill="s1", next=["b"],
-                     gate=Gate(must_produce="plan", min_length=10)),
+                Step(id="a", skill="s1", next=["b"], gate=Gate(must_produce="plan", min_length=10)),
                 Step(id="b", skill="s2", next=[]),
             ],
         )
@@ -432,10 +435,12 @@ class TestPipelineEngine:
         from src.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
-            id="gate-fail", name="门禁失败测试",
+            id="gate-fail",
+            name="门禁失败测试",
             steps=[
-                Step(id="a", skill="s1", next=["b"],
-                     gate=Gate(must_produce="plan", min_length=500)),
+                Step(
+                    id="a", skill="s1", next=["b"], gate=Gate(must_produce="plan", min_length=500)
+                ),
                 Step(id="b", skill="s2", next=[]),
             ],
         )
@@ -503,7 +508,8 @@ class TestPipelineEngine:
         from src.pipeline.engine import PipelineEngine
 
         pipeline = Pipeline(
-            id="multi-skip", name="多步跳过",
+            id="multi-skip",
+            name="多步跳过",
             steps=[
                 Step(id="a", skill="s1", next=["b"], skip_if="skip_a"),
                 Step(id="b", skill="s2", next=["c"], skip_if="skip_b"),
@@ -641,17 +647,13 @@ class TestPipelineMCPTools:
     """测试 Pipeline MCP 工具的 ToolExecutor 集成"""
 
     def _make_executor(self):
-        from src.mcp.tools import ToolExecutor, ALL_TOOLS
+        from src.mcp.tools import ToolExecutor
         from src.mcp.registry import SkillRegistry
         import os
 
-        config_path = os.path.join(
-            os.path.dirname(__file__), "..", "config", "skills.yaml"
-        )
+        config_path = os.path.join(os.path.dirname(__file__), "..", "config", "skills.yaml")
         registry = SkillRegistry(config_path)
-        pipelines_dir = os.path.join(
-            os.path.dirname(__file__), "..", "config", "pipelines"
-        )
+        pipelines_dir = os.path.join(os.path.dirname(__file__), "..", "config", "pipelines")
         return ToolExecutor(registry, pipelines_dir=pipelines_dir)
 
     def test_pipeline_start_full_dev(self):
@@ -665,10 +667,13 @@ class TestPipelineMCPTools:
 
     def test_pipeline_start_with_skip_context(self):
         executor = self._make_executor()
-        result = executor.execute("pipeline_start", {
-            "pipeline_id": "full-dev",
-            "context": {"scope_is_trivial": True},
-        })
+        result = executor.execute(
+            "pipeline_start",
+            {
+                "pipeline_id": "full-dev",
+                "context": {"scope_is_trivial": True},
+            },
+        )
         text = result[0].text
         assert "plan" in text  # brainstorm 被跳过，直接到 plan
 
@@ -686,6 +691,7 @@ class TestPipelineMCPTools:
 
     def test_pipeline_status_after_start(self):
         import re
+
         executor = self._make_executor()
         result = executor.execute("pipeline_start", {"pipeline_id": "full-dev"})
         text = result[0].text
@@ -694,9 +700,7 @@ class TestPipelineMCPTools:
         assert match
         run_id = match.group(1)
 
-        result2 = executor.execute("pipeline_status", {
-            "run_id": run_id, "pipeline_id": "full-dev"
-        })
+        result2 = executor.execute("pipeline_status", {"run_id": run_id, "pipeline_id": "full-dev"})
         text2 = result2[0].text
         assert "full-dev" in text2
         assert run_id in text2
@@ -706,6 +710,7 @@ class TestPipelineMCPTools:
             executor = self._make_executor()
             # 用临时目录覆盖 store
             from src.pipeline.store import RunStateStore
+
             executor._store = RunStateStore(base_dir=tmpdir)
 
             result = executor.execute("pipeline_status", {})
@@ -715,6 +720,7 @@ class TestPipelineMCPTools:
     def test_full_dev_pipeline_walkthrough(self):
         """完整走一遍 full-dev pipeline：启动→逐步推进→完成"""
         import re
+
         executor = self._make_executor()
 
         # 启动
@@ -724,42 +730,62 @@ class TestPipelineMCPTools:
         run_id = match.group(1)
 
         # 推进 brainstorm → plan (门禁: brainstorm_output)
-        result = executor.execute("pipeline_advance", {
-            "run_id": run_id, "pipeline_id": "full-dev",
-            "artifacts": ["brainstorm_output"],
-            "context_updates": {"brainstorm_output": "功能构想和关键决策"},
-        })
+        result = executor.execute(
+            "pipeline_advance",
+            {
+                "run_id": run_id,
+                "pipeline_id": "full-dev",
+                "artifacts": ["brainstorm_output"],
+                "context_updates": {"brainstorm_output": "功能构想和关键决策"},
+            },
+        )
         assert "plan" in result[0].text
 
         # 推进 plan → develop (门禁: implementation_plan, min_length 500)
-        result = executor.execute("pipeline_advance", {
-            "run_id": run_id, "pipeline_id": "full-dev",
-            "artifacts": ["implementation_plan"],
-            "context_updates": {"implementation_plan": "A" * 600},
-        })
+        result = executor.execute(
+            "pipeline_advance",
+            {
+                "run_id": run_id,
+                "pipeline_id": "full-dev",
+                "artifacts": ["implementation_plan"],
+                "context_updates": {"implementation_plan": "A" * 600},
+            },
+        )
         text = result[0].text
         assert "develop" in text or "review" in text or "已完成" in text
 
         # 推进 develop → review (门禁: code_changes)
-        result = executor.execute("pipeline_advance", {
-            "run_id": run_id, "pipeline_id": "full-dev",
-            "artifacts": ["code_changes"],
-            "context_updates": {"code_changes": "changed files"},
-        })
+        result = executor.execute(
+            "pipeline_advance",
+            {
+                "run_id": run_id,
+                "pipeline_id": "full-dev",
+                "artifacts": ["code_changes"],
+                "context_updates": {"code_changes": "changed files"},
+            },
+        )
 
         # 推进 review → finish (门禁: review_feedback)
-        result = executor.execute("pipeline_advance", {
-            "run_id": run_id, "pipeline_id": "full-dev",
-            "artifacts": ["review_feedback"],
-            "context_updates": {"review_feedback": "LGTM"},
-        })
+        result = executor.execute(
+            "pipeline_advance",
+            {
+                "run_id": run_id,
+                "pipeline_id": "full-dev",
+                "artifacts": ["review_feedback"],
+                "context_updates": {"review_feedback": "LGTM"},
+            },
+        )
 
         # 推进 finish → 完成 (门禁: merge_confirmation)
-        result = executor.execute("pipeline_advance", {
-            "run_id": run_id, "pipeline_id": "full-dev",
-            "artifacts": ["merge_confirmation"],
-            "context_updates": {"merge_confirmation": "merged"},
-        })
+        result = executor.execute(
+            "pipeline_advance",
+            {
+                "run_id": run_id,
+                "pipeline_id": "full-dev",
+                "artifacts": ["merge_confirmation"],
+                "context_updates": {"merge_confirmation": "merged"},
+            },
+        )
 
         text = result[0].text
         assert "已完成" in text or "completed" in text.lower() or "5 个步骤" in text

@@ -17,7 +17,7 @@ from src.models import SkillMeta
 @dataclass
 class SearchResult:
     skill: SkillMeta
-    score: float          # 0.0 ~ 1.0
+    score: float  # 0.0 ~ 1.0
     matched_fields: list[str]
 
 
@@ -114,7 +114,7 @@ class KeywordSearcher:
             all_field_tokens = id_tokens | tag_tokens | sum_tokens
             weighted_covered = self._match_weighted(tokens, all_field_tokens)
             coverage = min(weighted_covered / len(tokens), 1.0)
-            score *= (0.7 + 0.3 * coverage)
+            score *= 0.7 + 0.3 * coverage
 
         return min(score, 1.0), matched
 

@@ -65,9 +65,7 @@ class Compressor:
             lines.append("> 当前 Zone 无可选 skills。")
 
         lines.append("")
-        lines.append(
-            "如需使用某个 skill，请说明\"使用 [skill-name] skill\"，系统将加载完整内容。"
-        )
+        lines.append('如需使用某个 skill，请说明"使用 [skill-name] skill"，系统将加载完整内容。')
 
         return "\n".join(lines)
 
@@ -84,9 +82,7 @@ class Compressor:
         for skill in self.resolved.forced_skills:
             path = self._resolve_path(skill.path)
             content = (
-                path.read_text(encoding="utf-8")
-                if path.exists()
-                else f"> 文件不存在: {skill.path}"
+                path.read_text(encoding="utf-8") if path.exists() else f"> 文件不存在: {skill.path}"
             )
             parts.append(f"---\n{content.strip()}\n---")
 

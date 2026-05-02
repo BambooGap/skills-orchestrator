@@ -19,14 +19,34 @@ from .models import Manifest
 
 # ─────────────────────────── helpers ────────────────────────────
 
+
 def _ok(msg: str) -> str:
     return click.style("✓", fg="green") + f" {msg}"
+
 
 def _warn(msg: str) -> str:
     return click.style("⚠", fg="yellow") + f" {msg}"
 
+
 def _err(msg: str) -> str:
     return click.style("✗", fg="red") + f" {msg}"
+
+
+def _load_pipeline(pipeline_id: str):
+    """加载 Pipeline 定义，返回 Pipeline 对象或 None"""
+    from src.pipeline.loader import PipelineLoader
+
+    pipelines_dir = Path("config/pipelines")
+    if not pipelines_dir.exists():
+        pipelines_dir = Path(__file__).parent.parent / "config" / "pipelines"
+    yaml_path = pipelines_dir / f"{pipeline_id}.yaml"
+    if not yaml_path.exists():
+        return None
+    loader = PipelineLoader()
+    try:
+        return loader.load(str(yaml_path))
+    except Exception:
+        return None
 
 
 def _parse_frontmatter(content: str) -> dict:
@@ -88,7 +108,15 @@ def _append_skills_to_yaml(config_path: str, new_entries: list[dict]) -> None:
     else:
         raw = {
             "version": "1.0",
-            "zones": [{"id": "default", "name": "默认区", "load_policy": "free", "priority": 0, "rules": []}],
+            "zones": [
+                {
+                    "id": "default",
+                    "name": "默认区",
+                    "load_policy": "free",
+                    "priority": 0,
+                    "rules": [],
+                }
+            ],
             "skills": [],
             "combos": [],
         }
@@ -103,19 +131,20 @@ def _append_skills_to_yaml(config_path: str, new_entries: list[dict]) -> None:
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
-    click.echo(_ok(f"追加 {added} 个 skill 到 {config_path}（跳过 {len(new_entries) - added} 个已存在）"))
+    click.echo(
+        _ok(f"追加 {added} 个 skill 到 {config_path}（跳过 {len(new_entries) - added} 个已存在）")
+    )
 
 
 # ─────────────────────────── GitHub import helpers ────────────────────────────
 
+
 def _gh_api(api_path: str) -> object:
     """优先用 gh CLI（已认证，无限速），失败则回退到 urllib。"""
     import subprocess
+
     try:
-        result = subprocess.run(
-            ["gh", "api", api_path],
-            capture_output=True, text=True, timeout=15
-        )
+        result = subprocess.run(["gh", "api", api_path], capture_output=True, text=True, timeout=15)
         if result.returncode == 0:
             return json.loads(result.stdout)
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -125,7 +154,10 @@ def _gh_api(api_path: str) -> object:
     url = f"https://api.github.com/{api_path.lstrip('/')}"
     req = urllib.request.Request(
         url,
-        headers={"User-Agent": "skills-orchestrator/1.0", "Accept": "application/vnd.github.v3+json"},
+        headers={
+            "User-Agent": "skills-orchestrator/1.0",
+            "Accept": "application/vnd.github.v3+json",
+        },
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read())
@@ -182,7 +214,11 @@ def _fetch_github_skills(source: str) -> list[tuple[str, str]]:
     results = []
     for item in items:
         # 扁平结构：直接是 .md 文件
-        if item.get("type") == "file" and item["name"].endswith(".md") and item["name"] not in ("README.md", "CLAUDE.md", "CURSOR.md", "EXAMPLES.md"):
+        if (
+            item.get("type") == "file"
+            and item["name"].endswith(".md")
+            and item["name"] not in ("README.md", "CLAUDE.md", "CURSOR.md", "EXAMPLES.md")
+        ):
             try:
                 content = _fetch_raw(item["download_url"])
                 results.append((item["name"], content))
@@ -212,6 +248,7 @@ def _fetch_github_skills(source: str) -> list[tuple[str, str]]:
 
 
 # ─────────────────────────── CLI ────────────────────────────
+
 
 @click.group()
 def cli():
@@ -246,7 +283,7 @@ def build(config: str, output: str, zone: Optional[str]):
         resolved = resolver.resolve(target_zone)
         click.echo(
             _ok(
-                f"冲突解决: "
+                "冲突解决: "
                 + click.style(f"{len(resolved.forced_skills)} forced", fg="green")
                 + ", "
                 + click.style(f"{len(resolved.passive_skills)} passive", fg="yellow")
@@ -285,17 +322,23 @@ def validate(config: str):
         click.echo(f"  Combos: {len(cfg.combos)}")
 
         if resolved.forced_skills:
-            click.echo(f"\n{click.style('Forced', fg='green', bold=True)} ({len(resolved.forced_skills)})")
+            click.echo(
+                f"\n{click.style('Forced', fg='green', bold=True)} ({len(resolved.forced_skills)})"
+            )
             for s in resolved.forced_skills:
                 click.echo(f"  {click.style('✓', fg='green')} {s.id}: {s.name}")
 
         if resolved.passive_skills:
-            click.echo(f"\n{click.style('Passive', fg='yellow', bold=True)} ({len(resolved.passive_skills)})")
+            click.echo(
+                f"\n{click.style('Passive', fg='yellow', bold=True)} ({len(resolved.passive_skills)})"
+            )
             for s in resolved.passive_skills:
                 click.echo(f"  {click.style('○', fg='yellow')} {s.id}: {s.name}")
 
         if resolved.blocked_skills:
-            click.echo(f"\n{click.style('Blocked', fg='red', bold=True)} ({len(resolved.blocked_skills)})")
+            click.echo(
+                f"\n{click.style('Blocked', fg='red', bold=True)} ({len(resolved.blocked_skills)})"
+            )
             for s in resolved.blocked_skills:
                 reason = resolved.block_reasons.get(s.id, "冲突声明")
                 click.echo(f"  {click.style('✗', fg='red')} {s.id}: {s.name}")
@@ -343,7 +386,9 @@ def status(config: str):
         click.echo(f"\n{click.style('Forced Skills', fg='green', bold=True)} — 强制加载")
         if resolved.forced_skills:
             for s in resolved.forced_skills:
-                click.echo(f"  {click.style('✓', fg='green')} {click.style(s.id, bold=True)}: {s.name}")
+                click.echo(
+                    f"  {click.style('✓', fg='green')} {click.style(s.id, bold=True)}: {s.name}"
+                )
                 click.echo(f"    priority={s.priority}  tags=[{', '.join(s.tags)}]")
         else:
             click.echo("  （无）")
@@ -351,7 +396,9 @@ def status(config: str):
         click.echo(f"\n{click.style('Passive Skills', fg='yellow', bold=True)} — 按需加载")
         if resolved.passive_skills:
             for s in resolved.passive_skills:
-                click.echo(f"  {click.style('○', fg='yellow')} {click.style(s.id, bold=True)}: {s.name}")
+                click.echo(
+                    f"  {click.style('○', fg='yellow')} {click.style(s.id, bold=True)}: {s.name}"
+                )
                 click.echo(f"    priority={s.priority}  tags=[{', '.join(s.tags)}]")
         else:
             click.echo("  （无）")
@@ -360,7 +407,9 @@ def status(config: str):
         if resolved.blocked_skills:
             for s in resolved.blocked_skills:
                 reason = resolved.block_reasons.get(s.id, "冲突声明")
-                click.echo(f"  {click.style('✗', fg='red')} {click.style(s.id, bold=True)}: {s.name}")
+                click.echo(
+                    f"  {click.style('✗', fg='red')} {click.style(s.id, bold=True)}: {s.name}"
+                )
                 click.echo(f"    {click.style('→', fg='red')} {reason}")
         else:
             click.echo("  （无）")
@@ -375,12 +424,23 @@ def status(config: str):
 @cli.command()
 @click.option("--skills-dir", "-d", default="./skills", help="Skills 目录")
 @click.option("--output", "-o", default="skills.yaml", help="输出配置文件路径")
-def init(skills_dir: str, output: str):
-    """交互式初始化，从本地 skills 目录生成 skills.yaml"""
+@click.option(
+    "--non-interactive",
+    "-y",
+    is_flag=True,
+    help="非交互模式：直接从 frontmatter 生成配置，不逐一询问",
+)
+def init(skills_dir: str, output: str, non_interactive: bool):
+    """初始化，从本地 skills 目录生成 skills.yaml
+
+    默认为交互式模式（逐一询问每个 skill 的配置）。
+    使用 --non-interactive 可直接从 frontmatter 自动生成配置，
+    仅对缺少 frontmatter 的字段使用默认值。
+    """
     skills_path = Path(skills_dir)
 
     if not skills_path.exists():
-        if click.confirm(f"目录 {skills_dir} 不存在，是否创建？", default=True):
+        if non_interactive or click.confirm(f"目录 {skills_dir} 不存在，是否创建？", default=True):
             skills_path.mkdir(parents=True)
             click.echo(_ok(f"已创建目录: {skills_path}"))
         else:
@@ -392,38 +452,72 @@ def init(skills_dir: str, output: str):
         click.echo(_warn(f"{skills_dir} 中没有 .md 文件，请先添加 skill 文件"))
         return
 
-    click.echo(f"\n找到 {len(md_files)} 个 skill 文件，开始配置：\n")
+    click.echo(
+        f"\n找到 {len(md_files)} 个 skill 文件"
+        + ("，非交互模式：直接从 frontmatter 生成" if non_interactive else "，开始配置：")
+        + "\n"
+    )
 
     entries = []
+    missing_fm_count = 0
     for md_file in md_files:
         content = md_file.read_text(encoding="utf-8")
         meta = _parse_frontmatter(content)
+        has_frontmatter = bool(meta.get("id") or meta.get("name"))
 
-        click.echo(click.style(f"─── {md_file.name} ───", bold=True))
         skill_id = meta.get("id", md_file.stem)
         default_name = meta.get("name", md_file.stem.replace("-", " ").title())
         default_summary = meta.get("summary", "")
         default_tags = ", ".join(meta.get("tags", []))
+        default_policy = meta.get("load_policy", "free")
+        default_priority = meta.get("priority", 50)
 
-        name = click.prompt("  名称", default=default_name)
-        summary = click.prompt("  简介", default=default_summary)
-        tags_str = click.prompt("  标签（逗号分隔）", default=default_tags)
-        policy = click.prompt("  加载策略", default="free",
-                              type=click.Choice(["require", "free"]), show_choices=True)
-        priority = click.prompt("  优先级 (0-999)", default=50, type=int)
+        if not has_frontmatter:
+            missing_fm_count += 1
 
-        entries.append({
-            "id": meta.get("id", md_file.stem),
-            "name": name,
-            "path": f"${{SKILLS_ROOT}}/{md_file.name}",
-            "summary": summary,
-            "tags": [t.strip() for t in tags_str.split(",") if t.strip()],
-            "load_policy": policy,
-            "priority": priority,
-            "zones": ["default"],
-            "conflict_with": [],
-        })
-        click.echo("")
+        if non_interactive:
+            # 非交互模式：直接使用 frontmatter 值（缺字段用默认值）
+            name = default_name
+            summary = default_summary
+            tags_list = (
+                [t.strip() for t in default_tags.split(",") if t.strip()]
+                if isinstance(default_tags, str)
+                else default_tags
+            )
+            policy = default_policy
+            priority = default_priority
+            click.echo(f"  {md_file.name} → {skill_id} ({policy}, p{priority})")
+        else:
+            # 交互模式：逐一询问
+            click.echo(click.style(f"─── {md_file.name} ───", bold=True))
+            name = click.prompt("  名称", default=default_name)
+            summary = click.prompt("  简介", default=default_summary)
+            tags_str = click.prompt("  标签（逗号分隔）", default=default_tags)
+            policy = click.prompt(
+                "  加载策略",
+                default="free",
+                type=click.Choice(["require", "free"]),
+                show_choices=True,
+            )
+            priority = click.prompt("  优先级 (0-999)", default=50, type=int)
+            tags_list = [t.strip() for t in tags_str.split(",") if t.strip()]
+            click.echo("")
+
+        entries.append(
+            {
+                "id": skill_id,
+                "name": name,
+                "path": f"${{SKILLS_ROOT}}/{md_file.name}",
+                "summary": summary,
+                "tags": tags_list
+                if isinstance(tags_list, list)
+                else [t.strip() for t in default_tags.split(",") if t.strip()],
+                "load_policy": policy,
+                "priority": priority,
+                "zones": meta.get("zones", ["default"]),
+                "conflict_with": meta.get("conflict_with", []),
+            }
+        )
 
     config = {
         "version": "1.0",
@@ -444,8 +538,11 @@ def init(skills_dir: str, output: str):
     with open(output_path, "w", encoding="utf-8") as f:
         yaml.dump(config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
+    click.echo("")
     click.echo(_ok(f"生成 {output_path}，包含 {len(entries)} 个 skills"))
-    click.echo(f"\n下一步：")
+    if non_interactive and missing_fm_count > 0:
+        click.echo(_warn(f"其中 {missing_fm_count} 个文件缺少 frontmatter，使用了推断默认值"))
+    click.echo("\n下一步：")
     click.echo(f"  export SKILLS_ROOT={skills_path.resolve()}")
     click.echo(f"  skills-orchestrator build --config {output_path}")
 
@@ -455,11 +552,26 @@ def init(skills_dir: str, output: str):
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则自动探测")
 @click.option("--full", is_flag=True, help="全量导出：所有 skill 完整内容（不分 forced/passive）")
-@click.option("--summary", is_flag=True, help="摘要模式：passive skill 只导出摘要（仅对 hermes/openclaw 有效，它们默认全量）")
-@click.option("--output", "-o", default=None, help="输出路径（仅 agents-md target 使用，默认 AGENTS.md）")
+@click.option(
+    "--summary",
+    is_flag=True,
+    help="摘要模式：passive skill 只导出摘要（仅对 hermes/openclaw 有效，它们默认全量）",
+)
+@click.option(
+    "--output", "-o", default=None, help="输出路径（仅 agents-md target 使用，默认 AGENTS.md）"
+)
 @click.option("--base-dir", default=None, help="目标根目录（hermes/openclaw 使用，默认自动检测）")
 @click.option("--dry-run", is_flag=True, help="预览导出结果，不实际写入文件")
-def sync(target_name: str, config: str, zone: Optional[str], full: bool, summary: bool, output: Optional[str], base_dir: Optional[str], dry_run: bool):
+def sync(
+    target_name: str,
+    config: str,
+    zone: Optional[str],
+    full: bool,
+    summary: bool,
+    output: Optional[str],
+    base_dir: Optional[str],
+    dry_run: bool,
+):
     """将 skills 同步到外部 Agent 的 skill 目录
 
     \b
@@ -504,7 +616,7 @@ def sync(target_name: str, config: str, zone: Optional[str], full: bool, summary
             if summary:
                 full = False  # 用户显式要求摘要
             else:
-                full = True   # 默认全量
+                full = True  # 默认全量
         # agents-md / copilot: full 由用户 --full flag 决定，默认 False
 
         forced_count = len(resolved.forced_skills)
@@ -513,18 +625,22 @@ def sync(target_name: str, config: str, zone: Optional[str], full: bool, summary
 
         if full:
             click.echo(
-                f"  "
+                "  "
                 + click.style("--full 模式", fg="cyan", bold=True)
                 + f": 导出 {forced_count + passive_count} 个 skill 完整内容"
             )
         else:
             click.echo(
-                f"  "
+                "  "
                 + click.style(f"{forced_count} forced", fg="green")
                 + " 完整内容 + "
                 + click.style(f"{passive_count} passive", fg="yellow")
                 + " 摘要"
-                + (f" + {click.style(str(blocked_count) + ' blocked', fg='red')}（跳过）" if blocked_count else "")
+                + (
+                    f" + {click.style(str(blocked_count) + ' blocked', fg='red')}（跳过）"
+                    if blocked_count
+                    else ""
+                )
             )
 
         if dry_run:
@@ -545,6 +661,7 @@ def sync(target_name: str, config: str, zone: Optional[str], full: bool, summary
 
         # 构建 Registry（让 SyncEngine 支持继承合并）
         from .mcp.registry import SkillRegistry
+
         registry = SkillRegistry(config)
 
         # 创建 target
@@ -596,7 +713,9 @@ def import_skill(source: str, skills_dir: str, config: str, dry_run: bool):
             content = _fetch_raw(source)
             files = [(filename, content)]
         else:
-            raise ValueError("支持的来源：GitHub URL（repo / 目录 / 单文件）或以 .md 结尾的原始 URL")
+            raise ValueError(
+                "支持的来源：GitHub URL（repo / 目录 / 单文件）或以 .md 结尾的原始 URL"
+            )
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)
@@ -641,9 +760,9 @@ def import_skill(source: str, skills_dir: str, config: str, dry_run: bool):
     if new_entries:
         click.echo("")
         _append_skills_to_yaml(config, new_entries)
-        click.echo(f"\n下一步：")
+        click.echo("\n下一步：")
         click.echo(f"  export SKILLS_ROOT={skills_path.resolve()}")
-        click.echo(f"  skills-orchestrator build")
+        click.echo("  skills-orchestrator build")
 
 
 @cli.command()
@@ -666,11 +785,12 @@ def serve(config: str):
     from .mcp.server import run_stdio
 
     config_path = str(Path(config).resolve())
-    click.echo(_ok(f"Skills MCP Server 启动中..."), err=True)
+    click.echo(_ok("Skills MCP Server 启动中..."), err=True)
     click.echo(f"  配置: {config_path}", err=True)
 
     try:
         from .mcp.registry import SkillRegistry
+
         reg = SkillRegistry(config_path)
         click.echo(_ok(f"已加载 {len(reg.all())} 个 skill"), err=True)
     except Exception as e:
@@ -716,6 +836,7 @@ def mcp_test(tool_name: str, args_json: str, config: str):
 
 # ──────────────────────── Pipeline 子命令 ────────────────────────
 
+
 @cli.group()
 def pipeline():
     """Pipeline 流程编排管理"""
@@ -759,7 +880,9 @@ def pipeline_list():
 
 @pipeline.command("start")
 @click.argument("pipeline_id")
-@click.option("--context", "-x", default="{}", help="初始上下文 JSON，如 '{\"scope_is_trivial\": true}'")
+@click.option(
+    "--context", "-x", default="{}", help="初始上下文 JSON，如 '{\"scope_is_trivial\": true}'"
+)
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 def pipeline_start(pipeline_id: str, context: str, config: str):
     """启动一个 Pipeline 运行
@@ -794,24 +917,48 @@ def pipeline_start(pipeline_id: str, context: str, config: str):
 @click.option("--pipeline-id", "-p", default=None, help="Pipeline ID")
 def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str]):
     """查看 Pipeline 运行状态"""
-    from .mcp.tools import ToolExecutor
+    from src.pipeline.store import RunStateStore
 
-    # pipeline_status 不需要 registry，但 ToolExecutor 需要
     try:
-        executor = ToolExecutor.__new__(ToolExecutor)
-        executor._registry = None
-        executor._searcher = None
-        executor._pipelines_dir = None
-        executor._pipelines = {}
-        executor._store = None
-        args = {}
-        if run_id:
-            args["run_id"] = run_id
-        if pipeline_id:
-            args["pipeline_id"] = pipeline_id
-        results = executor.execute("pipeline_status", args)
-        for r in results:
-            click.echo(r.text)
+        store = RunStateStore()
+
+        # 加载 RunState
+        if run_id and pipeline_id:
+            state = store.load(pipeline_id, run_id)
+        else:
+            state = store.load_latest(pipeline_id or None)
+
+        if state is None:
+            click.echo(_warn("没有找到运行记录。"))
+            return
+
+        # 加载 Pipeline 定义（用于显示步骤详情）
+        pipeline = _load_pipeline(state.pipeline_id)
+        lines = [
+            f"Pipeline: {state.pipeline_id}  Run: {state.run_id}",
+            f"状态: {state.status}  当前步骤: {state.current_step or '(已完成)'}",
+            f"开始时间: {state.started_at}  更新时间: {state.updated_at}",
+            "",
+            "步骤历史：",
+        ]
+        for h in state.step_history:
+            status_icon = {"completed": "✓", "skipped": "⏭", "failed": "✗"}.get(h["status"], "?")
+            reason = f" ({h.get('reason', '')})" if h.get("reason") else ""
+            lines.append(f"  {status_icon} {h['step']} — {h['status']}{reason}")
+
+        if state.current_step and pipeline:
+            step = pipeline.get_step(state.current_step)
+            if step and step.gate:
+                lines.append("")
+                lines.append(f"门禁要求: 产出 '{step.gate.must_produce}'")
+                if step.gate.min_length:
+                    lines.append(f"  最小长度: {step.gate.min_length} 字符")
+
+        if state.context:
+            lines.append("")
+            lines.append(f"上下文键: {', '.join(state.context.keys())}")
+
+        click.echo("\n".join(lines))
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)
@@ -820,7 +967,9 @@ def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str]):
 @pipeline.command("advance")
 @click.argument("run_id")
 @click.argument("pipeline_id")
-@click.option("--artifacts", "-a", default="[]", help="产出列表 JSON，如 '[\"implementation_plan\"]'")
+@click.option(
+    "--artifacts", "-a", default="[]", help="产出列表 JSON，如 '[\"implementation_plan\"]'"
+)
 @click.option("--context", "-x", default="{}", help="上下文更新 JSON")
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 def pipeline_advance(run_id: str, pipeline_id: str, artifacts: str, context: str, config: str):
@@ -840,12 +989,15 @@ def pipeline_advance(run_id: str, pipeline_id: str, artifacts: str, context: str
         executor = ToolExecutor(registry)
         arts = json.loads(artifacts)
         ctx = json.loads(context)
-        results = executor.execute("pipeline_advance", {
-            "run_id": run_id,
-            "pipeline_id": pipeline_id,
-            "artifacts": arts,
-            "context_updates": ctx,
-        })
+        results = executor.execute(
+            "pipeline_advance",
+            {
+                "run_id": run_id,
+                "pipeline_id": pipeline_id,
+                "artifacts": arts,
+                "context_updates": ctx,
+            },
+        )
         for r in results:
             click.echo(r.text)
     except json.JSONDecodeError as e:
@@ -861,23 +1013,51 @@ def pipeline_advance(run_id: str, pipeline_id: str, artifacts: str, context: str
 @click.option("--pipeline-id", "-p", default=None, help="Pipeline ID")
 def pipeline_resume(run_id: Optional[str], pipeline_id: Optional[str]):
     """恢复中断的 Pipeline 运行"""
-    from .mcp.tools import ToolExecutor
+    from src.pipeline.engine import PipelineEngine
+    from src.pipeline.store import RunStateStore
 
     try:
-        executor = ToolExecutor.__new__(ToolExecutor)
-        executor._registry = None
-        executor._searcher = None
-        executor._pipelines_dir = None
-        executor._pipelines = {}
-        executor._store = None
-        args = {}
-        if run_id:
-            args["run_id"] = run_id
-        if pipeline_id:
-            args["pipeline_id"] = pipeline_id
-        results = executor.execute("pipeline_resume", args)
-        for r in results:
-            click.echo(r.text)
+        store = RunStateStore()
+
+        # 加载 RunState
+        if run_id and pipeline_id:
+            state = store.load(pipeline_id, run_id)
+        else:
+            state = store.load_latest(pipeline_id or None)
+
+        if state is None:
+            click.echo(_warn("没有找到可恢复的运行记录。"))
+            return
+
+        if state.status == "completed":
+            click.echo(f"Pipeline 已完成，无需恢复。Run: {state.run_id}")
+            return
+
+        pipeline = _load_pipeline(state.pipeline_id)
+        if pipeline is None:
+            click.echo(_err(f"Pipeline 不存在: {state.pipeline_id}"), err=True)
+            raise SystemExit(1)
+
+        engine = PipelineEngine(pipeline)
+        state = engine.resume(state)
+        store.save(state)
+
+        step = pipeline.get_step(state.current_step) if state.current_step else None
+        lines = [
+            f"Pipeline '{pipeline.name}' 已恢复！",
+            f"Run ID: {state.run_id}",
+            f"当前步骤: {state.current_step} (skill: {step.skill if step else '?'})",
+            f"状态: {state.status}",
+        ]
+        if step and step.gate:
+            lines.append("")
+            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.must_produce}'")
+            if step.gate.min_length:
+                lines.append(f"  最小长度: {step.gate.min_length} 字符")
+
+        lines.append("")
+        lines.append("使用 pipeline advance <run_id> <pipeline_id> 推进下一步。")
+        click.echo("\n".join(lines))
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)

@@ -66,7 +66,7 @@ class SkillRegistry:
         p = Path(skill_path)
         if p.is_absolute():
             return p
-        base = getattr(self, '_base_dir', None) or str(Path(self._config_path).parent)
+        base = getattr(self, "_base_dir", None) or str(Path(self._config_path).parent)
         return (Path(base) / p).resolve()
 
     def get_content(self, skill_id: str, _chain: tuple[str, ...] = ()) -> Optional[str]:
@@ -113,7 +113,7 @@ class SkillRegistry:
         end = content.find("\n---", 3)
         if end == -1:
             return content
-        return content[end + 4:].lstrip()
+        return content[end + 4 :].lstrip()
 
     def _warm(self, skill: SkillMeta) -> None:
         self.get_content(skill.id)

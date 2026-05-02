@@ -12,10 +12,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 class Gate:
     """质量门禁：Step 完成前必须满足的条件"""
 
-    must_produce: str = ""              # 必须产出的 artifact key
-    min_length: int = 0                 # artifact 最小字符数
-    check_command: str = ""             # 可选：运行命令验证
-    max_iterations: int = 0             # 可选：最大重试轮数（0=不限）
+    must_produce: str = ""  # 必须产出的 artifact key
+    min_length: int = 0  # artifact 最小字符数
+    check_command: str = ""  # 可选：运行命令验证
+    max_iterations: int = 0  # 可选：最大重试轮数（0=不限）
 
     def check(self, context: Dict[str, Any]) -> Tuple[bool, str]:
         """检查门禁是否通过，返回 (passed, reason)"""
@@ -39,11 +39,11 @@ class Gate:
 class Step:
     """Pipeline 中的一个步骤"""
 
-    id: str                              # 步骤唯一 ID
-    skill: str                           # 引用的 skill ID
+    id: str  # 步骤唯一 ID
+    skill: str  # 引用的 skill ID
     next: List[str] = field(default_factory=list)  # 下一步骤 ID 列表
-    skip_if: Optional[str] = None        # 跳过条件（context 中的 bool key）
-    gate: Optional[Gate] = None          # 质量门禁
+    skip_if: Optional[str] = None  # 跳过条件（context 中的 bool key）
+    gate: Optional[Gate] = None  # 质量门禁
 
     @property
     def is_terminal(self) -> bool:
@@ -179,16 +179,20 @@ class RunState:
 
     def to_json(self) -> str:
         """序列化为 JSON"""
-        return json.dumps({
-            "pipeline_id": self.pipeline_id,
-            "run_id": self.run_id,
-            "current_step": self.current_step,
-            "status": self.status,
-            "step_history": self.step_history,
-            "context": self.context,
-            "started_at": self.started_at,
-            "updated_at": self.updated_at,
-        }, ensure_ascii=False, indent=2)
+        return json.dumps(
+            {
+                "pipeline_id": self.pipeline_id,
+                "run_id": self.run_id,
+                "current_step": self.current_step,
+                "status": self.status,
+                "step_history": self.step_history,
+                "context": self.context,
+                "started_at": self.started_at,
+                "updated_at": self.updated_at,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
 
     @classmethod
     def from_json(cls, json_str: str) -> "RunState":
