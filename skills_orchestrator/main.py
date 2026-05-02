@@ -898,7 +898,8 @@ def serve(config: str, zone: str | None):
         click.echo(_err(f"加载失败: {e}"), err=True)
         raise SystemExit(1)
 
-    asyncio.run(run_stdio(config_path, zone_id=zone))
+    pipelines_dir = _resolve_pipelines_dir(config)
+    asyncio.run(run_stdio(config_path, zone_id=zone, pipelines_dir=str(pipelines_dir)))
 
 
 @cli.command("mcp-test")
@@ -924,7 +925,8 @@ def mcp_test(tool_name: str, args_json: str, config: str, zone: Optional[str]):
     config_path = str(Path(config).resolve())
     try:
         registry = SkillRegistry(config_path, zone_id=zone)
-        executor = ToolExecutor(registry)
+        pipelines_dir = _resolve_pipelines_dir(config)
+        executor = ToolExecutor(registry, pipelines_dir=str(pipelines_dir))
         arguments = json.loads(args_json)
         results = executor.execute(tool_name, arguments)
         for r in results:
@@ -1126,11 +1128,11 @@ def pipeline_start(pipeline_id: str, context: str, config: str, zone: Optional[s
 
     try:
         registry = SkillRegistry(config_path, zone_id=zone)
-        executor = ToolExecutor(registry)
+        executor = ToolExecutor(registry, pipelines_dir=str(pipelines_dir))
         ctx = _parse_context(context)
         results = executor.execute(
             "pipeline_start",
-            {"pipeline_id": pipeline_id, "context": ctx, "pipelines_dir": str(pipelines_dir)},
+            {"pipeline_id": pipeline_id, "context": ctx},
         )
         for r in results:
             click.echo(r.text)
@@ -1252,7 +1254,8 @@ def pipeline_advance(
             click.echo(f"  自动使用运行 ID: {click.style(run_id, bold=True)}")
 
         registry = SkillRegistry(config_path, zone_id=zone)
-        executor = ToolExecutor(registry)
+        pipelines_dir = _resolve_pipelines_dir(config)
+        executor = ToolExecutor(registry, pipelines_dir=str(pipelines_dir))
         arts = json.loads(artifacts)
         ctx = _parse_context(context)
         results = executor.execute(
@@ -1277,7 +1280,8 @@ def pipeline_advance(
 @pipeline.command("resume")
 @click.option("--run-id", "-r", default=None, help="运行 ID（不传则恢复最近一次）")
 @click.option("--pipeline-id", "-p", default=None, help="Pipeline ID")
-def pipeline_resume(run_id: Optional[str], pipeline_id: Optional[str]):
+@click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
+def pipeline_resume(run_id: Optional[str], pipeline_id: Optional[str], config: str):
     """恢复中断的 Pipeline 运行"""
     from skills_orchestrator.pipeline.engine import PipelineEngine
     from skills_orchestrator.pipeline.store import RunStateStore
@@ -1299,7 +1303,7 @@ def pipeline_resume(run_id: Optional[str], pipeline_id: Optional[str]):
             click.echo(f"Pipeline 已完成，无需恢复。Run: {state.run_id}")
             return
 
-        pipeline = _load_pipeline(state.pipeline_id)
+        pipeline = _load_pipeline(state.pipeline_id, config)
         if pipeline is None:
             click.echo(_err(f"Pipeline 不存在: {state.pipeline_id}"), err=True)
             raise SystemExit(1)
