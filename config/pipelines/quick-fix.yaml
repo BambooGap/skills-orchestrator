@@ -15,7 +15,7 @@ steps:
       must_produce: code_changes
 
   - id: commit
-    skill: git-worktrees
+    skill: git-commit-conventions
     next: []
     gate:
       must_produce: commit_sha

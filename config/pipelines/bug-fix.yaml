@@ -1,0 +1,29 @@
+id: bug-fix
+name: 系统性 Bug 修复
+description: 完整的 bug 修复流程，适合复杂 bug 或影响范围不明确的问题
+steps:
+  - id: debug
+    skill: systematic-debugging
+    next: [fix]
+    gate:
+      must_produce: root_cause
+      min_length: 100
+
+  - id: fix
+    skill: tdd
+    next: [review]
+    gate:
+      must_produce: code_changes
+
+  - id: review
+    skill: pr-review
+    next: [finish]
+    skip_if: skip_review
+    gate:
+      must_produce: review_feedback
+
+  - id: finish
+    skill: finish-branch
+    next: []
+    gate:
+      must_produce: commit_sha

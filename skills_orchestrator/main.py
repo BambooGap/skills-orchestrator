@@ -32,6 +32,16 @@ def _err(msg: str) -> str:
     return click.style("✗", fg="red") + f" {msg}"
 
 
+def _parse_context(context_str: str) -> dict:
+    """解析 context 参数：支持 JSON 字符串或 @文件路径。"""
+    if context_str.strip().startswith("@"):
+        filepath = Path(context_str.strip()[1:])
+        if not filepath.exists():
+            raise click.BadParameter(f"context 文件不存在: {filepath}")
+        return json.loads(filepath.read_text(encoding="utf-8"))
+    return json.loads(context_str)
+
+
 def _load_pipeline(pipeline_id: str):
     """加载 Pipeline 定义，返回 Pipeline 对象或 None"""
     from skills_orchestrator.pipeline.loader import PipelineLoader
@@ -936,7 +946,8 @@ def pipeline_list():
 @pipeline.command("start")
 @click.argument("pipeline_id")
 @click.option(
-    "--context", "-x", default="{}", help="初始上下文 JSON，如 '{\"scope_is_trivial\": true}'"
+    "--context", "-x", default="{}",
+    help="初始上下文 JSON 或 @文件路径，如 '{\"skip_review\": true}' 或 @ctx.json"
 )
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 def pipeline_start(pipeline_id: str, context: str, config: str):
@@ -946,7 +957,8 @@ def pipeline_start(pipeline_id: str, context: str, config: str):
     示例：
       skills-orchestrator pipeline start full-dev
       skills-orchestrator pipeline start quick-fix
-      skills-orchestrator pipeline start full-dev --context '{"scope_is_trivial": true}'
+      skills-orchestrator pipeline start bug-fix --context '{"skip_review": true}'
+      skills-orchestrator pipeline start bug-fix --context @context.json
     """
     from .mcp.registry import SkillRegistry
     from .mcp.tools import ToolExecutor
@@ -955,7 +967,7 @@ def pipeline_start(pipeline_id: str, context: str, config: str):
     try:
         registry = SkillRegistry(config_path)
         executor = ToolExecutor(registry)
-        ctx = json.loads(context)
+        ctx = _parse_context(context)
         results = executor.execute("pipeline_start", {"pipeline_id": pipeline_id, "context": ctx})
         for r in results:
             click.echo(r.text)
@@ -1020,30 +1032,50 @@ def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str]):
 
 
 @pipeline.command("advance")
-@click.argument("run_id")
 @click.argument("pipeline_id")
+@click.option("--run-id", "-r", default=None, help="运行 ID（不传则自动使用最近一次进行中的运行）")
 @click.option(
     "--artifacts", "-a", default="[]", help="产出列表 JSON，如 '[\"implementation_plan\"]'"
 )
-@click.option("--context", "-x", default="{}", help="上下文更新 JSON")
+@click.option(
+    "--context", "-x", default="{}",
+    help="上下文更新 JSON 或 @文件路径，如 '{\"done\": true}' 或 @ctx.json"
+)
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
-def pipeline_advance(run_id: str, pipeline_id: str, artifacts: str, context: str, config: str):
+def pipeline_advance(pipeline_id: str, run_id: Optional[str], artifacts: str, context: str, config: str):
     """推进 Pipeline 到下一步
 
     \b
     示例：
-      skills-orchestrator pipeline advance <run_id> full-dev
-      skills-orchestrator pipeline advance <run_id> full-dev --artifacts '["implementation_plan"]'
+      skills-orchestrator pipeline advance bug-fix
+      skills-orchestrator pipeline advance bug-fix --run-id abc123
+      skills-orchestrator pipeline advance bug-fix --artifacts '["root_cause"]'
+      skills-orchestrator pipeline advance bug-fix --context @updates.json
     """
     from .mcp.registry import SkillRegistry
     from .mcp.tools import ToolExecutor
+    from .pipeline.store import RunStateStore
 
     config_path = str(Path(config).resolve())
     try:
+        # 自动找最新运行（run_id 未指定时）
+        if not run_id:
+            store = RunStateStore()
+            state = store.load_latest(pipeline_id)
+            if state is None:
+                click.echo(_err(f"没有找到 '{pipeline_id}' 的运行记录，请先执行 pipeline start"), err=True)
+                raise SystemExit(1)
+            if state.status == "completed":
+                click.echo(_warn(f"Pipeline '{pipeline_id}' 最近一次运行已完成（run: {state.run_id}）"))
+                click.echo("  如需重新运行，请执行 pipeline start")
+                return
+            run_id = state.run_id
+            click.echo(f"  自动使用运行 ID: {click.style(run_id, bold=True)}")
+
         registry = SkillRegistry(config_path)
         executor = ToolExecutor(registry)
         arts = json.loads(artifacts)
-        ctx = json.loads(context)
+        ctx = _parse_context(context)
         results = executor.execute(
             "pipeline_advance",
             {

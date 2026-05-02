@@ -1,0 +1,22 @@
+id: security-audit
+name: 安全审查流程
+description: 代码安全审查，适合合并前的安全检查或定期安全复查
+steps:
+  - id: code-review
+    skill: pr-review
+    next: [security-check]
+    gate:
+      must_produce: review_feedback
+
+  - id: security-check
+    skill: security-review
+    next: [finish]
+    gate:
+      must_produce: security_findings
+      min_length: 200
+
+  - id: finish
+    skill: finish-branch
+    next: []
+    gate:
+      must_produce: merge_confirmation
