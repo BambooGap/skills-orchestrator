@@ -409,7 +409,7 @@ class SyncEngine:
 
     语义：
     - 默认模式（与 build 一致）：forced 完整内容 + passive 摘要，按 Zone 过滤
-    - --full 模式：所有 skill 完整内容（不分 forced/passive），不按 Zone 过滤
+    - --full 模式：当前 Zone 内所有可见 skill 完整内容
     """
 
     def __init__(
@@ -436,6 +436,47 @@ class SyncEngine:
     def _read_skill_content(self, skill: SkillMeta) -> str:
         """读取 skill 文件完整内容（通过 SkillContentResolver 统一处理 base 继承合并）。"""
         return self._resolver.read(skill)
+
+    def _patch_frontmatter_load_policy(self, content: str, effective_policy: str) -> str:
+        """Patch frontmatter 中的 load_policy 为 effective policy
+
+        Args:
+            content: 原始 markdown 内容（含 frontmatter）
+            effective_policy: 实际生效的 load_policy
+
+        Returns:
+            patch 后的内容
+        """
+        if not content.startswith("---"):
+            return content
+
+        # 找到 frontmatter 结束位置
+        end = content.find("\n---", 3)
+        if end == -1:
+            return content
+
+        # 解析 frontmatter
+        fm_text = content[3:end].strip()
+        try:
+            fm = yaml.safe_load(fm_text) or {}
+        except Exception:
+            return content
+
+        # 如果已经有 effective_load_policy 或 load_policy 已经是 effective，不修改
+        if fm.get("load_policy") == effective_policy:
+            return content
+
+        # 记录原始值并更新
+        source_policy = fm.get("load_policy", "free")
+        if source_policy != effective_policy:
+            fm["source_load_policy"] = source_policy
+            fm["load_policy"] = effective_policy
+
+            # 重新生成 frontmatter
+            new_fm = yaml.dump(fm, allow_unicode=True, sort_keys=False, default_flow_style=False)
+            return f"---\n{new_fm}---{content[end + 4 :]}"
+
+        return content
 
     def _make_meta(self, skill: SkillMeta, effective_load_policy: str | None = None) -> dict:
         """生成 skill 元数据，支持覆盖 load_policy
@@ -484,22 +525,36 @@ class SyncEngine:
         """
         target.prepare()
 
+        # 计算 effective_load_policy
+        zone = self.resolved.active_zone
+        zone_forces_all = zone is not None and zone.load_policy == "require"
+
+        def get_effective_policy(skill: SkillMeta) -> str:
+            if skill.load_policy == "require":
+                return "require"
+            if zone_forces_all and skill.load_policy == "free":
+                return "require"
+            return skill.load_policy
+
         if self.full:
             # --full 模式：所有 skill 完整内容
             all_skills = list(self.resolved.forced_skills) + list(self.resolved.passive_skills)
             for skill in all_skills:
                 content = self._read_skill_content(skill)
-                # forced skills 使用 "require"，passive 使用原始值
-                effective_policy = "require" if skill in self.resolved.forced_skills else None
+                effective_policy = get_effective_policy(skill)
+                # patch frontmatter
+                content = self._patch_frontmatter_load_policy(content, effective_policy)
                 target.write(skill.id, content, self._make_meta(skill, effective_policy))
         else:
             # 默认模式：forced 完整 + passive 摘要，按 Zone
             for skill in self.resolved.forced_skills:
                 content = self._read_skill_content(skill)
-                target.write(skill.id, content, self._make_meta(skill, "require"))
+                effective_policy = get_effective_policy(skill)
+                content = self._patch_frontmatter_load_policy(content, effective_policy)
+                target.write(skill.id, content, self._make_meta(skill, effective_policy))
 
             for skill in self.resolved.passive_skills:
-                content = self._make_summary_content(skill)
+                content = self._make_summary_content(skill, get_effective_policy(skill))
                 meta = {**self._make_meta(skill), "_is_summary": True}
                 target.write(skill.id, content, meta)
 

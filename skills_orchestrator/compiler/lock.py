@@ -169,6 +169,15 @@ class SkillsLock:
         issues = []
         _base_dir = base_dir or resolved.base_dir
 
+        # Zone 一致性检查
+        lock_zone = lock_data.get("zone", "default")
+        current_zone = resolved.active_zone.id if resolved.active_zone else "default"
+        if lock_zone != current_zone:
+            issues.append(
+                f"⚠ Zone 不一致：lock={lock_zone}, current={current_zone}"
+                f"（建议使用 -z {lock_zone} 重新生成 lock）"
+            )
+
         all_skills = resolved.forced_skills + resolved.passive_skills + resolved.blocked_skills
 
         # 计算 effective_load_policy

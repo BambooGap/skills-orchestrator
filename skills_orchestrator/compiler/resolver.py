@@ -36,27 +36,29 @@ class Resolver:
         )
 
     def _validate_bases(self, skills: List[SkillMeta]) -> None:
-        """验证 base 引用存在且无循环。"""
+        """验证 base 引用存在且无循环（基于全量 skills，支持跨 Zone 检测）。"""
+        # 使用全量 skills 构建 base_map（支持跨 Zone 循环检测）
         all_ids = {s.id for s in self.config.skills}
-        base_map = {s.id: s.base for s in skills if s.base}
+        all_base_map = {s.id: s.base for s in self.config.skills if s.base}
 
-        for skill_id, base_id in base_map.items():
-            if base_id not in all_ids:
+        # 当前 zone skills 的 base 引用检查
+        for skill in skills:
+            if skill.base and skill.base not in all_ids:
                 raise ValueError(
-                    f"skill '{skill_id}' 的 base '{base_id}' 不存在，"
+                    f"skill '{skill.id}' 的 base '{skill.base}' 不存在，"
                     f"请检查 frontmatter 中的 base 字段。"
                 )
 
-        # 循环检测：DFS
+        # 循环检测：基于全量 skills（DFS）
         def has_cycle(start: str, visited: set) -> bool:
             if start in visited:
                 return True
-            b = base_map.get(start, "")
+            b = all_base_map.get(start, "")
             if not b:
                 return False
             return has_cycle(b, visited | {start})
 
-        for skill_id in base_map:
+        for skill_id in all_base_map:
             if has_cycle(skill_id, set()):
                 raise ValueError(f"skill '{skill_id}' 存在循环继承，请检查 base 引用链。")
 

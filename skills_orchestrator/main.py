@@ -43,13 +43,38 @@ def _parse_context(context_str: str) -> dict:
     return json.loads(context_str)
 
 
-def _load_pipeline(pipeline_id: str):
+def _resolve_pipelines_dir(config_path: Optional[str] = None) -> Path:
+    """统一解析 pipelines 目录，优先级：
+    1. 显式 --pipelines-dir（TODO: 未来可加 CLI 参数）
+    2. config 文件同级目录的 pipelines/
+    3. 当前目录 config/pipelines
+    4. 包内 config/pipelines（开发环境 fallback）
+    """
+    # 2. config 文件同级目录
+    if config_path:
+        config_dir = Path(config_path).parent
+        pipelines_dir = config_dir / "pipelines"
+        if pipelines_dir.is_dir():
+            return pipelines_dir
+
+    # 3. 当前目录 config/pipelines
+    pipelines_dir = Path("config/pipelines")
+    if pipelines_dir.is_dir():
+        return pipelines_dir
+
+    # 4. 包内 config/pipelines（开发环境 fallback）
+    package_pipelines = Path(__file__).parent.parent / "config" / "pipelines"
+    if package_pipelines.is_dir():
+        return package_pipelines
+
+    return pipelines_dir  # 返回默认路径（即使不存在）
+
+
+def _load_pipeline(pipeline_id: str, config_path: Optional[str] = None):
     """加载 Pipeline 定义，返回 Pipeline 对象或 None"""
     from skills_orchestrator.pipeline.loader import PipelineLoader
 
-    pipelines_dir = Path("config/pipelines")
-    if not pipelines_dir.exists():
-        pipelines_dir = Path(__file__).parent.parent / "config" / "pipelines"
+    pipelines_dir = _resolve_pipelines_dir(config_path)
     yaml_path = pipelines_dir / f"{pipeline_id}.yaml"
     if not yaml_path.exists():
         return None
@@ -924,19 +949,21 @@ def pipeline():
 @pipeline.command("list")
 @click.option("--detail", "-d", is_flag=True, help="显示详细版列表（带分类和预览）")
 @click.option("--compact", "-c", is_flag=True, help="显示紧凑版列表（适合窄终端）")
-def pipeline_list(detail: bool, compact: bool):
+@click.option(
+    "--config", "-f", default="config/skills.yaml", help="配置文件路径（用于定位 pipelines 目录）"
+)
+def pipeline_list(detail: bool, compact: bool, config: str):
     """列出可用的 Pipeline
 
     默认显示简洁版，使用 --detail 查看详细版，--compact 查看紧凑版
     """
-    pipelines_dir = os.path.join(os.path.dirname(__file__), "..", "config", "pipelines")
-    pipelines_dir = os.path.normpath(pipelines_dir)
+    pipelines_dir = _resolve_pipelines_dir(config)
 
-    if not os.path.isdir(pipelines_dir):
-        click.echo(_warn("没有找到 pipeline 配置目录"))
+    if not pipelines_dir.is_dir():
+        click.echo(_warn(f"没有找到 pipeline 配置目录: {pipelines_dir}"))
         return
 
-    yaml_files = sorted(f for f in os.listdir(pipelines_dir) if f.endswith(".yaml"))
+    yaml_files = sorted(f for f in pipelines_dir.iterdir() if f.suffix == ".yaml")
     if not yaml_files:
         click.echo(_warn("没有可用的 Pipeline"))
         return
@@ -945,11 +972,9 @@ def pipeline_list(detail: bool, compact: bool):
     if compact:
         click.echo(f"\n可用 Pipeline ({len(yaml_files)}个):\n")
         for f in yaml_files:
-            pipeline_id = f.replace(".yaml", "")
-            filepath = os.path.join(pipelines_dir, f)
+            pipeline_id = f.stem
             try:
-                with open(filepath, encoding="utf-8") as fh:
-                    data = yaml.safe_load(fh)
+                data = yaml.safe_load(f.read_text(encoding="utf-8"))
                 name = data.get("name", pipeline_id)
                 steps = data.get("steps", [])
                 step_count = len(steps)
@@ -976,12 +1001,10 @@ def pipeline_list(detail: bool, compact: bool):
         click.echo("=" * 60)
 
         for f in yaml_files:
-            pipeline_id = f.replace(".yaml", "")
-            filepath = os.path.join(pipelines_dir, f)
+            pipeline_id = f.stem
 
             try:
-                with open(filepath, encoding="utf-8") as fh:
-                    data = yaml.safe_load(fh)
+                data = yaml.safe_load(f.read_text(encoding="utf-8"))
 
                 name = data.get("name", pipeline_id)
                 desc = data.get("description", "")
@@ -1044,11 +1067,9 @@ def pipeline_list(detail: bool, compact: bool):
     # 默认简洁版
     click.echo(f"\n可用的 Pipeline（{len(yaml_files)} 个）：\n")
     for f in yaml_files:
-        pipeline_id = f.replace(".yaml", "")
-        filepath = os.path.join(pipelines_dir, f)
+        pipeline_id = f.stem
         try:
-            with open(filepath, encoding="utf-8") as fh:
-                data = yaml.safe_load(fh)
+            data = yaml.safe_load(f.read_text(encoding="utf-8"))
             name = data.get("name", pipeline_id)
             desc = data.get("description", "")
             steps = data.get("steps", [])
@@ -1085,13 +1106,32 @@ def pipeline_start(pipeline_id: str, context: str, config: str, zone: Optional[s
     """
     from .mcp.registry import SkillRegistry
     from .mcp.tools import ToolExecutor
+    from .pipeline.loader import PipelineLoader
 
     config_path = str(Path(config).resolve())
+    pipelines_dir = _resolve_pipelines_dir(config)
+
+    # 加载 pipeline 定义
+    loader = PipelineLoader()
+    yaml_path = pipelines_dir / f"{pipeline_id}.yaml"
+    if not yaml_path.exists():
+        click.echo(_err(f"Pipeline '{pipeline_id}' 不存在"), err=True)
+        raise SystemExit(1)
+
+    try:
+        pipeline = loader.load(str(yaml_path))
+    except Exception as e:
+        click.echo(_err(f"Pipeline 加载失败: {e}"), err=True)
+        raise SystemExit(1)
+
     try:
         registry = SkillRegistry(config_path, zone_id=zone)
         executor = ToolExecutor(registry)
         ctx = _parse_context(context)
-        results = executor.execute("pipeline_start", {"pipeline_id": pipeline_id, "context": ctx})
+        results = executor.execute(
+            "pipeline_start",
+            {"pipeline_id": pipeline_id, "context": ctx, "pipelines_dir": str(pipelines_dir)},
+        )
         for r in results:
             click.echo(r.text)
     except json.JSONDecodeError as e:
@@ -1105,7 +1145,8 @@ def pipeline_start(pipeline_id: str, context: str, config: str, zone: Optional[s
 @pipeline.command("status")
 @click.option("--run-id", "-r", default=None, help="运行 ID")
 @click.option("--pipeline-id", "-p", default=None, help="Pipeline ID")
-def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str]):
+@click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
+def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str], config: str):
     """查看 Pipeline 运行状态"""
     from skills_orchestrator.pipeline.store import RunStateStore
 
@@ -1123,7 +1164,7 @@ def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str]):
             return
 
         # 加载 Pipeline 定义（用于显示步骤详情）
-        pipeline = _load_pipeline(state.pipeline_id)
+        pipeline = _load_pipeline(state.pipeline_id, config)
         lines = [
             f"Pipeline: {state.pipeline_id}  Run: {state.run_id}",
             f"状态: {state.status}  当前步骤: {state.current_step or '(已完成)'}",
