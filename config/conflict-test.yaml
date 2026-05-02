@@ -1,0 +1,24 @@
+zones:
+  - id: default
+    name: 默认
+    priority: 0
+    load_policy: free
+
+skills:
+  - id: skill-a
+    name: Skill A
+    path: ${SKILLS_ROOT}/skill-a.md
+    summary: Skill A
+    tags: [test]
+    load_policy: require
+    priority: 10
+    conflict_with: [skill-b]
+
+  - id: skill-b
+    name: Skill B
+    path: ${SKILLS_ROOT}/skill-b.md
+    summary: Skill B
+    tags: [test]
+    load_policy: require
+    priority: 10
+    conflict_with: [skill-a]

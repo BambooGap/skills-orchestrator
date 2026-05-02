@@ -1,0 +1,21 @@
+id: quick-fix
+name: 快速修复
+description: 小bug修复流程，跳过规划和审查
+steps:
+  - id: debug
+    skill: systematic-debugging
+    next: [fix]
+    gate:
+      must_produce: root_cause
+
+  - id: fix
+    skill: tdd
+    next: [commit]
+    gate:
+      must_produce: code_changes
+
+  - id: commit
+    skill: git-worktrees
+    next: []
+    gate:
+      must_produce: commit_sha

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "skills-orchestrator": {
+      "command": "skills-orchestrator",
+      "args": ["serve", "--config", "/Users/wanxiaoyu/Desktop/skills-orchestrator/config/skills.yaml"],
+      "env": {}
+    }
+  }
+}

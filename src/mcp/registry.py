@@ -1,0 +1,119 @@
+"""SkillRegistry — 运行时 skill 注册表，从 compiler 加载，惰性缓存内容"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Optional
+
+from src.compiler.parser import Parser
+from src.compiler.resolver import Resolver
+from src.models import SkillMeta, Config, Combo
+
+
+class SkillRegistry:
+    """
+    运行时 skill 注册表。
+
+    - 启动时通过 Parser + Resolver 加载所有 skill 元数据
+    - skill 完整内容惰性读取（仅 get_skill 时才读文件）
+    - 支持热重载（reload()）
+    """
+
+    def __init__(self, config_path: str):
+        self._config_path = config_path
+        self._skills: dict[str, SkillMeta] = {}
+        self._combos: list[Combo] = []
+        self._content_cache: dict[str, str] = {}
+        self._load()
+
+    def _load(self) -> None:
+        parser = Parser(self._config_path)
+        config: Config = parser.parse()
+
+        resolver = Resolver(config)
+        resolved = resolver.resolve()
+
+        self._skills = {}
+        for skill in resolved.forced_skills + resolved.passive_skills:
+            self._skills[skill.id] = skill
+
+        self._combos = config.combos
+        self._content_cache = {}
+        self._base_dir = resolved.base_dir  # 项目根目录，用于解析相对路径
+
+        # required_on_start: 预热缓存（reduce first-call latency）
+        for skill in resolved.forced_skills:
+            self._warm(skill)
+
+    def reload(self) -> None:
+        """热重载：重新扫描 skill 文件，不重启 server"""
+        self._content_cache.clear()
+        self._load()
+
+    # ── 查询接口 ──────────────────────────────────────────────────
+
+    def all(self) -> list[SkillMeta]:
+        return list(self._skills.values())
+
+    def combos(self) -> list[Combo]:
+        return list(self._combos)
+
+    def get_meta(self, skill_id: str) -> Optional[SkillMeta]:
+        return self._skills.get(skill_id)
+
+    def _resolve_path(self, skill_path: str) -> Path:
+        """将 skill.path 解析为绝对路径（相对路径以项目根目录为基准）。"""
+        p = Path(skill_path)
+        if p.is_absolute():
+            return p
+        base = getattr(self, '_base_dir', None) or str(Path(self._config_path).parent)
+        return (Path(base) / p).resolve()
+
+    def get_content(self, skill_id: str, _chain: tuple[str, ...] = ()) -> Optional[str]:
+        """返回 skill 完整 .md 内容（带缓存）。
+
+        若 skill 声明了 base，则将 base 内容与当前内容合并（base 在前）。
+        _chain 用于循环检测，正常调用不需要传入。
+        """
+        if skill_id in self._content_cache:
+            return self._content_cache[skill_id]
+
+        skill = self._skills.get(skill_id)
+        if skill is None:
+            return None
+
+        path = self._resolve_path(skill.path)
+        if not path.exists():
+            return f"> 文件不存在: {skill.path}"
+
+        raw = path.read_text(encoding="utf-8")
+
+        if skill.base:
+            if skill.base in _chain:
+                # 循环继承保护：直接返回原始内容
+                content = raw
+            else:
+                base_content = self.get_content(skill.base, _chain + (skill_id,))
+                if base_content:
+                    body = self._strip_frontmatter(raw)
+                    content = base_content + "\n\n---\n\n" + body
+                else:
+                    content = raw
+        else:
+            content = raw
+
+        self._content_cache[skill_id] = content
+        return content
+
+    @staticmethod
+    def _strip_frontmatter(content: str) -> str:
+        """移除 YAML frontmatter（--- ... ---），返回正文。"""
+        if not content.startswith("---"):
+            return content
+        end = content.find("\n---", 3)
+        if end == -1:
+            return content
+        return content[end + 4:].lstrip()
+
+    def _warm(self, skill: SkillMeta) -> None:
+        self.get_content(skill.id)

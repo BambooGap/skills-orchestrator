@@ -1,0 +1,460 @@
+"""SyncTarget 抽象基类 + 内置实现
+
+设计原则：
+- write(skill_id, content, meta) 支持聚合型和分散型两种 target
+- 聚合型（如 AGENTS.md）：write 追加内容到内存缓冲区，finalize 一次性写文件
+- 分散型（如 Hermes）：write 直接写单个文件
+- sync 语义默认与 build 一致：forced 完整内容 + passive 摘要，按 Zone 过滤
+"""
+
+from __future__ import annotations
+
+import os
+from abc import ABC, abstractmethod
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import yaml
+
+from src.models import ResolvedConfig, SkillMeta, Zone
+
+
+# ═══════════════════════════ 抽象基类 ═══════════════════════════
+
+
+class SyncTarget(ABC):
+    """同步目标抽象基类"""
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """目标名称（用于日志）"""
+
+    @abstractmethod
+    def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
+        """写入一个 skill 的内容
+
+        Args:
+            skill_id: skill 唯一标识
+            content: skill 完整 markdown 内容（含 frontmatter）
+            meta: 元数据字典，至少包含 name, summary, tags, load_policy 等
+        """
+
+    @abstractmethod
+    def finalize(self) -> int:
+        """完成写入，返回写入的 skill 数量"""
+
+    def prepare(self) -> None:
+        """可选的预处理步骤（创建目录等）"""
+        pass
+
+
+# ═══════════════════════════ HermesTarget ═══════════════════════════
+
+
+class HermesTarget(SyncTarget):
+    """Hermes skill 目录同步
+
+    格式：~/.hermes/skills/{category}/{skill_id}/SKILL.md
+    - 每个 skill 一个子目录，内含 SKILL.md
+    - SKILL.md 带 YAML frontmatter（与 skills-orchestrator 格式一致）
+    - category 从 skill 的 tags 推断，或默认 "general"
+    """
+
+    # tag → category 映射表（可扩展）
+    TAG_CATEGORY_MAP: Dict[str, str] = {
+        "coding": "software-development",
+        "code": "software-development",
+        "quality": "software-development",
+        "testing": "software-development",
+        "tdd": "software-development",
+        "refactor": "software-development",
+        "debug": "software-development",
+        "error": "software-development",
+        "style": "software-development",
+        "naming": "software-development",
+        "readability": "software-development",
+        "api": "software-development",
+        "design": "software-development",
+        "rest": "software-development",
+        "git": "software-development",
+        "workflow": "software-development",
+        "parallel": "software-development",
+        "review": "software-development",
+        "security": "software-development",
+        "owasp": "software-development",
+        "ops": "devops",
+        "deployment": "devops",
+        "checklist": "devops",
+        "production": "devops",
+        "environment": "devops",
+        "config": "devops",
+        "planning": "productivity",
+        "estimation": "productivity",
+        "project": "productivity",
+        "process": "productivity",
+        "brainstorming": "productivity",
+        "decision": "productivity",
+        "docs": "productivity",
+        "readme": "productivity",
+        "mindset": "software-development",
+        "best-practices": "software-development",
+        "performance": "software-development",
+        "profiling": "software-development",
+        "optimization": "software-development",
+        "reliability": "software-development",
+        "pr": "software-development",
+        "base": "software-development",
+        "english": "software-development",
+    }
+
+    def __init__(self, base_dir: Optional[str] = None, category_override: Optional[str] = None):
+        """
+        Args:
+            base_dir: Hermes skills 根目录，默认 ~/.hermes/skills
+            category_override: 强制所有 skill 使用同一 category
+        """
+        self.base_dir = Path(base_dir or os.path.expanduser("~/.hermes/skills"))
+        self.category_override = category_override
+        self._count = 0
+
+    @property
+    def name(self) -> str:
+        return f"Hermes ({self.base_dir})"
+
+    def prepare(self) -> None:
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+
+    def _infer_category(self, meta: Dict[str, Any]) -> str:
+        """从 skill tags 推断 category"""
+        if self.category_override:
+            return self.category_override
+
+        tags = meta.get("tags", [])
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(",") if t.strip()]
+
+        for tag in tags:
+            tag_lower = tag.lower()
+            if tag_lower in self.TAG_CATEGORY_MAP:
+                return self.TAG_CATEGORY_MAP[tag_lower]
+
+        return "general"
+
+    def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
+        category = self._infer_category(meta)
+        skill_dir = self.base_dir / category / skill_id
+        skill_dir.mkdir(parents=True, exist_ok=True)
+
+        skill_file = skill_dir / "SKILL.md"
+
+        # 确保 content 有 frontmatter
+        if not content.startswith("---"):
+            frontmatter = {
+                "name": meta.get("name", skill_id),
+                "description": meta.get("summary", ""),
+                "version": meta.get("version", "1.0.0"),
+                "metadata": {
+                    "hermes": {
+                        "tags": meta.get("tags", []),
+                        "source": "skills-orchestrator",
+                        "load_policy": meta.get("load_policy", "free"),
+                        "priority": meta.get("priority", 50),
+                    }
+                }
+            }
+            fm_yaml = yaml.dump(frontmatter, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            content = f"---\n{fm_yaml}---\n\n{content}"
+
+        skill_file.write_text(content, encoding="utf-8")
+        self._count += 1
+
+    def finalize(self) -> int:
+        return self._count
+
+
+# ═══════════════════════════ OpenClawTarget ═══════════════════════════
+
+
+class OpenClawTarget(SyncTarget):
+    """OpenClaw skill 目录同步
+
+    格式（已确认，与 Hermes 相同的目录结构）：
+    - 目录：~/.openclaw/workspace/skills/{skill_id}/SKILL.md
+    - 每个 skill 一个子目录，内含 SKILL.md
+    - SKILL.md 带 YAML frontmatter，必须包含 name 和 description 字段
+    - OpenClaw 扫描逻辑：递归扫描 skills 根目录下的子目录，找 SKILL.md
+
+    两个 skill 根目录：
+    1. workspace skills: ~/.openclaw/workspace/skills/ （用户自定义，sync 写这里）
+    2. bundled skills: /opt/homebrew/lib/node_modules/openclaw/skills/ （内置，只读）
+
+    注意：OpenClaw 没有额外的注册步骤，只要文件放在 skills 目录下就会被自动发现。
+    """
+
+    def __init__(self, base_dir: Optional[str] = None):
+        self.base_dir = Path(base_dir or os.path.expanduser("~/.openclaw/workspace/skills"))
+        self._count = 0
+
+    @property
+    def name(self) -> str:
+        return f"OpenClaw ({self.base_dir})"
+
+    def prepare(self) -> None:
+        self.base_dir.mkdir(parents=True, exist_ok=True)
+
+    def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
+        skill_dir = self.base_dir / skill_id
+        skill_dir.mkdir(parents=True, exist_ok=True)
+
+        skill_file = skill_dir / "SKILL.md"
+
+        # 确保 content 有 frontmatter 且包含 name + description
+        # OpenClaw 要求 frontmatter 中至少有 name 和 description
+        if content.startswith("---"):
+            # 已有 frontmatter，检查是否包含必要字段
+            end = content.find("\n---", 3)
+            if end != -1:
+                fm_text = content[3:end].strip()
+                fm = yaml.safe_load(fm_text) or {}
+                if not isinstance(fm, dict):
+                    fm = {}
+                needs_patch = False
+                if not fm.get("name") and meta.get("name"):
+                    fm["name"] = meta["name"]
+                    needs_patch = True
+                if not fm.get("description") and meta.get("summary"):
+                    fm["description"] = meta["summary"]
+                    needs_patch = True
+                if needs_patch:
+                    new_fm = yaml.dump(fm, allow_unicode=True, default_flow_style=False, sort_keys=False)
+                    body = content[end + 4:].lstrip("\n")
+                    content = f"---\n{new_fm}---\n\n{body}"
+        else:
+            # 没有 frontmatter，补全 OpenClaw 要求的最小格式
+            frontmatter = {
+                "name": meta.get("name", skill_id),
+                "description": meta.get("summary", ""),
+            }
+            if meta.get("tags"):
+                frontmatter["tags"] = meta["tags"]
+            fm_yaml = yaml.dump(frontmatter, allow_unicode=True, default_flow_style=False, sort_keys=False)
+            content = f"---\n{fm_yaml}---\n\n{content}"
+
+        skill_file.write_text(content, encoding="utf-8")
+        self._count += 1
+
+    def finalize(self) -> int:
+        return self._count
+
+
+# ═══════════════════════════ CopilotTarget ═══════════════════════════
+
+
+class CopilotTarget(SyncTarget):
+    """GitHub Copilot 指令同步
+
+    格式：项目根目录下 .github/copilot-instructions.md
+    - 聚合型：所有 skill 合并写入一个文件
+    - 格式与 AGENTS.md 相同（纯 markdown，带 frontmatter 块）
+    - GitHub Copilot 自动读取此文件作为项目级指令
+    """
+
+    def __init__(self, output_path: str = ".github/copilot-instructions.md"):
+        self.output_path = Path(output_path)
+        self._parts: List[str] = []
+        self._count = 0
+
+    @property
+    def name(self) -> str:
+        return f"Copilot ({self.output_path})"
+
+    def prepare(self) -> None:
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
+        stripped = content.strip()
+        if stripped.startswith("---"):
+            self._parts.append(stripped)
+        else:
+            self._parts.append(f"---\n{stripped}\n---")
+        self._count += 1
+
+    def finalize(self) -> int:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        header = f"<!-- Generated by Skills Orchestrator sync | {timestamp} -->\n\n"
+        body = "\n\n".join(self._parts)
+        self.output_path.write_text(header + body, encoding="utf-8")
+        return self._count
+
+
+# ═══════════════════════════ AGENTS.md Target ═══════════════════════════
+
+
+class AgentsMdTarget(SyncTarget):
+    """聚合型 Target — 把所有 skill 写进一个 AGENTS.md
+
+    聚合型策略：
+    - write 时追加到内存缓冲区
+    - finalize 时一次性写入文件
+    """
+
+    def __init__(self, output_path: str = "AGENTS.md"):
+        self.output_path = Path(output_path)
+        self._parts: List[str] = []
+        self._count = 0
+
+    @property
+    def name(self) -> str:
+        return f"AGENTS.md ({self.output_path})"
+
+    def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
+        # 聚合型：每个 skill 用 --- 块包裹
+        # 如果 content 已有 frontmatter（以 --- 开头），不要重复包裹
+        stripped = content.strip()
+        if stripped.startswith("---"):
+            self._parts.append(stripped)
+        else:
+            self._parts.append(f"---\n{stripped}\n---")
+        self._count += 1
+
+    def finalize(self) -> int:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        header = f"<!-- Generated by Skills Orchestrator sync | {timestamp} -->\n\n"
+        body = "\n\n".join(self._parts)
+        self.output_path.write_text(header + body, encoding="utf-8")
+        return self._count
+
+
+# ═══════════════════════════ Sync Engine ═══════════════════════════
+
+
+class SyncEngine:
+    """同步引擎 — 根据 ResolvedConfig 将 skills 导出到 target
+
+    语义：
+    - 默认模式（与 build 一致）：forced 完整内容 + passive 摘要，按 Zone 过滤
+    - --full 模式：所有 skill 完整内容（不分 forced/passive），不按 Zone 过滤
+    """
+
+    def __init__(self, resolved: ResolvedConfig, full: bool = False, registry=None):
+        """
+        Args:
+            resolved: 编译解析后的配置
+            full: True = 全量导出所有 skill 完整内容
+            registry: SkillRegistry 实例（可选），传入后 _read_skill_content 会走
+                      registry.get_content() 以支持 base 继承合并
+        """
+        self.resolved = resolved
+        self.full = full
+        self._registry = registry
+
+    def _resolve_path(self, skill_path: str) -> Path:
+        """将 skill.path 解析为绝对路径"""
+        p = Path(skill_path)
+        if p.is_absolute():
+            return p
+        return (Path(self.resolved.base_dir) / p).resolve()
+
+    def _read_skill_content(self, skill: SkillMeta) -> str:
+        """读取 skill 文件完整内容
+
+        如果构造时传入了 registry，优先走 registry.get_content() 以支持 base 继承合并；
+        否则降级为直接读文件（兼容无 registry 的场景，如测试）。
+        """
+        if self._registry is not None:
+            try:
+                content = self._registry.get_content(skill.id)
+                if content:
+                    return content
+            except Exception:
+                pass  # registry 查询失败时降级为文件直读
+
+        path = self._resolve_path(skill.path)
+        if path.exists():
+            return path.read_text(encoding="utf-8")
+        return f"> 文件不存在: {skill.path}"
+
+    def _make_summary_content(self, skill: SkillMeta) -> str:
+        """为 passive skill 生成摘要格式的 markdown"""
+        tags = ", ".join(skill.tags)
+        return (
+            f"---\n"
+            f"id: {skill.id}\n"
+            f"name: {skill.name}\n"
+            f"summary: \"{skill.summary}\"\n"
+            f"tags: [{tags}]\n"
+            f"load_policy: {skill.load_policy}\n"
+            f"---\n\n"
+            f"# {skill.name}\n\n"
+            f"{skill.summary}\n\n"
+            f"> 如需完整内容，请使用 `skills-orchestrator sync --full` 导出"
+        )
+
+    def sync_to(self, target: SyncTarget) -> int:
+        """将 skills 同步到指定 target
+
+        Returns:
+            写入的 skill 数量
+        """
+        target.prepare()
+
+        if self.full:
+            # --full 模式：所有 skill 完整内容
+            all_skills = list(self.resolved.forced_skills) + list(self.resolved.passive_skills)
+            for skill in all_skills:
+                content = self._read_skill_content(skill)
+                meta = {
+                    "name": skill.name,
+                    "summary": skill.summary,
+                    "tags": skill.tags,
+                    "load_policy": skill.load_policy,
+                    "priority": skill.priority,
+                }
+                target.write(skill.id, content, meta)
+        else:
+            # 默认模式：forced 完整 + passive 摘要，按 Zone
+            for skill in self.resolved.forced_skills:
+                content = self._read_skill_content(skill)
+                meta = {
+                    "name": skill.name,
+                    "summary": skill.summary,
+                    "tags": skill.tags,
+                    "load_policy": skill.load_policy,
+                    "priority": skill.priority,
+                }
+                target.write(skill.id, content, meta)
+
+            for skill in self.resolved.passive_skills:
+                content = self._make_summary_content(skill)
+                meta = {
+                    "name": skill.name,
+                    "summary": skill.summary,
+                    "tags": skill.tags,
+                    "load_policy": skill.load_policy,
+                    "priority": skill.priority,
+                }
+                target.write(skill.id, content, meta)
+
+        return target.finalize()
+
+
+# ═══════════════════════════ Target Registry ═══════════════════════════
+
+
+TARGET_REGISTRY: Dict[str, type] = {
+    "hermes": HermesTarget,
+    "openclaw": OpenClawTarget,
+    "copilot": CopilotTarget,
+    "agents-md": AgentsMdTarget,
+}
+
+
+def get_target(name: str, **kwargs: Any) -> SyncTarget:
+    """根据名称创建 SyncTarget 实例"""
+    cls = TARGET_REGISTRY.get(name)
+    if cls is None:
+        available = ", ".join(TARGET_REGISTRY.keys())
+        raise ValueError(f"未知的同步目标: {name}（可用: {available}）")
+    return cls(**kwargs)

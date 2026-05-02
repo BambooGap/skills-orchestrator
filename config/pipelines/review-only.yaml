@@ -1,0 +1,15 @@
+id: review-only
+name: 代码审查
+description: 只做审查和合并，适合已有代码的检查
+steps:
+  - id: review
+    skill: pr-review
+    next: [finish]
+    gate:
+      must_produce: review_feedback
+
+  - id: finish
+    skill: finish-branch
+    next: []
+    gate:
+      must_produce: merge_confirmation

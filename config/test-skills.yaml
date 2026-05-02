@@ -1,0 +1,51 @@
+version: "1.0"
+
+zones:
+  - id: enterprise
+    name: 企业项目
+    priority: 10
+    rules:
+      - git_contains: .enterprise
+    load_policy: exclusive
+    skills:
+      - chinese-code-review
+    allow_base_skills:
+      - systematic-debugging
+
+  - id: default
+    name: 默认
+    priority: 0
+    load_policy: free
+
+skills:
+  - id: chinese-code-review
+    name: 中文代码审查
+    path: ${SKILLS_ROOT}/chinese-code-review.md
+    summary: 按企业规范审查代码，输出中文审查报告
+    tags: [review, chinese, enterprise]
+    load_policy: require
+    priority: 10
+
+  - id: systematic-debugging
+    name: 结构化调试
+    path: ${SKILLS_ROOT}/systematic-debugging.md
+    summary: 用于调试 bug、测试失败、异常排查
+    tags: [debug, error, testing]
+    load_policy: free
+    priority: 5
+
+  - id: quick-fix
+    name: 快速修复
+    path: ${SKILLS_ROOT}/quick-fix.md
+    summary: 快速定位并修复简单 bug
+    tags: [debug, fix]
+    load_policy: free
+    conflict_with: [systematic-debugging]
+    priority: 3
+
+combos:
+  - id: full-review
+    name: 完整审查套件
+    members:
+      - chinese-code-review
+      - systematic-debugging

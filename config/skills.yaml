@@ -1,0 +1,58 @@
+version: "2.0"
+
+# ============ Skill 目录（自动发现，无需手动注册）============
+# Parser 递归扫描所有子目录，从每个 .md 文件的 frontmatter 读取元数据
+skill_dirs:
+  - ../skills   # 相对于本配置文件所在目录（config/）
+
+# ============ 区域定义 ============
+zones:
+  - id: enterprise
+    name: 企业强制区
+    load_policy: require
+    priority: 200
+    allow_base_skills: []
+    rules:
+      - pattern: "*/internal/*"
+      - git_contains: "company.com"
+
+  - id: security-team
+    name: 安全团队区
+    load_policy: exclusive
+    priority: 500
+    allow_base_skills: [git-operations, file-read]
+    rules:
+      - pattern: "*/security/*"
+
+  - id: default
+    name: 默认区
+    load_policy: free
+    priority: 0
+    rules: []
+
+# ============ 覆盖（只写例外，不写所有人）============
+# 用于覆盖 frontmatter 里的默认值
+# 例：企业强制区要求 chinese-code-review 变成 require
+overrides: []
+
+# ============ Combo 定义 ============
+combos:
+  - id: debug-workflow
+    name: 调试工作流
+    description: "系统化调试，用于完整的 bug 排查场景"
+    skills: [systematic-debugging]
+
+  - id: full-dev-workflow
+    name: 完整开发工作流
+    description: "从计划到提 PR 的完整流程：头脑风暴 → 写计划 → git worktrees → 完成分支"
+    skills: [brainstorming, writing-plans, git-worktrees, finish-branch]
+
+  - id: code-quality
+    name: 代码质量套件
+    description: "系统化调试 + 安全重构 + PR Review"
+    skills: [systematic-debugging, refactoring, pr-review]
+
+  - id: git-workflow
+    name: Git 工作流套件
+    description: "Git 基础操作 + Worktrees + 完成分支清单"
+    skills: [git-operations, git-worktrees, finish-branch]
