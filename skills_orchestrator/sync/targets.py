@@ -537,7 +537,7 @@ class SyncEngine:
             return skill.load_policy
 
         if self.full:
-            # --full 模式：所有 skill 完整内容
+            # --full 模式：当前 Zone 内所有可见 skill 完整内容
             all_skills = list(self.resolved.forced_skills) + list(self.resolved.passive_skills)
             for skill in all_skills:
                 content = self._read_skill_content(skill)

@@ -1,6 +1,6 @@
 # Skills Orchestrator 测试报告
 
-**项目**: skills-orchestrator v2.0.0a4
+**项目**: skills-orchestrator v2.0.0
 **测试日期**: 2026-05-03
 **测试员**: Hermes Agent
 **项目路径**: /Users/wanxiaoyu/Desktop/skills-orchestrator

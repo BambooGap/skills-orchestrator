@@ -32,3 +32,6 @@ skills.lock.json
 # Test virtual environments
 .venv-test/
 .venv312-test/
+
+.venv313-test/
+.ruff_cache/
