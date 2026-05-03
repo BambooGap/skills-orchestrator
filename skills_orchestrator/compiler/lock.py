@@ -12,8 +12,23 @@ import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
+from typing import Tuple
 
 from skills_orchestrator.models import ResolvedConfig
+
+
+def _parse_version(version: str) -> Tuple[int, ...]:
+    """解析版本号为元组，用于正确的版本比较
+
+    示例：
+        '1.1' -> (1, 1)
+        '1.10' -> (1, 10)
+        '2.0.1' -> (2, 0, 1)
+    """
+    try:
+        return tuple(int(x) for x in version.split("."))
+    except (ValueError, AttributeError):
+        return (0,)
 
 
 class LockEntry:
@@ -215,7 +230,7 @@ class SkillsLock:
                 )
 
             # 检查 effective_load_policy 变化（仅当 lock 版本 >= 1.1）
-            if lock_data.get("version") >= "1.1":
+            if _parse_version(lock_data.get("version", "0")) >= _parse_version("1.1"):
                 old_effective = entry.get("effective_load_policy")
                 current_effective = effective_policy(skill)
                 if current_effective != old_effective:

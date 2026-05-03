@@ -7,6 +7,7 @@ import re
 import urllib.request
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 import click
 import yaml
@@ -36,7 +37,13 @@ def _err(msg: str) -> str:
 def _parse_context(context_str: str) -> dict:
     """解析 context 参数：支持 JSON 字符串或 @文件路径。"""
     if context_str.strip().startswith("@"):
-        filepath = Path(context_str.strip()[1:])
+        filepath = Path(context_str.strip()[1:]).resolve()
+        # 安全检查：文件必须在当前工作目录内，防止路径穿越
+        cwd = Path.cwd().resolve()
+        try:
+            filepath.relative_to(cwd)
+        except ValueError:
+            raise click.BadParameter(f"安全限制：context 文件必须在当前目录内: {filepath}")
         if not filepath.exists():
             raise click.BadParameter(f"context 文件不存在: {filepath}")
         return json.loads(filepath.read_text(encoding="utf-8"))
@@ -45,7 +52,7 @@ def _parse_context(context_str: str) -> dict:
 
 def _resolve_pipelines_dir(config_path: Optional[str] = None) -> Path:
     """统一解析 pipelines 目录，优先级：
-    1. 显式 --pipelines-dir（TODO: 未来可加 CLI 参数）
+    1. 各 pipeline 命令的 --pipelines-dir 参数（已实现）
     2. config 文件同级目录的 pipelines/
     3. 当前目录 config/pipelines
     4. 包内 config/pipelines（开发环境 fallback）
@@ -81,7 +88,11 @@ def _load_pipeline(pipeline_id: str, config_path: Optional[str] = None):
     loader = PipelineLoader()
     try:
         return loader.load(str(yaml_path))
-    except Exception:
+    except yaml.YAMLError as e:
+        click.echo(f"Pipeline YAML 解析失败: {e}", err=True)
+        return None
+    except Exception as e:
+        click.echo(f"加载 Pipeline 失败: {e}", err=True)
         return None
 
 
@@ -132,7 +143,11 @@ def _parse_frontmatter(content: str) -> dict:
 
 
 def _slugify(text: str) -> str:
-    return re.sub(r"[^a-z0-9-]", "-", text.lower()).strip("-")
+    """将文本转换为 slug 格式，保留中文、字母、数字、连字符"""
+    # 保留字母、数字、中文、连字符
+    result = re.sub(r"[^\w\u4e00-\u9fff-]", "-", text.lower()).strip("-")
+    # 兜底：如果结果为空，返回原文（避免纯中文输入产生空字符串）
+    return result if result else text
 
 
 def _append_skills_to_yaml(config_path: str, new_entries: list[dict]) -> None:
@@ -197,6 +212,20 @@ def _gh_api(api_path: str) -> object:
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read())
+
+
+def _validate_github_url(url: str) -> bool:
+    """验证 URL 是否为合法的 GitHub 域名，防止 SSRF 攻击"""
+    try:
+        parsed = urlparse(url)
+        # 只允许 github.com 和 raw.githubusercontent.com
+        return parsed.hostname in (
+            "github.com",
+            "raw.githubusercontent.com",
+            "api.github.com",
+        )
+    except Exception:
+        return False
 
 
 def _fetch_raw(url: str) -> str:
@@ -404,7 +433,7 @@ def validate(config: str, zone: Optional[str], check_lock: Optional[str]):
         if check_lock:
             lock_path = Path(check_lock)
             if not lock_path.exists():
-                click.echo(_warn(f"Lock 文件不存在: {lock_path}"))
+                raise click.ClickException(f"Lock 文件不存在: {lock_path}")
             else:
                 issues = SkillsLock.check(resolved, str(lock_path))
                 if issues:
@@ -634,7 +663,11 @@ def init(skills_dir: str, output: str, non_interactive: bool):
 @click.argument("target_name", type=click.Choice(list(TARGET_REGISTRY.keys())))
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则自动探测")
-@click.option("--full", is_flag=True, help="全量导出：所有 skill 完整内容（不分 forced/passive）")
+@click.option(
+    "--full",
+    is_flag=True,
+    help="全量导出：当前 Zone 内所有可见 skill 的完整内容（不分 forced/passive）",
+)
 @click.option(
     "--summary",
     is_flag=True,
@@ -731,7 +764,6 @@ def sync(
 
         if dry_run:
             click.echo(f"\n{click.style('[dry-run]', fg='yellow')} 目标: {target_name}")
-            engine = SyncEngine(resolved, full=full, all_skills=cfg.skills)
             # 列出将要导出的 skills
             if full:
                 all_skills_list = list(resolved.forced_skills) + list(resolved.passive_skills)
@@ -776,7 +808,8 @@ def sync(
 @click.option("--skills-dir", "-d", default="./skills", help="本地 skills 存放目录")
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径（追加导入记录）")
 @click.option("--dry-run", is_flag=True, help="预览导入结果，不实际写入文件")
-def import_skill(source: str, skills_dir: str, config: str, dry_run: bool):
+@click.option("--force", is_flag=True, help="强制覆盖已存在的文件")
+def import_skill(source: str, skills_dir: str, config: str, dry_run: bool, force: bool):
     """从 GitHub 导入 skill 文件并注册到 skills.yaml
 
     \b
@@ -792,9 +825,14 @@ def import_skill(source: str, skills_dir: str, config: str, dry_run: bool):
     click.echo(f"来源: {source}\n")
 
     try:
-        if "github.com" in source:
+        if _validate_github_url(source):
             files = _fetch_github_skills(source)
         elif source.startswith("http") and source.endswith(".md"):
+            # 验证非 GitHub URL 是否安全
+            if not _validate_github_url(source):
+                raise ValueError(
+                    "安全限制：只支持 GitHub URL (github.com, raw.githubusercontent.com)"
+                )
             filename = source.rsplit("/", 1)[-1]
             content = _fetch_raw(source)
             files = [(filename, content)]
@@ -838,6 +876,12 @@ def import_skill(source: str, skills_dir: str, config: str, dry_run: bool):
             click.echo(f"    summary={entry['summary'][:60]}...")
         else:
             target = skills_path / filename
+            # 检查文件是否已存在，防止静默覆盖
+            if target.exists() and not force:
+                click.echo(
+                    f"  {click.style('⚠', fg='yellow')} {target} 已存在，跳过（使用 --force 强制覆盖）"
+                )
+                continue
             target.write_text(content, encoding="utf-8")
             click.echo(f"  {click.style('✓', fg='green')} {target}")
             new_entries.append(entry)
@@ -1095,7 +1139,10 @@ def pipeline_list(detail: bool, compact: bool, config: str):
 )
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 zone id")
-def pipeline_start(pipeline_id: str, context: str, config: str, zone: Optional[str]):
+@click.option("--pipelines-dir", default=None, help="Pipeline 定义目录（默认为 config/pipelines）")
+def pipeline_start(
+    pipeline_id: str, context: str, config: str, zone: Optional[str], pipelines_dir: Optional[str]
+):
     """启动一个 Pipeline 运行
 
     \b
@@ -1105,30 +1152,25 @@ def pipeline_start(pipeline_id: str, context: str, config: str, zone: Optional[s
       skills-orchestrator pipeline start bug-fix --context '{"skip_review": true}'
       skills-orchestrator pipeline start bug-fix --context @context.json
       skills-orchestrator pipeline start quick-fix -z enterprise
+      skills-orchestrator pipeline start quick-fix --pipelines-dir /path/to/pipelines
     """
     from .mcp.registry import SkillRegistry
     from .mcp.tools import ToolExecutor
-    from .pipeline.loader import PipelineLoader
 
     config_path = str(Path(config).resolve())
-    pipelines_dir = _resolve_pipelines_dir(config)
+    resolved_pipelines_dir = (
+        Path(pipelines_dir) if pipelines_dir else _resolve_pipelines_dir(config)
+    )
 
-    # 加载 pipeline 定义
-    loader = PipelineLoader()
-    yaml_path = pipelines_dir / f"{pipeline_id}.yaml"
-    if not yaml_path.exists():
-        click.echo(_err(f"Pipeline '{pipeline_id}' 不存在"), err=True)
-        raise SystemExit(1)
-
-    try:
-        pipeline = loader.load(str(yaml_path))
-    except Exception as e:
-        click.echo(_err(f"Pipeline 加载失败: {e}"), err=True)
+    # 使用 _load_pipeline 统一加载，避免重复
+    pipeline = _load_pipeline(pipeline_id, config)
+    if pipeline is None:
+        click.echo(_err(f"Pipeline '{pipeline_id}' 不存在或加载失败"), err=True)
         raise SystemExit(1)
 
     try:
         registry = SkillRegistry(config_path, zone_id=zone)
-        executor = ToolExecutor(registry, pipelines_dir=str(pipelines_dir))
+        executor = ToolExecutor(registry, pipelines_dir=str(resolved_pipelines_dir))
         ctx = _parse_context(context)
         results = executor.execute(
             "pipeline_start",
@@ -1145,11 +1187,21 @@ def pipeline_start(pipeline_id: str, context: str, config: str, zone: Optional[s
 
 
 @pipeline.command("status")
+@click.argument("pipeline_id", required=False, default=None)
 @click.option("--run-id", "-r", default=None, help="运行 ID")
-@click.option("--pipeline-id", "-p", default=None, help="Pipeline ID")
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
-def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str], config: str):
-    """查看 Pipeline 运行状态"""
+@click.option("--pipelines-dir", default=None, help="Pipeline 定义目录（默认为 config/pipelines）")
+def pipeline_status(
+    pipeline_id: Optional[str], run_id: Optional[str], config: str, pipelines_dir: Optional[str]
+):
+    """查看 Pipeline 运行状态
+
+    \b
+    示例：
+      skills-orchestrator pipeline status quick-fix
+      skills-orchestrator pipeline status quick-fix --run-id abc123
+      skills-orchestrator pipeline status  # 查看最近的运行
+    """
     from skills_orchestrator.pipeline.store import RunStateStore
 
     try:
@@ -1211,6 +1263,7 @@ def pipeline_status(run_id: Optional[str], pipeline_id: Optional[str], config: s
 )
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 zone id")
+@click.option("--pipelines-dir", default=None, help="Pipeline 定义目录（默认为 config/pipelines）")
 def pipeline_advance(
     pipeline_id: str,
     run_id: Optional[str],
@@ -1218,6 +1271,7 @@ def pipeline_advance(
     context: str,
     config: str,
     zone: Optional[str],
+    pipelines_dir: Optional[str],
 ):
     """推进 Pipeline 到下一步
 
@@ -1254,8 +1308,10 @@ def pipeline_advance(
             click.echo(f"  自动使用运行 ID: {click.style(run_id, bold=True)}")
 
         registry = SkillRegistry(config_path, zone_id=zone)
-        pipelines_dir = _resolve_pipelines_dir(config)
-        executor = ToolExecutor(registry, pipelines_dir=str(pipelines_dir))
+        resolved_pipelines_dir = (
+            Path(pipelines_dir) if pipelines_dir else _resolve_pipelines_dir(config)
+        )
+        executor = ToolExecutor(registry, pipelines_dir=str(resolved_pipelines_dir))
         arts = json.loads(artifacts)
         ctx = _parse_context(context)
         results = executor.execute(
@@ -1278,11 +1334,21 @@ def pipeline_advance(
 
 
 @pipeline.command("resume")
+@click.argument("pipeline_id", required=False, default=None)
 @click.option("--run-id", "-r", default=None, help="运行 ID（不传则恢复最近一次）")
-@click.option("--pipeline-id", "-p", default=None, help="Pipeline ID")
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
-def pipeline_resume(run_id: Optional[str], pipeline_id: Optional[str], config: str):
-    """恢复中断的 Pipeline 运行"""
+@click.option("--pipelines-dir", default=None, help="Pipeline 定义目录（默认为 config/pipelines）")
+def pipeline_resume(
+    pipeline_id: Optional[str], run_id: Optional[str], config: str, pipelines_dir: Optional[str]
+):
+    """恢复中断的 Pipeline 运行
+
+    \b
+    示例：
+      skills-orchestrator pipeline resume quick-fix
+      skills-orchestrator pipeline resume quick-fix --run-id abc123
+      skills-orchestrator pipeline resume  # 恢复最近的运行
+    """
     from skills_orchestrator.pipeline.engine import PipelineEngine
     from skills_orchestrator.pipeline.store import RunStateStore
 

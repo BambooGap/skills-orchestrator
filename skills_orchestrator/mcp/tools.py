@@ -606,7 +606,14 @@ class ToolExecutor:
 
         run_id = args.get("run_id", "").strip()
         pipeline_id = args.get("pipeline_id", "").strip()
-        context_updates = args.get("context_updates", {})
+        context_updates = args.get("context_updates", {}) or {}
+
+        # 读取 artifacts 参数并合并到 context_updates
+        artifacts = args.get("artifacts", []) or []
+        for artifact in artifacts:
+            if not isinstance(artifact, str):
+                return [types.TextContent(type="text", text="artifacts 必须是字符串列表")]
+            context_updates.setdefault(artifact, True)
 
         store = self._get_store()
         state = store.load(pipeline_id, run_id)

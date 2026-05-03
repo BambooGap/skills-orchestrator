@@ -183,6 +183,12 @@ class PipelineEngine:
                 state.current_step = None
                 return state
 
+            # 防御性检查：确保 next 列表不为空
+            if not current.next:
+                state.status = "completed"
+                state.current_step = None
+                return state
+
             next_step_id = current.next[0]
             next_step = self.pipeline.get_step(next_step_id)
             if next_step is None:

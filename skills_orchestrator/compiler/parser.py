@@ -52,7 +52,7 @@ class Parser:
         skills = auto_skills + extra
 
         combos = self._parse_combos(raw.get("combos", []))
-        skills = self._expand_combos(skills, combos)
+        skills = self._validate_combos(skills, combos)
 
         # 优先找 id="default" 的 zone，找不到再退回第一个无 rules 的 zone
         default_zone = next((z for z in zones if z.id == "default"), None) or next(
@@ -187,10 +187,10 @@ class Parser:
             ]
             zones.append(
                 Zone(
-                    id=raw["id"],
-                    name=raw["name"],
-                    load_policy=raw["load_policy"],
-                    priority=raw["priority"],
+                    id=raw.get("id", ""),
+                    name=raw.get("name", raw.get("id", "未命名 Zone")),
+                    load_policy=raw.get("load_policy", "passive"),
+                    priority=raw.get("priority", 100),
                     rules=rules,
                     skills=raw.get("skills", []),
                     allow_base_skills=raw.get("allow_base_skills", []),
@@ -268,7 +268,8 @@ class Parser:
 
         return Path(*common)
 
-    def _expand_combos(self, skills: list[SkillMeta], combos: list[Combo]) -> list[SkillMeta]:
+    def _validate_combos(self, skills: list[SkillMeta], combos: list[Combo]) -> list[SkillMeta]:
+        """验证 Combo 引用的 skill 是否存在"""
         skill_ids = {s.id for s in skills}
         for combo in combos:
             for skill_id in combo.members:

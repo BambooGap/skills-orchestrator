@@ -84,13 +84,41 @@ class SkillRegistry:
         return (Path(base) / p).resolve()
 
     def get_content(self, skill_id: str) -> Optional[str]:
-        """返回 skill 完整 .md 内容（带缓存）。
-
-        公共入口：只能读取当前 zone 可见 skill。
-        """
+        """公共入口：只返回当前 zone 可见的 skill 内容"""
         if skill_id not in self._skills:
             return None
-        return self._get_content_internal(skill_id, allow_all_for_base=True)
+        return self._resolve_content(skill_id, chain=())
+
+    def _resolve_content(self, skill_id: str, chain: tuple[str, ...] = ()) -> Optional[str]:
+        """内部内容解析，base 继承可访问全量 _all_skills（不对外暴露）"""
+        if skill_id in self._content_cache:
+            return self._content_cache[skill_id]
+
+        skill = self._skills.get(skill_id) or self._all_skills.get(skill_id)
+        if skill is None:
+            return None
+
+        path = self._resolve_path(skill.path)
+        if not path.exists():
+            return f"> 文件不存在: {skill.path}"
+
+        raw = path.read_text(encoding="utf-8")
+
+        if skill.base:
+            if skill.base in chain:
+                content = raw  # 循环继承保护
+            else:
+                base_content = self._resolve_content(skill.base, chain + (skill_id,))
+                if base_content:
+                    body = self._strip_frontmatter(raw)
+                    content = base_content + "\n\n---\n\n" + body
+                else:
+                    content = raw
+        else:
+            content = raw
+
+        self._content_cache[skill_id] = content
+        return content
 
     def get_base_content(self, skill_id: str, chain: tuple[str, ...] = ()) -> Optional[str]:
         """读取 base skill 内容（内部方法，支持跨 Zone）。
@@ -102,55 +130,7 @@ class SkillRegistry:
         Returns:
             base skill 的完整内容，或 None
         """
-        return self._get_content_internal(skill_id, _chain=chain, allow_all_for_base=True)
-
-    def _get_content_internal(
-        self, skill_id: str, _chain: tuple[str, ...] = (), allow_all_for_base: bool = False
-    ) -> Optional[str]:
-        """内部读取方法，支持 base 继承。
-
-        Args:
-            skill_id: skill 唯一标识
-            _chain: 循环继承检测链
-            allow_all_for_base: 是否允许从全量索引读取（用于 base 继承）
-        """
-        if skill_id in self._content_cache:
-            return self._content_cache[skill_id]
-
-        # 先从当前 zone 查找
-        skill = self._skills.get(skill_id)
-
-        # 如果允许访问全量索引（用于 base 继承）
-        if skill is None and allow_all_for_base:
-            skill = self._all_skills.get(skill_id)
-
-        if skill is None:
-            return None
-
-        path = self._resolve_path(skill.path)
-        if not path.exists():
-            return f"> 文件不存在: {skill.path}"
-
-        raw = path.read_text(encoding="utf-8")
-
-        if skill.base:
-            if skill.base in _chain:
-                # 循环继承保护：直接返回原始内容
-                content = raw
-            else:
-                base_content = self._get_content_internal(
-                    skill.base, _chain + (skill_id,), allow_all_for_base=True
-                )
-                if base_content:
-                    body = self._strip_frontmatter(raw)
-                    content = base_content + "\n\n---\n\n" + body
-                else:
-                    content = raw
-        else:
-            content = raw
-
-        self._content_cache[skill_id] = content
-        return content
+        return self._resolve_content(skill_id, chain=chain)
 
     @staticmethod
     def _strip_frontmatter(content: str) -> str:
@@ -163,4 +143,5 @@ class SkillRegistry:
         return content[end + 4 :].lstrip()
 
     def _warm(self, skill: SkillMeta) -> None:
-        self._get_content_internal(skill.id, allow_all_for_base=True)
+        # 使用内部解析方法预加载
+        self._resolve_content(skill.id, chain=())

@@ -128,6 +128,7 @@ class RunState:
     context: Dict[str, Any] = field(default_factory=dict)  # artifact 存储
     started_at: str = ""
     updated_at: str = ""
+    _step_start_time: Optional[float] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
         if not self.started_at:
@@ -137,6 +138,8 @@ class RunState:
     def advance_to(self, step_id: str) -> None:
         """推进到指定步骤"""
         self.current_step = step_id
+        self._step_start_time = datetime.now().timestamp()
+        self.updated_at = datetime.now().isoformat()
         self.status = "running"
         self.updated_at = datetime.now().isoformat()
 
@@ -144,44 +147,66 @@ class RunState:
         """完成当前步骤"""
         if self.current_step is None:
             return
+
+        # 计算步骤持续时间
+        now = datetime.now()
+        duration_s = 0.0
+        if self._step_start_time:
+            duration_s = round(now.timestamp() - self._step_start_time, 2)
+
         record: Dict[str, Any] = {
             "step": self.current_step,
             "status": "completed",
             "artifacts": artifacts or [],
             "started_at": self.updated_at,
-            "duration_s": 0,
+            "duration_s": duration_s,
         }
         self.step_history.append(record)
-        self.updated_at = datetime.now().isoformat()
+        self.updated_at = now.isoformat()
 
     def skip_current(self, reason: str = "") -> None:
         """跳过当前步骤"""
         if self.current_step is None:
             return
+
+        # 计算步骤持续时间
+        now = datetime.now()
+        duration_s = 0.0
+        if self._step_start_time:
+            duration_s = round(now.timestamp() - self._step_start_time, 2)
+
         record: Dict[str, Any] = {
             "step": self.current_step,
             "status": "skipped",
             "artifacts": [],
             "reason": reason,
             "started_at": self.updated_at,
-            "duration_s": 0,
+            "duration_s": duration_s,
         }
         self.step_history.append(record)
-        self.updated_at = datetime.now().isoformat()
+        self.updated_at = now.isoformat()
 
     def fail_current(self, reason: str = "") -> None:
         """标记当前步骤失败"""
         if self.current_step is None:
             return
+
+        # 计算步骤持续时间
+        now = datetime.now()
+        duration_s = 0.0
+        if self._step_start_time:
+            duration_s = round(now.timestamp() - self._step_start_time, 2)
+
         record: Dict[str, Any] = {
             "step": self.current_step,
             "status": "failed",
             "artifacts": [],
             "reason": reason,
             "started_at": self.updated_at,
-            "duration_s": 0,
+            "duration_s": duration_s,
         }
         self.step_history.append(record)
+        self.updated_at = now.isoformat()
         self.status = "failed"
         self.updated_at = datetime.now().isoformat()
 
