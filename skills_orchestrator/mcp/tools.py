@@ -328,12 +328,9 @@ class ToolExecutor:
             all_ids = [s.id for s in self._registry.all()]
             similar = [sid for sid in all_ids if skill_id.lower() in sid.lower()]
             hint = f"\n相似的 skill id: {', '.join(similar)}" if similar else ""
-            return [
-                types.TextContent(
-                    type="text",
-                    text=f"找不到 skill: '{skill_id}'{hint}\n使用 list_skills 查看所有可用 skill。",
-                )
-            ]
+            raise ValueError(
+                f"找不到 skill: '{skill_id}'{hint}\n使用 list_skills 查看所有可用 skill。"
+            )
 
         header = (
             f"# Skill: {meta.name if meta else skill_id}\n"

@@ -115,11 +115,16 @@ class Parser:
 
         base = meta.get("base", "")
 
-        # 存相对于项目根目录的路径，保证项目可移植
+        # 存相对于项目根目录的路径，并校验防止路径逃逸
+        resolved_md = md_file.resolve()
+        resolved_base = self.base_dir.resolve()
         try:
+            resolved_md.relative_to(resolved_base)
             stored_path = str(md_file.relative_to(self.base_dir))
         except ValueError:
-            stored_path = str(md_file)  # 在项目根外时回退绝对路径
+            raise ValueError(
+                f"安全拦截: Skill 路径 '{md_file}' 尝试逃逸项目根目录 '{self.base_dir}'"
+            )
 
         return SkillMeta(
             id=skill_id,

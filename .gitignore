@@ -35,3 +35,5 @@ skills.lock.json
 
 .venv313-test/
 .ruff_cache/
+
+my-sandbox/

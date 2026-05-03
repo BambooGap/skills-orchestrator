@@ -106,6 +106,14 @@ class SkillsLock:
             return p
         return (Path(self.base_dir) / p).resolve()
 
+    @staticmethod
+    def _effective_policy(skill, zone_forces_all: bool) -> str:
+        if skill.load_policy == "require":
+            return "require"
+        if zone_forces_all and skill.load_policy == "free":
+            return "require"
+        return skill.load_policy
+
     def generate(self) -> dict:
         """生成 lock 内容"""
         entries = []
@@ -114,13 +122,6 @@ class SkillsLock:
         # 计算 effective_load_policy
         zone = self.resolved.active_zone
         zone_forces_all = zone is not None and zone.load_policy == "require"
-
-        def effective_policy(skill) -> str:
-            if skill.load_policy == "require":
-                return "require"
-            if zone_forces_all and skill.load_policy == "free":
-                return "require"
-            return skill.load_policy
 
         for skill in all_skills:
             path = self._resolve_path(skill.path)
@@ -132,7 +133,7 @@ class SkillsLock:
                     path=skill.path,
                     content_hash=content_hash,
                     source_load_policy=skill.load_policy,
-                    effective_load_policy=effective_policy(skill),
+                    effective_load_policy=self._effective_policy(skill, zone_forces_all),
                     priority=skill.priority,
                     zones=skill.zones,
                     base=skill.base,
@@ -150,7 +151,7 @@ class SkillsLock:
                     path=skill.path,
                     content_hash=content_hash,
                     source_load_policy=skill.load_policy,
-                    effective_load_policy=effective_policy(skill),
+                    effective_load_policy=self._effective_policy(skill, zone_forces_all),
                     priority=skill.priority,
                     zones=skill.zones,
                     base=skill.base,
@@ -199,13 +200,6 @@ class SkillsLock:
         zone = resolved.active_zone
         zone_forces_all = zone is not None and zone.load_policy == "require"
 
-        def effective_policy(skill) -> str:
-            if skill.load_policy == "require":
-                return "require"
-            if zone_forces_all and skill.load_policy == "free":
-                return "require"
-            return skill.load_policy
-
         for skill in all_skills:
             entry = lock_entries.get(skill.id)
             if not entry:
@@ -232,7 +226,7 @@ class SkillsLock:
             # 检查 effective_load_policy 变化（仅当 lock 版本 >= 1.1）
             if _parse_version(lock_data.get("version", "0")) >= _parse_version("1.1"):
                 old_effective = entry.get("effective_load_policy")
-                current_effective = effective_policy(skill)
+                current_effective = SkillsLock._effective_policy(skill, zone_forces_all)
                 if current_effective != old_effective:
                     issues.append(
                         f"~ {skill.id}: effective_load_policy 变化"

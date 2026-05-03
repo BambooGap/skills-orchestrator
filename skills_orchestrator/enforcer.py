@@ -56,6 +56,7 @@ class Enforcer:
                 text=True,
                 timeout=5,
                 cwd=str(workdir),
+                env={"PATH": "/usr/bin:/usr/local/bin"},
             )
             if result.returncode != 0:
                 # 不是 git 仓库，回退到 marker 文件
@@ -70,6 +71,7 @@ class Enforcer:
                 text=True,
                 timeout=5,
                 cwd=git_root,
+                env={"PATH": "/usr/bin:/usr/local/bin"},
             )
             if result.returncode == 0 and target in result.stdout:
                 return True
@@ -81,6 +83,7 @@ class Enforcer:
                 text=True,
                 timeout=5,
                 cwd=git_root,
+                env={"PATH": "/usr/bin:/usr/local/bin"},
             )
             if result.returncode == 0 and target in result.stdout:
                 return True

@@ -182,15 +182,15 @@ class TestToolExecutor:
         assert "减少 LLM 编码错误" in text
 
     def test_get_skill_not_found(self):
-        results = self.executor.execute("get_skill", {"id": "nonexistent-skill"})
-        text = self._text(results)
-        assert "找不到" in text
+        with pytest.raises(ValueError) as exc_info:
+            self.executor.execute("get_skill", {"id": "nonexistent-skill"})
+        assert "找不到" in str(exc_info.value)
 
     def test_get_skill_suggests_similar(self):
-        results = self.executor.execute("get_skill", {"id": "git-work"})
-        text = self._text(results)
+        with pytest.raises(ValueError) as exc_info:
+            self.executor.execute("get_skill", {"id": "git-work"})
         # 应提示相似 id
-        assert "git-worktrees" in text
+        assert "git-worktrees" in str(exc_info.value)
 
     # suggest_combo
     def test_suggest_combo_returns_plans(self):
