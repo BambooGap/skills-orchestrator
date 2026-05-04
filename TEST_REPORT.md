@@ -7,3 +7,4 @@
 | v2.0.0 | [reports/TEST_REPORT_v2.0.0.md](reports/TEST_REPORT_v2.0.0.md) | 2026-05-03 |
 | v2.0.1 | [reports/TEST_REPORT_v2.0.1.md](reports/TEST_REPORT_v2.0.1.md) | 2026-05-04 |
 | v2.0.2 | [reports/TEST_REPORT_v2.0.2.md](reports/TEST_REPORT_v2.0.2.md) | 2026-05-04 |
+| v2.0.3 | [reports/TEST_REPORT_v2.0.3.md](reports/TEST_REPORT_v2.0.3.md) | 2026-05-04 |
