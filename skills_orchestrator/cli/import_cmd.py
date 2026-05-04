@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import click
+import yaml
 
 from skills_orchestrator.security import safe_subprocess_env
 
@@ -22,6 +23,9 @@ from .helpers import (
 
 
 # ─── GitHub import helpers ────────────────────────────────────────
+
+
+MAX_IMPORT_BYTES = 2 * 1024 * 1024
 
 
 def _gh_api(api_path: str) -> object:
@@ -67,10 +71,44 @@ def _validate_github_url(url: str) -> bool:
         return False
 
 
+def _decode_markdown_bytes(data: bytes, source: str = "") -> str:
+    if len(data) > MAX_IMPORT_BYTES:
+        raise ValueError(f"导入内容超过大小限制（最大 {MAX_IMPORT_BYTES // 1024 // 1024} MB）")
+
+    try:
+        content = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        label = f" {source}" if source else ""
+        raise ValueError(f"导入内容{label}不是有效 UTF-8，可能是二进制文件") from exc
+
+    if not content.strip():
+        raise ValueError("导入内容为空")
+
+    return content
+
+
+def _validate_importable_markdown(content: str) -> None:
+    """校验远程导入内容的安全边界，保持无 frontmatter 推断兼容。"""
+    if not content.startswith("---"):
+        return
+
+    end = content.find("\n---", 3)
+    if end == -1:
+        raise ValueError("frontmatter 缺少结束分隔符")
+
+    frontmatter = content[3:end].strip()
+    try:
+        yaml.safe_load(frontmatter) or {}
+    except yaml.YAMLError as exc:
+        raise ValueError(f"frontmatter YAML 解析失败: {exc}") from exc
+
+
 def _fetch_raw(url: str) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": "skills-orchestrator/1.0"})
     with urllib.request.urlopen(req, timeout=15) as resp:
-        return resp.read().decode("utf-8")
+        content = _decode_markdown_bytes(resp.read(MAX_IMPORT_BYTES + 1), url)
+        _validate_importable_markdown(content)
+        return content
 
 
 def _github_url_to_parts(source: str) -> tuple[str, str, str, str]:

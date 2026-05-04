@@ -73,6 +73,44 @@ def test_require_conflict_error():
         resolver.resolve(zone)
 
 
+def test_base_cycle_error_includes_chain():
+    """base 继承成环时，错误信息应带完整链路方便定位。"""
+    zone = Zone(id="default", name="默认区", load_policy="free", priority=0)
+
+    skill_a = SkillMeta(
+        id="skill-a",
+        name="Skill A",
+        path="/path/a",
+        summary="A",
+        base="skill-b",
+        zones=["default"],
+    )
+    skill_b = SkillMeta(
+        id="skill-b",
+        name="Skill B",
+        path="/path/b",
+        summary="B",
+        base="skill-c",
+        zones=["default"],
+    )
+    skill_c = SkillMeta(
+        id="skill-c",
+        name="Skill C",
+        path="/path/c",
+        summary="C",
+        base="skill-a",
+        zones=["default"],
+    )
+
+    config = Config(zones=[zone], skills=[skill_a, skill_b, skill_c])
+    resolver = Resolver(config)
+
+    with pytest.raises(ValueError) as exc:
+        resolver.resolve(zone)
+
+    assert "skill-a -> skill-b -> skill-c -> skill-a" in str(exc.value)
+
+
 def test_priority_wins_on_same_policy():
     """测试相同 load_policy 时 priority 高者胜"""
     zone = Zone(id="default", name="默认区", load_policy="free", priority=0)

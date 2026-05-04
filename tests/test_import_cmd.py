@@ -8,10 +8,12 @@ import click
 import pytest
 
 from skills_orchestrator.cli.import_cmd import (
+    MAX_IMPORT_BYTES,
     _validate_github_url,
     _github_url_to_parts,
     _fetch_github_skills,
     _fetch_raw,
+    _validate_importable_markdown,
 )
 from skills_orchestrator.cli.helpers import _slugify, _parse_frontmatter
 from skills_orchestrator.main import _parse_context
@@ -289,6 +291,21 @@ class TestFetchGithubSkills:
 
 
 class TestFetchRaw:
+    class FakeResponse:
+        def __init__(self, data: bytes):
+            self.data = data
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self, size=-1):
+            if size is None or size < 0:
+                return self.data
+            return self.data[:size]
+
     def test_timeout_raises(self):
         """urllib timeout should propagate as exception."""
         with patch("skills_orchestrator.cli.import_cmd.urllib.request.urlopen") as mock_urlopen:
@@ -306,6 +323,38 @@ class TestFetchRaw:
             )
             with pytest.raises(urllib.error.HTTPError):
                 _fetch_raw("https://raw.githubusercontent.com/user/repo/main/nonexistent.md")
+
+    def test_oversized_content_rejected(self):
+        """Remote markdown should be bounded to avoid untrusted large downloads."""
+        data = b"a" * (MAX_IMPORT_BYTES + 2)
+        with patch("skills_orchestrator.cli.import_cmd.urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.return_value = self.FakeResponse(data)
+            with pytest.raises(ValueError, match="超过大小限制"):
+                _fetch_raw("https://raw.githubusercontent.com/user/repo/main/large.md")
+
+    def test_non_utf8_content_rejected(self):
+        """Binary or non-UTF-8 content should be rejected."""
+        with patch("skills_orchestrator.cli.import_cmd.urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.return_value = self.FakeResponse(b"\xff\xfe\x00\x00")
+            with pytest.raises(ValueError, match="有效 UTF-8"):
+                _fetch_raw("https://raw.githubusercontent.com/user/repo/main/binary.md")
+
+    def test_empty_content_rejected(self):
+        """Empty remote markdown should be rejected before metadata inference."""
+        with patch("skills_orchestrator.cli.import_cmd.urllib.request.urlopen") as mock_urlopen:
+            mock_urlopen.return_value = self.FakeResponse(b" \n\t\n")
+            with pytest.raises(ValueError, match="导入内容为空"):
+                _fetch_raw("https://raw.githubusercontent.com/user/repo/main/empty.md")
+
+
+class TestValidateImportableMarkdown:
+    def test_no_frontmatter_allowed(self):
+        """No frontmatter remains valid when metadata can be inferred later."""
+        _validate_importable_markdown("# My Skill\n\nUseful content.")
+
+    def test_invalid_yaml_frontmatter_rejected(self):
+        with pytest.raises(ValueError, match="frontmatter YAML 解析失败"):
+            _validate_importable_markdown("---\nname: [bad yaml\n---\nBody")
 
 
 # ═══════════════════════════════════════════════════════════════

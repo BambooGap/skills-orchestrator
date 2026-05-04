@@ -1,3 +1,3 @@
 """Skills Orchestrator - 编译时治理工具"""
 
-__version__ = "2.0.3"
+__version__ = "2.0.4"

@@ -338,6 +338,26 @@ class TestAgentsMdTarget:
         assert "---" in content
         assert "代码风格规范" in content
 
+    def test_finalize_overwrites_manual_changes(self, tmp_path):
+        """sync 是生成式覆盖：目标文件的手工修改不会被保留。"""
+        out = tmp_path / "AGENTS.md"
+        meta = {"name": "TDD", "summary": "测试驱动"}
+
+        target = AgentsMdTarget(output_path=str(out))
+        target.write("tdd", SAMPLE_SKILL_CONTENT, meta)
+        target.finalize()
+        first_content = out.read_text(encoding="utf-8")
+
+        out.write_text("manual edit\n", encoding="utf-8")
+
+        target_again = AgentsMdTarget(output_path=str(out))
+        target_again.write("tdd", SAMPLE_SKILL_CONTENT, meta)
+        target_again.finalize()
+        second_content = out.read_text(encoding="utf-8")
+
+        assert second_content == first_content
+        assert "manual edit" not in second_content
+
 
 # ── SyncEngine 测试 ──────────────────────────────────────────────
 

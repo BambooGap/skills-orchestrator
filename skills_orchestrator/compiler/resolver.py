@@ -50,18 +50,23 @@ class Resolver:
                     f"请检查 frontmatter 中的 base 字段。"
                 )
 
-        # 循环检测：基于全量 skills（DFS）
-        def has_cycle(start: str, visited: set) -> bool:
-            if start in visited:
-                return True
-            b = all_base_map.get(start, "")
-            if not b:
-                return False
-            return has_cycle(b, visited | {start})
+        # 循环检测：基于全量 skills（DFS），并保留完整链路方便定位。
+        def find_cycle(start: str, path: list[str]) -> list[str] | None:
+            if start in path:
+                cycle_start = path.index(start)
+                return path[cycle_start:] + [start]
+
+            base_id = all_base_map.get(start, "")
+            if not base_id:
+                return None
+
+            return find_cycle(base_id, path + [start])
 
         for skill_id in all_base_map:
-            if has_cycle(skill_id, set()):
-                raise ValueError(f"skill '{skill_id}' 存在循环继承，请检查 base 引用链。")
+            cycle = find_cycle(skill_id, [])
+            if cycle:
+                chain = " -> ".join(cycle)
+                raise ValueError(f"skill base 存在循环继承: {chain}")
 
     def _filter_by_zone(self, zone: Optional[Zone]) -> List[SkillMeta]:
         """按 Zone 过滤 skills"""
