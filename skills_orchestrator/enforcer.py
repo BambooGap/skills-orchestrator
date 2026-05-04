@@ -4,6 +4,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from skills_orchestrator.models import Zone, Config, Manifest, LoadPlan
+from skills_orchestrator.security import safe_subprocess_env
 
 
 class Enforcer:
@@ -56,7 +57,7 @@ class Enforcer:
                 text=True,
                 timeout=5,
                 cwd=str(workdir),
-                env={"PATH": "/usr/bin:/usr/local/bin"},
+                env=safe_subprocess_env(),
             )
             if result.returncode != 0:
                 # 不是 git 仓库，回退到 marker 文件
@@ -71,7 +72,7 @@ class Enforcer:
                 text=True,
                 timeout=5,
                 cwd=git_root,
-                env={"PATH": "/usr/bin:/usr/local/bin"},
+                env=safe_subprocess_env(),
             )
             if result.returncode == 0 and target in result.stdout:
                 return True
@@ -83,7 +84,7 @@ class Enforcer:
                 text=True,
                 timeout=5,
                 cwd=git_root,
-                env={"PATH": "/usr/bin:/usr/local/bin"},
+                env=safe_subprocess_env(),
             )
             if result.returncode == 0 and target in result.stdout:
                 return True

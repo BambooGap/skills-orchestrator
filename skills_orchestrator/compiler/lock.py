@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Tuple
 
 from skills_orchestrator.models import ResolvedConfig
+from skills_orchestrator.compiler.policies import compute_effective_load_policy
 
 
 def _parse_version(version: str) -> Tuple[int, ...]:
@@ -108,11 +109,7 @@ class SkillsLock:
 
     @staticmethod
     def _effective_policy(skill, zone_forces_all: bool) -> str:
-        if skill.load_policy == "require":
-            return "require"
-        if zone_forces_all and skill.load_policy == "free":
-            return "require"
-        return skill.load_policy
+        return compute_effective_load_policy(skill, zone_forces_all)
 
     def generate(self) -> dict:
         """生成 lock 内容"""

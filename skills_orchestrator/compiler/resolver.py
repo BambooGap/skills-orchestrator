@@ -3,6 +3,7 @@
 from typing import List, Optional
 
 from skills_orchestrator.models import Zone, SkillMeta, Config, ResolvedConfig
+from skills_orchestrator.compiler.policies import compute_effective_load_policy
 
 
 class Resolver:
@@ -140,11 +141,7 @@ class Resolver:
                         break
 
             if not conflict_found and skill.id not in blocked_ids:
-                # Zone require 时，free skill 升级为 forced
-                is_forced = skill.load_policy == "require" or (
-                    zone_forces_all and skill.load_policy == "free"
-                )
-                if is_forced:
+                if compute_effective_load_policy(skill, zone_forces_all) == "require":
                     forced.append(skill)
                 else:
                     passive.append(skill)
@@ -170,12 +167,7 @@ class Resolver:
         """
 
         def effective_policy(skill: SkillMeta) -> str:
-            """计算 effective load_policy"""
-            if skill.load_policy == "require":
-                return "require"
-            if zone_forces_all and skill.load_policy == "free":
-                return "require"
-            return skill.load_policy
+            return compute_effective_load_policy(skill, zone_forces_all)
 
         # effective load_policy 权重
         policy_weight = {"require": 2, "free": 1}

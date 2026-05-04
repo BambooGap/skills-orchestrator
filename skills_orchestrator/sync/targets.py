@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
+from importlib import resources
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -19,6 +20,23 @@ import yaml
 
 from skills_orchestrator.models import ResolvedConfig, SkillMeta
 from skills_orchestrator.compiler.content_resolver import SkillContentResolver
+from skills_orchestrator.compiler.policies import compute_effective_load_policy
+
+
+def _load_tag_category_map() -> Dict[str, str]:
+    """Load tag→category mapping from the packaged config asset.
+
+    Falls back to an empty dict if the file is missing.
+    """
+    try:
+        config_file = resources.files("skills_orchestrator.config").joinpath("tag_categories.yaml")
+        raw = yaml.safe_load(config_file.read_text(encoding="utf-8")) or {}
+    except (FileNotFoundError, ModuleNotFoundError):
+        return {}
+
+    if isinstance(raw, dict):
+        return {str(k): str(v) for k, v in raw.items()}
+    return {}
 
 
 # ═══════════════════════════ 抽象基类 ═══════════════════════════
@@ -63,52 +81,8 @@ class HermesTarget(SyncTarget):
     - category 从 skill 的 tags 推断，或默认 "general"
     """
 
-    # tag → category 映射表（可扩展）
-    TAG_CATEGORY_MAP: Dict[str, str] = {
-        "coding": "software-development",
-        "code": "software-development",
-        "quality": "software-development",
-        "testing": "software-development",
-        "tdd": "software-development",
-        "refactor": "software-development",
-        "debug": "software-development",
-        "error": "software-development",
-        "style": "software-development",
-        "naming": "software-development",
-        "readability": "software-development",
-        "api": "software-development",
-        "design": "software-development",
-        "rest": "software-development",
-        "git": "software-development",
-        "workflow": "software-development",
-        "parallel": "software-development",
-        "review": "software-development",
-        "security": "software-development",
-        "owasp": "software-development",
-        "ops": "devops",
-        "deployment": "devops",
-        "checklist": "devops",
-        "production": "devops",
-        "environment": "devops",
-        "config": "devops",
-        "planning": "productivity",
-        "estimation": "productivity",
-        "project": "productivity",
-        "process": "productivity",
-        "brainstorming": "productivity",
-        "decision": "productivity",
-        "docs": "productivity",
-        "readme": "productivity",
-        "mindset": "software-development",
-        "best-practices": "software-development",
-        "performance": "software-development",
-        "profiling": "software-development",
-        "optimization": "software-development",
-        "reliability": "software-development",
-        "pr": "software-development",
-        "base": "software-development",
-        "english": "software-development",
-    }
+    # tag → category mapping loaded from config/tag_categories.yaml
+    TAG_CATEGORY_MAP: Dict[str, str] = _load_tag_category_map()
 
     def __init__(self, base_dir: Optional[str] = None, category_override: Optional[str] = None):
         """
@@ -530,11 +504,7 @@ class SyncEngine:
         zone_forces_all = zone is not None and zone.load_policy == "require"
 
         def get_effective_policy(skill: SkillMeta) -> str:
-            if skill.load_policy == "require":
-                return "require"
-            if zone_forces_all and skill.load_policy == "free":
-                return "require"
-            return skill.load_policy
+            return compute_effective_load_policy(skill, zone_forces_all)
 
         if self.full:
             # --full 模式：当前 Zone 内所有可见 skill 完整内容

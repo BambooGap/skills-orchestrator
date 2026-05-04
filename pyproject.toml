@@ -1,6 +1,6 @@
 [project]
 name = "skills-orchestrator"
-version = "2.0.1"
+version = "2.0.2"
 description = "编译时 Skill 治理工具 — 生成 AGENTS.md，强制执行冲突检测，MCP Server 按需加载"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -45,7 +45,7 @@ where = ["."]
 include = ["skills_orchestrator", "skills_orchestrator.*"]
 
 [tool.setuptools.package-data]
-"skills_orchestrator" = ["py.typed"]
+"skills_orchestrator" = ["py.typed", "config/*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

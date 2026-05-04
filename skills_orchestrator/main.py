@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 """Skills Orchestrator CLI"""
 
-import hashlib
 import json
 import os
-import re
-import urllib.request
 from pathlib import Path
 from typing import Optional
-from urllib.parse import urlparse
 
 import click
 import yaml
@@ -18,6 +14,8 @@ from .compiler import Parser, Resolver, Compressor, SkillsLock
 from .enforcer import Enforcer
 from .sync.targets import get_target, SyncEngine, TARGET_REGISTRY
 from .models import Manifest
+from .cli.init_cmd import init as _init_cmd
+from .cli.import_cmd import import_skill as _import_cmd
 
 
 # ─────────────────────────── helpers ────────────────────────────
@@ -97,225 +95,6 @@ def _load_pipeline(pipeline_id: str, config_path: Optional[str] = None):
         return None
 
 
-def _parse_frontmatter(content: str) -> dict:
-    """解析 YAML frontmatter（--- ... ---），返回 meta dict；无 frontmatter 时推断基本信息。"""
-    if content.startswith("---"):
-        end = content.find("\n---", 3)
-        if end != -1:
-            fm_text = content[3:end].strip()
-            try:
-                meta = yaml.safe_load(fm_text) or {}
-                if isinstance(meta, dict):
-                    # 兼容 description → summary（karpathy-skills 等仓库用 description 字段）
-                    if "summary" not in meta and "description" in meta:
-                        meta["summary"] = meta["description"]
-                    # tags 可能是 list 或逗号分隔的字符串
-                    if "tags" in meta and isinstance(meta["tags"], str):
-                        meta["tags"] = [t.strip() for t in meta["tags"].split(",") if t.strip()]
-                    return meta
-            except yaml.YAMLError:
-                pass
-
-    # 无 frontmatter：从 markdown heading 推断
-    meta = {}
-    lines = content.splitlines()
-    for line in lines:
-        if line.startswith("# "):
-            meta["name"] = line[2:].strip()
-            break
-    # 取第一段非空、非 heading 的文字作为 summary
-    in_para = False
-    para_lines = []
-    for line in lines[1:]:
-        if line.startswith("#"):
-            if in_para:
-                break
-            continue
-        if line.strip() == "":
-            if in_para:
-                break
-        else:
-            in_para = True
-            para_lines.append(line.strip())
-    if para_lines:
-        summary = " ".join(para_lines)
-        meta["summary"] = summary[:120] + ("..." if len(summary) > 120 else "")
-    return meta
-
-
-def _slugify(text: str) -> str:
-    """将文本转换为 slug 格式，保留中文、字母、数字、连字符"""
-    # 保留字母、数字、中文、连字符
-    result = re.sub(r"[^\w\u4e00-\u9fff-]", "-", text.lower()).strip("-")
-    # 兜底：如果结果为空，返回基于 SHA-1 的稳定 ID（跨进程确定性）
-    if not result or result.strip("-") == "":
-        return f"skill-{hashlib.sha1(text.encode()).hexdigest()[:8]}"
-    return result
-
-
-def _append_skills_to_yaml(config_path: str, new_entries: list[dict]) -> None:
-    """把新 skill 条目追加到现有 skills.yaml，如不存在则创建最小配置。"""
-    path = Path(config_path)
-    if path.exists():
-        with open(path, encoding="utf-8") as f:
-            raw = yaml.safe_load(f) or {}
-    else:
-        raw = {
-            "version": "1.0",
-            "zones": [
-                {
-                    "id": "default",
-                    "name": "默认区",
-                    "load_policy": "free",
-                    "priority": 0,
-                    "rules": [],
-                }
-            ],
-            "skills": [],
-            "combos": [],
-        }
-
-    existing_ids = {s["id"] for s in raw.get("skills", [])}
-    added = 0
-    for entry in new_entries:
-        if entry["id"] not in existing_ids:
-            raw.setdefault("skills", []).append(entry)
-            added += 1
-
-    with open(path, "w", encoding="utf-8") as f:
-        yaml.dump(raw, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
-
-    click.echo(
-        _ok(f"追加 {added} 个 skill 到 {config_path}（跳过 {len(new_entries) - added} 个已存在）")
-    )
-
-
-# ─────────────────────────── GitHub import helpers ────────────────────────────
-
-
-def _gh_api(api_path: str) -> object:
-    """优先用 gh CLI（已认证，无限速），失败则回退到 urllib。"""
-    import subprocess
-
-    try:
-        result = subprocess.run(["gh", "api", api_path], capture_output=True, text=True, timeout=15)
-        if result.returncode == 0:
-            return json.loads(result.stdout)
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
-
-    # 回退：未认证的 GitHub API
-    url = f"https://api.github.com/{api_path.lstrip('/')}"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "skills-orchestrator/1.0",
-            "Accept": "application/vnd.github.v3+json",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        return json.loads(resp.read())
-
-
-def _validate_github_url(url: str) -> bool:
-    """验证 URL 是否为合法的 GitHub 域名，防止 SSRF 攻击"""
-    try:
-        parsed = urlparse(url)
-        # 只允许 github.com 和 raw.githubusercontent.com
-        return parsed.hostname in (
-            "github.com",
-            "raw.githubusercontent.com",
-            "api.github.com",
-        )
-    except Exception:
-        return False
-
-
-def _fetch_raw(url: str) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": "skills-orchestrator/1.0"})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        return resp.read().decode("utf-8")
-
-
-def _github_url_to_parts(source: str) -> tuple[str, str, str, str]:
-    """解析 GitHub URL，返回 (owner, repo, ref, path)。"""
-    m = re.match(
-        r"https?://github\.com/([^/]+)/([^/]+)(?:/(tree|blob)/([^/]+)(/.*)?)?",
-        source.rstrip("/"),
-    )
-    if not m:
-        raise ValueError(f"无法解析 GitHub URL: {source}")
-    owner, repo = m.group(1), m.group(2)
-    ref = m.group(4) or "main"
-    path = (m.group(5) or "").lstrip("/")
-    return owner, repo, ref, path
-
-
-def _fetch_github_skills(source: str) -> list[tuple[str, str]]:
-    """返回 [(filename, content), ...]。
-
-    支持两种仓库结构：
-    1. 扁平：目录下直接放 *.md
-    2. 子目录：每个 skill 一个子目录，内含 SKILL.md（如 karpathy-skills 格式）
-    """
-    owner, repo, ref, path = _github_url_to_parts(source)
-
-    # 单文件（blob URL）
-    if "/blob/" in source:
-        raw_url = f"https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path}"
-        filename = Path(path).name
-        return [(filename, _fetch_raw(raw_url))]
-
-    # 目录或仓库根
-    api_path = f"repos/{owner}/{repo}/contents/{path}"
-    if ref != "main":
-        api_path += f"?ref={ref}"
-
-    try:
-        items = _gh_api(api_path)
-    except Exception as e:
-        raise RuntimeError(f"GitHub API 请求失败: {e}\n提示：安装 gh CLI 并登录可绕过限速") from e
-
-    if not isinstance(items, list):
-        raise RuntimeError(f"API 返回格式异常（期望列表，实际: {type(items).__name__}）")
-
-    results = []
-    for item in items:
-        # 扁平结构：直接是 .md 文件
-        if (
-            item.get("type") == "file"
-            and item["name"].endswith(".md")
-            and not item["name"].lower().startswith("readme")
-            and item["name"] not in ("CLAUDE.md", "CURSOR.md", "EXAMPLES.md")
-        ):
-            try:
-                content = _fetch_raw(item["download_url"])
-                results.append((item["name"], content))
-                click.echo(f"  ✓ {item['name']}")
-            except Exception as e:
-                click.echo(_warn(f"跳过 {item['name']}: {e}"))
-
-        # 子目录结构：进入子目录找 SKILL.md（karpathy-skills 格式）
-        elif item.get("type") == "dir" and not item["name"].startswith("."):
-            sub_api_path = f"repos/{owner}/{repo}/contents/{item['path']}"
-            if ref != "main":
-                sub_api_path += f"?ref={ref}"
-            try:
-                sub_items = _gh_api(sub_api_path)
-                if isinstance(sub_items, list):
-                    for sub in sub_items:
-                        if sub.get("type") == "file" and sub["name"].upper() == "SKILL.MD":
-                            content = _fetch_raw(sub["download_url"])
-                            # 文件名用目录名（如 karpathy-guidelines.md）
-                            filename = f"{item['name']}.md"
-                            results.append((filename, content))
-                            click.echo(f"  ✓ {item['name']}/SKILL.md → {filename}")
-            except Exception as e:
-                click.echo(_warn(f"跳过子目录 {item['name']}: {e}"))
-
-    return results
-
-
 # ─────────────────────────── CLI ────────────────────────────
 
 
@@ -324,6 +103,13 @@ def _fetch_github_skills(source: str) -> list[tuple[str, str]]:
 def cli():
     """Skills Orchestrator — 编译时 Skill 治理工具"""
     pass
+
+
+# Register migrated init command from cli/init_cmd.py
+cli.add_command(_init_cmd, "init")
+
+# Register migrated import command from cli/import_cmd.py
+cli.add_command(_import_cmd)
 
 
 @cli.command()
@@ -536,138 +322,7 @@ def status(config: str, zone: Optional[str]):
         raise SystemExit(1)
 
 
-@cli.command()
-@click.option("--skills-dir", "-d", default="./skills", help="Skills 目录")
-@click.option("--output", "-o", default="skills.yaml", help="输出配置文件路径")
-@click.option(
-    "--non-interactive",
-    "-y",
-    is_flag=True,
-    help="非交互模式：直接从 frontmatter 生成配置，不逐一询问",
-)
-def init(skills_dir: str, output: str, non_interactive: bool):
-    """初始化，从本地 skills 目录生成 skills.yaml
-
-    默认为交互式模式（逐一询问每个 skill 的配置）。
-    使用 --non-interactive 可直接从 frontmatter 自动生成配置，
-    仅对缺少 frontmatter 的字段使用默认值。
-    """
-    skills_path = Path(skills_dir)
-
-    if not skills_path.exists():
-        if non_interactive or click.confirm(f"目录 {skills_dir} 不存在，是否创建？", default=True):
-            skills_path.mkdir(parents=True)
-            click.echo(_ok(f"已创建目录: {skills_path}"))
-        else:
-            click.echo("已取消")
-            return
-
-    # 扫描 skill 文件：顶层 *.md + 子目录中的 SKILL.md
-    md_files = sorted(skills_path.glob("*.md"))
-    # 也扫描子目录结构（如 skills/quality/refactoring.md → skills/quality/ 下 .md 文件）
-    for sub_skill in sorted(skills_path.rglob("*.md")):
-        if sub_skill not in md_files:
-            md_files.append(sub_skill)
-    # 排除非 skill 文件
-    skip_names = {"README.md", "CLAUDE.md", "CURSOR.md", "EXAMPLES.md"}
-    md_files = [f for f in md_files if f.name not in skip_names and not f.name.startswith(".")]
-    if not md_files:
-        click.echo(_warn(f"{skills_dir} 中没有 .md 文件，请先添加 skill 文件"))
-        return
-
-    click.echo(
-        f"\n找到 {len(md_files)} 个 skill 文件"
-        + ("，非交互模式：直接从 frontmatter 生成" if non_interactive else "，开始配置：")
-        + "\n"
-    )
-
-    entries = []
-    missing_fm_count = 0
-    for md_file in md_files:
-        content = md_file.read_text(encoding="utf-8")
-        meta = _parse_frontmatter(content)
-        has_frontmatter = bool(meta.get("id") or meta.get("name"))
-
-        skill_id = meta.get("id", md_file.stem)
-        default_name = meta.get("name", md_file.stem.replace("-", " ").title())
-        default_summary = meta.get("summary", "")
-        default_tags = ", ".join(meta.get("tags", []))
-        default_policy = meta.get("load_policy", "free")
-        default_priority = meta.get("priority", 50)
-
-        if not has_frontmatter:
-            missing_fm_count += 1
-
-        if non_interactive:
-            # 非交互模式：直接使用 frontmatter 值（缺字段用默认值）
-            name = default_name
-            summary = default_summary
-            tags_list = (
-                [t.strip() for t in default_tags.split(",") if t.strip()]
-                if isinstance(default_tags, str)
-                else default_tags
-            )
-            policy = default_policy
-            priority = default_priority
-            click.echo(f"  {md_file.name} → {skill_id} ({policy}, p{priority})")
-        else:
-            # 交互模式：逐一询问
-            click.echo(click.style(f"─── {md_file.name} ───", bold=True))
-            name = click.prompt("  名称", default=default_name)
-            summary = click.prompt("  简介", default=default_summary)
-            tags_str = click.prompt("  标签（逗号分隔）", default=default_tags)
-            policy = click.prompt(
-                "  加载策略",
-                default=default_policy,
-                type=click.Choice(["require", "free"]),
-                show_choices=True,
-            )
-            priority = click.prompt("  优先级 (0-999)", default=default_priority, type=int)
-            tags_list = [t.strip() for t in tags_str.split(",") if t.strip()]
-            click.echo("")
-
-        entries.append(
-            {
-                "id": skill_id,
-                "name": name,
-                "path": f"${{SKILLS_ROOT}}/{md_file.relative_to(skills_path)}",
-                "summary": summary,
-                "tags": tags_list
-                if isinstance(tags_list, list)
-                else [t.strip() for t in default_tags.split(",") if t.strip()],
-                "load_policy": policy,
-                "priority": priority,
-                "zones": meta.get("zones", ["default"]),
-                "conflict_with": meta.get("conflict_with", []),
-            }
-        )
-
-    config = {
-        "version": "1.0",
-        "zones": [
-            {
-                "id": "default",
-                "name": "默认区",
-                "load_policy": "free",
-                "priority": 0,
-                "rules": [],
-            }
-        ],
-        "skills": entries,
-        "combos": [],
-    }
-
-    output_path = Path(output)
-    with open(output_path, "w", encoding="utf-8") as f:
-        yaml.dump(config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
-
-    click.echo("")
-    click.echo(_ok(f"生成 {output_path}，包含 {len(entries)} 个 skills"))
-    if non_interactive and missing_fm_count > 0:
-        click.echo(_warn(f"其中 {missing_fm_count} 个文件缺少 frontmatter，使用了推断默认值"))
-    click.echo("\n下一步：")
-    click.echo(f"  export SKILLS_ROOT={skills_path.resolve()}")
-    click.echo(f"  skills-orchestrator build --config {output_path}")
+# init command migrated to cli/init_cmd.py — registered below
 
 
 @cli.command()
@@ -812,102 +467,6 @@ def sync(
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)
-
-
-@cli.command("import")
-@click.argument("source")
-@click.option("--skills-dir", "-d", default="./skills", help="本地 skills 存放目录")
-@click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径（追加导入记录）")
-@click.option("--dry-run", is_flag=True, help="预览导入结果，不实际写入文件")
-@click.option("--force", is_flag=True, help="强制覆盖已存在的文件")
-def import_skill(source: str, skills_dir: str, config: str, dry_run: bool, force: bool):
-    """从 GitHub 导入 skill 文件并注册到 skills.yaml
-
-    \b
-    示例：
-      skills-orchestrator import https://github.com/user/repo
-      skills-orchestrator import https://github.com/user/repo/tree/main/skills
-      skills-orchestrator import https://github.com/user/repo/blob/main/my-skill.md
-    """
-    skills_path = Path(skills_dir)
-    if not dry_run:
-        skills_path.mkdir(parents=True, exist_ok=True)
-
-    click.echo(f"来源: {source}\n")
-
-    try:
-        if not _validate_github_url(source):
-            raise ValueError(
-                "安全限制：只支持 GitHub URL (github.com, raw.githubusercontent.com)\n"
-                "支持的来源：GitHub repo / 目录 / 单文件，或 raw.githubusercontent.com 直链"
-            )
-
-        parsed_host = urlparse(source).hostname or ""
-        if parsed_host == "raw.githubusercontent.com":
-            # raw 直链：单文件，直接下载
-            if not source.endswith(".md"):
-                raise ValueError("raw.githubusercontent.com 链接必须以 .md 结尾")
-            filename = source.rsplit("/", 1)[-1]
-            content = _fetch_raw(source)
-            files = [(filename, content)]
-        else:
-            files = _fetch_github_skills(source)
-    except Exception as e:
-        click.echo(_err(str(e)), err=True)
-        raise SystemExit(1)
-
-    if not files:
-        click.echo(_warn("未找到任何 .md 文件"))
-        if "github.com" in source and "/tree/" not in source and "/blob/" not in source:
-            click.echo("  提示：尝试指定子目录，例如：")
-            click.echo(f"    skills-orchestrator import {source.rstrip('/')}/tree/main/skills")
-        return
-
-    click.echo(f"\n共 {len(files)} 个文件：")
-
-    new_entries = []
-    for filename, content in files:
-        meta = _parse_frontmatter(content)
-        stem = Path(filename).stem
-        skill_id = meta.get("id", _slugify(stem))
-        entry = {
-            "id": skill_id,
-            "name": meta.get("name", stem.replace("-", " ").title()),
-            "path": f"${{SKILLS_ROOT}}/{filename}",
-            "summary": meta.get("summary", f"从 {source} 导入"),
-            "tags": meta.get("tags", []),
-            "load_policy": meta.get("load_policy", "free"),
-            "priority": int(meta.get("priority", 50)),
-            "zones": ["default"],
-            "conflict_with": [],
-        }
-
-        if dry_run:
-            click.echo(f"  {click.style('[dry-run]', fg='yellow')} {filename}")
-            click.echo(f"    id={skill_id}  name={entry['name']}")
-            click.echo(f"    summary={entry['summary'][:60]}...")
-        else:
-            target = skills_path / filename
-            # 检查文件是否已存在，防止静默覆盖
-            if target.exists() and not force:
-                click.echo(
-                    f"  {click.style('⚠', fg='yellow')} {target} 已存在，跳过（使用 --force 强制覆盖）"
-                )
-                continue
-            target.write_text(content, encoding="utf-8")
-            click.echo(f"  {click.style('✓', fg='green')} {target}")
-            new_entries.append(entry)
-
-    if dry_run:
-        click.echo(f"\n{click.style('[dry-run]', fg='yellow')} 未写入任何文件")
-        return
-
-    if new_entries:
-        click.echo("")
-        _append_skills_to_yaml(config, new_entries)
-        click.echo("\n下一步：")
-        click.echo(f"  export SKILLS_ROOT={skills_path.resolve()}")
-        click.echo("  skills-orchestrator build")
 
 
 @cli.command()

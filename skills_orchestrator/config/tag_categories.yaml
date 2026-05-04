@@ -1,0 +1,46 @@
+# Tag -> Hermes category mapping
+# Used by HermesTarget to determine skill storage category.
+# Add entries here to map new tags to categories.
+coding: software-development
+code: software-development
+quality: software-development
+testing: software-development
+tdd: software-development
+refactor: software-development
+debug: software-development
+error: software-development
+style: software-development
+naming: software-development
+readability: software-development
+api: software-development
+design: software-development
+rest: software-development
+git: software-development
+workflow: software-development
+parallel: software-development
+review: software-development
+security: software-development
+owasp: software-development
+ops: devops
+deployment: devops
+checklist: devops
+production: devops
+environment: devops
+config: devops
+planning: productivity
+estimation: productivity
+project: productivity
+process: productivity
+brainstorming: productivity
+decision: productivity
+docs: productivity
+readme: productivity
+mindset: software-development
+best-practices: software-development
+performance: software-development
+profiling: software-development
+optimization: software-development
+reliability: software-development
+pr: software-development
+base: software-development
+english: software-development
