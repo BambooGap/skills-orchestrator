@@ -92,6 +92,20 @@ class Pipeline:
                 if next_id not in step_ids:
                     errors.append(f"Step '{step.id}' 的 next='{next_id}' 不存在")
 
+            # 检查 gate.on_failure 引用
+            if step.gate and step.gate.on_failure:
+                if step.gate.on_failure not in step_ids:
+                    errors.append(
+                        f"Step '{step.id}' 的 gate.on_failure='{step.gate.on_failure}' 不存在"
+                    )
+
+            # 检查 step.on_gate_failure 引用
+            if step.on_gate_failure:
+                if step.on_gate_failure not in step_ids:
+                    errors.append(
+                        f"Step '{step.id}' 的 on_gate_failure='{step.on_gate_failure}' 不存在"
+                    )
+
         # 简单循环检测：DFS
         visited: Set[str] = set()
         path: Set[str] = set()
@@ -108,6 +122,11 @@ class Pipeline:
             if step:
                 for nid in step.next:
                     _dfs(nid)
+                # 也遍历 on_failure 分支
+                if step.gate and step.gate.on_failure:
+                    _dfs(step.gate.on_failure)
+                if step.on_gate_failure:
+                    _dfs(step.on_gate_failure)
             path.discard(sid)
 
         for s in self.steps:
@@ -137,11 +156,11 @@ class RunState:
 
     def advance_to(self, step_id: str) -> None:
         """推进到指定步骤"""
+        now = datetime.now()
         self.current_step = step_id
-        self._step_start_time = datetime.now().timestamp()
-        self.updated_at = datetime.now().isoformat()
+        self._step_start_time = now.timestamp()
+        self.updated_at = now.isoformat()
         self.status = "running"
-        self.updated_at = datetime.now().isoformat()
 
     def complete_current(self, artifacts: Optional[List[str]] = None) -> None:
         """完成当前步骤"""
@@ -208,7 +227,6 @@ class RunState:
         self.step_history.append(record)
         self.updated_at = now.isoformat()
         self.status = "failed"
-        self.updated_at = datetime.now().isoformat()
 
     def to_json(self) -> str:
         """序列化为 JSON"""

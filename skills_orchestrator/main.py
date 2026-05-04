@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Skills Orchestrator CLI"""
 
+import hashlib
 import json
 import os
 import re
@@ -146,8 +147,10 @@ def _slugify(text: str) -> str:
     """将文本转换为 slug 格式，保留中文、字母、数字、连字符"""
     # 保留字母、数字、中文、连字符
     result = re.sub(r"[^\w\u4e00-\u9fff-]", "-", text.lower()).strip("-")
-    # 兜底：如果结果为空，返回原文（避免纯中文输入产生空字符串）
-    return result if result else text
+    # 兜底：如果结果为空，返回基于 SHA-1 的稳定 ID（跨进程确定性）
+    if not result or result.strip("-") == "":
+        return f"skill-{hashlib.sha1(text.encode()).hexdigest()[:8]}"
+    return result
 
 
 def _append_skills_to_yaml(config_path: str, new_entries: list[dict]) -> None:
@@ -559,7 +562,15 @@ def init(skills_dir: str, output: str, non_interactive: bool):
             click.echo("已取消")
             return
 
+    # 扫描 skill 文件：顶层 *.md + 子目录中的 SKILL.md
     md_files = sorted(skills_path.glob("*.md"))
+    # 也扫描子目录结构（如 skills/quality/refactoring.md → skills/quality/ 下 .md 文件）
+    for sub_skill in sorted(skills_path.rglob("*.md")):
+        if sub_skill not in md_files:
+            md_files.append(sub_skill)
+    # 排除非 skill 文件
+    skip_names = {"README.md", "CLAUDE.md", "CURSOR.md", "EXAMPLES.md"}
+    md_files = [f for f in md_files if f.name not in skip_names and not f.name.startswith(".")]
     if not md_files:
         click.echo(_warn(f"{skills_dir} 中没有 .md 文件，请先添加 skill 文件"))
         return
@@ -619,7 +630,7 @@ def init(skills_dir: str, output: str, non_interactive: bool):
             {
                 "id": skill_id,
                 "name": name,
-                "path": f"${{SKILLS_ROOT}}/{md_file.name}",
+                "path": f"${{SKILLS_ROOT}}/{md_file.relative_to(skills_path)}",
                 "summary": summary,
                 "tags": tags_list
                 if isinstance(tags_list, list)
@@ -825,21 +836,22 @@ def import_skill(source: str, skills_dir: str, config: str, dry_run: bool, force
     click.echo(f"来源: {source}\n")
 
     try:
-        if _validate_github_url(source):
-            files = _fetch_github_skills(source)
-        elif source.startswith("http") and source.endswith(".md"):
-            # 验证非 GitHub URL 是否安全
-            if not _validate_github_url(source):
-                raise ValueError(
-                    "安全限制：只支持 GitHub URL (github.com, raw.githubusercontent.com)"
-                )
+        if not _validate_github_url(source):
+            raise ValueError(
+                "安全限制：只支持 GitHub URL (github.com, raw.githubusercontent.com)\n"
+                "支持的来源：GitHub repo / 目录 / 单文件，或 raw.githubusercontent.com 直链"
+            )
+
+        parsed_host = urlparse(source).hostname or ""
+        if parsed_host == "raw.githubusercontent.com":
+            # raw 直链：单文件，直接下载
+            if not source.endswith(".md"):
+                raise ValueError("raw.githubusercontent.com 链接必须以 .md 结尾")
             filename = source.rsplit("/", 1)[-1]
             content = _fetch_raw(source)
             files = [(filename, content)]
         else:
-            raise ValueError(
-                "支持的来源：GitHub URL（repo / 目录 / 单文件）或以 .md 结尾的原始 URL"
-            )
+            files = _fetch_github_skills(source)
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)

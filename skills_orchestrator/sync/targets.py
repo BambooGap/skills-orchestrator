@@ -378,11 +378,11 @@ class AgentsMdTarget(SyncTarget):
         lines.append("")
         lines.append("> 以下 skills 按需选用。根据当前任务选择最相关的 skill 加载。")
         lines.append("")
-        lines.append("| Skill | 说明 | Tags |")
-        lines.append("|-------|------|------|")
 
-        # Available Skills 区
+        # Available Skills 区：空时在表格外输出提示，避免无效 markdown 表格
         if self._passive_rows:
+            lines.append("| Skill | 说明 | Tags |")
+            lines.append("|-------|------|------|")
             lines.extend(self._passive_rows)
         else:
             lines.append("> 当前无可选 skills。")

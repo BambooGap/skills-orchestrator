@@ -357,7 +357,7 @@ pytest tests/ -v
 ruff check skills_orchestrator/ tests/
 ```
 
-CI 运行：ruff lint + format check + Python 3.10/3.11/3.12 矩阵测试。
+CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 
 ---
 
