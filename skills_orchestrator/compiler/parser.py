@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from skills_orchestrator.security import validate_path_within_root
+from skills_orchestrator.security import validate_path_within_root, validate_identifier
 from skills_orchestrator.models import Zone, Rule, SkillMeta, Combo, Config
 
 
@@ -76,7 +76,7 @@ class Parser:
         seen_ids: set[str] = set()
 
         for dir_expr in skill_dirs:
-            dir_path = (self.config_dir / self._expand_path(dir_expr)).resolve()
+            dir_path = (self.config_dir / self._expand_skill_dir(dir_expr)).resolve()
             if not dir_path.exists():
                 raise FileNotFoundError(f"skill_dirs 目录不存在: {dir_path}")
 
@@ -95,7 +95,7 @@ class Parser:
         content = md_file.read_text(encoding="utf-8")
         meta = self._read_frontmatter(content)
 
-        skill_id = meta.get("id", md_file.stem)
+        skill_id = validate_identifier(meta.get("id", md_file.stem), "skill id")
         name = meta.get("name", md_file.stem.replace("-", " ").title())
 
         # description 是 karpathy-skills 等外部仓库的字段名
@@ -210,7 +210,7 @@ class Parser:
             path = self._normalize_explicit_skill_path(raw["path"])
             skills.append(
                 SkillMeta(
-                    id=raw["id"],
+                    id=validate_identifier(raw["id"], "skill id"),
                     name=raw["name"],
                     path=path,
                     summary=raw["summary"],
@@ -238,8 +238,21 @@ class Parser:
     def _expand_path(self, path: str) -> str:
         return os.path.expanduser(os.path.expandvars(path))
 
+    def _expand_skill_dir(self, path: str) -> str:
+        """skill_dirs 专用展开：只允许 ~ 和 ${SKILLS_ROOT}。"""
+        if "$" in path:
+            if not (path.startswith("${SKILLS_ROOT}") or path.startswith("$SKILLS_ROOT")):
+                raise ValueError(
+                    f"skill_dirs 路径仅允许使用 SKILLS_ROOT 环境变量，不允许: {path!r}"
+                )
+        return os.path.expanduser(os.path.expandvars(path))
+
     def _normalize_explicit_skill_path(self, raw_path: str) -> str:
         """Expand and validate explicit skills[].path entries."""
+        if "$" in raw_path:
+            if not (raw_path.startswith("${SKILLS_ROOT}") or raw_path.startswith("$SKILLS_ROOT")):
+                raise ValueError("skill.path 仅允许使用 SKILLS_ROOT 环境变量")
+
         expanded = self._expand_path(raw_path)
         candidate = Path(expanded)
         if not candidate.is_absolute():
@@ -252,8 +265,6 @@ class Parser:
             if not skills_root:
                 raise ValueError("SKILLS_ROOT 未设置，无法解析 skill.path")
             allowed_root = Path(skills_root)
-        elif "$" in raw_path:
-            raise ValueError("skill.path 仅允许使用 SKILLS_ROOT 环境变量")
 
         return str(validate_path_within_root(candidate, allowed_root))
 
@@ -267,7 +278,7 @@ class Parser:
         paths = [config_dir]
 
         for dir_expr in raw.get("skill_dirs", []):
-            resolved = (config_dir / self._expand_path(dir_expr)).resolve()
+            resolved = (config_dir / self._expand_skill_dir(dir_expr)).resolve()
             if resolved.exists():
                 paths.append(resolved)
 

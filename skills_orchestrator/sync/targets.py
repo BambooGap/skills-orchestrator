@@ -21,6 +21,7 @@ import yaml
 from skills_orchestrator.models import ResolvedConfig, SkillMeta
 from skills_orchestrator.compiler.content_resolver import SkillContentResolver
 from skills_orchestrator.compiler.policies import compute_effective_load_policy
+from skills_orchestrator.security import safe_child_path, validate_identifier
 
 
 def _load_tag_category_map() -> Dict[str, str]:
@@ -118,8 +119,10 @@ class HermesTarget(SyncTarget):
         return "general"
 
     def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
+        validate_identifier(skill_id, "skill_id")
         category = self._infer_category(meta)
-        skill_dir = self.base_dir / category / skill_id
+        validate_identifier(category, "category")
+        skill_dir = safe_child_path(self.base_dir, category, skill_id)
         skill_dir.mkdir(parents=True, exist_ok=True)
 
         skill_file = skill_dir / "SKILL.md"
@@ -182,7 +185,8 @@ class OpenClawTarget(SyncTarget):
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
-        skill_dir = self.base_dir / skill_id
+        validate_identifier(skill_id, "skill_id")
+        skill_dir = safe_child_path(self.base_dir, skill_id)
         skill_dir.mkdir(parents=True, exist_ok=True)
 
         skill_file = skill_dir / "SKILL.md"
@@ -558,7 +562,8 @@ class CursorTarget(SyncTarget):
 
     def write(self, skill_id: str, content: str, meta: Dict[str, Any]) -> None:
         """写入单个 skill 文件"""
-        rule_file = self.rules_dir / f"{skill_id}.mdc"
+        validate_identifier(skill_id, "skill_id")
+        rule_file = safe_child_path(self.rules_dir, f"{skill_id}.mdc")
 
         # 确保 content 有 frontmatter
         if not content.startswith("---"):
