@@ -9,17 +9,24 @@ from typing import Optional
 import click
 import yaml
 
+from skills_orchestrator.security import (
+    console_safe_symbol,
+    console_safe_text,
+    safe_child_path,
+    validate_identifier,
+)
+
 
 def _ok(msg: str) -> str:
-    return click.style("✓", fg="green") + f" {msg}"
+    return click.style(console_safe_symbol("✓", "OK"), fg="green") + f" {console_safe_text(msg)}"
 
 
 def _warn(msg: str) -> str:
-    return click.style("⚠", fg="yellow") + f" {msg}"
+    return click.style(console_safe_symbol("⚠", "!"), fg="yellow") + f" {console_safe_text(msg)}"
 
 
 def _err(msg: str) -> str:
-    return click.style("✗", fg="red") + f" {msg}"
+    return click.style(console_safe_symbol("✗", "X"), fg="red") + f" {console_safe_text(msg)}"
 
 
 def _parse_context(context_str: str) -> dict:
@@ -66,7 +73,8 @@ def _load_pipeline(pipeline_id: str, config_path: Optional[str] = None):
     from skills_orchestrator.pipeline.loader import PipelineLoader
 
     pipelines_dir = _resolve_pipelines_dir(config_path)
-    yaml_path = pipelines_dir / f"{pipeline_id}.yaml"
+    pipeline_id = validate_identifier(pipeline_id, "pipeline_id")
+    yaml_path = safe_child_path(pipelines_dir, f"{pipeline_id}.yaml")
     if not yaml_path.exists():
         return None
     loader = PipelineLoader()

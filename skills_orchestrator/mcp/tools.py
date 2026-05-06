@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from mcp import types
+
+from skills_orchestrator.security import (
+    parse_int_in_range,
+    safe_child_path,
+    validate_identifier,
+)
 
 from .registry import SkillRegistry
 from .search import KeywordSearcher
@@ -229,6 +236,7 @@ class ToolExecutor:
         import os
         from skills_orchestrator.pipeline.loader import PipelineLoader
 
+        pipeline_id = validate_identifier(pipeline_id, "pipeline_id")
         if pipeline_id in self._pipelines:
             return self._pipelines[pipeline_id]
 
@@ -240,15 +248,16 @@ class ToolExecutor:
                 os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "pipelines"
             )
 
-        filepath = os.path.join(pipelines_dir, f"{pipeline_id}.yaml")
-        if not os.path.exists(filepath):
+        filepath = safe_child_path(Path(pipelines_dir), f"{pipeline_id}.yaml")
+        if not filepath.exists():
             return None
 
-        pipeline = loader.load(filepath)
+        pipeline = loader.load(str(filepath))
         self._pipelines[pipeline_id] = pipeline
         return pipeline
 
     def execute(self, name: str, arguments: dict[str, Any]) -> list[types.TextContent]:
+        arguments = self._validate_arguments(arguments)
         handlers = {
             "list_skills": self._list_skills,
             "search_skills": self._search_skills,
@@ -264,10 +273,34 @@ class ToolExecutor:
             return [types.TextContent(type="text", text=f"未知工具: {name}")]
         return handler(arguments)
 
+    @staticmethod
+    def _validate_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(arguments, dict):
+            raise ValueError("MCP 工具参数必须是 JSON object")
+        return arguments
+
+    @staticmethod
+    def _get_string(args: dict[str, Any], key: str, default: str = "") -> str:
+        value = args.get(key, default)
+        if value is None:
+            return default
+        if not isinstance(value, str):
+            raise ValueError(f"{key} 必须是字符串")
+        return value
+
+    @staticmethod
+    def _get_dict(args: dict[str, Any], key: str, default: dict | None = None) -> dict:
+        value = args.get(key, default if default is not None else {})
+        if value is None:
+            return default if default is not None else {}
+        if not isinstance(value, dict):
+            raise ValueError(f"{key} 必须是 object")
+        return value
+
     # ── list_skills ───────────────────────────────────────────────
 
     def _list_skills(self, args: dict) -> list[types.TextContent]:
-        tag_filter = args.get("tag", "").strip().lower()
+        tag_filter = self._get_string(args, "tag").strip().lower()
         skills = self._registry.all()
 
         if tag_filter:
@@ -289,8 +322,8 @@ class ToolExecutor:
     # ── search_skills ─────────────────────────────────────────────
 
     def _search_skills(self, args: dict) -> list[types.TextContent]:
-        query = args.get("query", "").strip()
-        top_k = int(args.get("top_k", 5))
+        query = self._get_string(args, "query").strip()
+        top_k = parse_int_in_range(args.get("top_k"), "top_k", default=5, minimum=1, maximum=20)
 
         if not query:
             return [types.TextContent(type="text", text="请提供搜索关键词。")]
@@ -315,7 +348,7 @@ class ToolExecutor:
     # ── get_skill ─────────────────────────────────────────────────
 
     def _get_skill(self, args: dict) -> list[types.TextContent]:
-        skill_id = args.get("id", "").strip()
+        skill_id = self._get_string(args, "id").strip()
 
         if not skill_id:
             return [types.TextContent(type="text", text="请提供 skill id。")]
@@ -344,8 +377,10 @@ class ToolExecutor:
     # ── suggest_combo ─────────────────────────────────────────────
 
     def _suggest_combo(self, args: dict) -> list[types.TextContent]:
-        requirement = args.get("requirement", "").strip()
-        max_combos = int(args.get("max_combos", 3))
+        requirement = self._get_string(args, "requirement").strip()
+        max_combos = parse_int_in_range(
+            args.get("max_combos"), "max_combos", default=3, minimum=1, maximum=5
+        )
 
         if not requirement:
             return [types.TextContent(type="text", text="请描述你的任务需求。")]
@@ -472,8 +507,8 @@ class ToolExecutor:
         import os
         from skills_orchestrator.pipeline.engine import PipelineEngine
 
-        pipeline_id = args.get("pipeline_id", "").strip()
-        context = args.get("context", {})
+        pipeline_id = self._get_string(args, "pipeline_id").strip()
+        context = self._get_dict(args, "context")
 
         if not pipeline_id:
             # 列出可用的 pipeline
@@ -556,14 +591,18 @@ class ToolExecutor:
     # ── pipeline_status ──────────────────────────────────────────
 
     def _pipeline_status(self, args: dict) -> list[types.TextContent]:
-        run_id = args.get("run_id", "").strip()
-        pipeline_id = args.get("pipeline_id", "").strip()
+        run_id = self._get_string(args, "run_id").strip()
+        pipeline_id = self._get_string(args, "pipeline_id").strip()
 
         store = self._get_store()
 
         if run_id and pipeline_id:
+            validate_identifier(pipeline_id, "pipeline_id")
+            validate_identifier(run_id, "run_id")
             state = store.load(pipeline_id, run_id)
         else:
+            if pipeline_id:
+                validate_identifier(pipeline_id, "pipeline_id")
             state = store.load_latest(pipeline_id or None)
 
         if state is None:
@@ -601,9 +640,11 @@ class ToolExecutor:
     def _pipeline_advance(self, args: dict) -> list[types.TextContent]:
         from skills_orchestrator.pipeline.engine import PipelineEngine
 
-        run_id = args.get("run_id", "").strip()
-        pipeline_id = args.get("pipeline_id", "").strip()
-        context_updates = args.get("context_updates", {}) or {}
+        run_id = self._get_string(args, "run_id").strip()
+        pipeline_id = self._get_string(args, "pipeline_id").strip()
+        context_updates = self._get_dict(args, "context_updates")
+        validate_identifier(pipeline_id, "pipeline_id")
+        validate_identifier(run_id, "run_id")
 
         # 读取 artifacts 参数并合并到 context_updates
         artifacts = args.get("artifacts", []) or []
@@ -697,14 +738,18 @@ class ToolExecutor:
     def _pipeline_resume(self, args: dict) -> list[types.TextContent]:
         from skills_orchestrator.pipeline.engine import PipelineEngine
 
-        run_id = args.get("run_id", "").strip()
-        pipeline_id = args.get("pipeline_id", "").strip()
+        run_id = self._get_string(args, "run_id").strip()
+        pipeline_id = self._get_string(args, "pipeline_id").strip()
 
         store = self._get_store()
 
         if run_id and pipeline_id:
+            validate_identifier(pipeline_id, "pipeline_id")
+            validate_identifier(run_id, "run_id")
             state = store.load(pipeline_id, run_id)
         else:
+            if pipeline_id:
+                validate_identifier(pipeline_id, "pipeline_id")
             state = store.load_latest(pipeline_id or None)
 
         if state is None:

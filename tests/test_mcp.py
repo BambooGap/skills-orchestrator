@@ -145,6 +145,10 @@ class TestToolExecutor:
         return "\n".join(r.text for r in results)
 
     # list_skills
+    def test_execute_rejects_non_object_arguments(self):
+        with pytest.raises(ValueError, match="JSON object"):
+            self.executor.execute("list_skills", [])
+
     def test_list_skills_all(self):
         results = self.executor.execute("list_skills", {})
         text = self._text(results)
@@ -156,6 +160,10 @@ class TestToolExecutor:
         text = self._text(results)
         assert "git-worktrees" in text
         assert "brainstorming" not in text
+
+    def test_list_skills_rejects_non_string_tag(self):
+        with pytest.raises(ValueError, match="tag"):
+            self.executor.execute("list_skills", {"tag": 123})
 
     def test_list_skills_unknown_tag(self):
         results = self.executor.execute("list_skills", {"tag": "nonexistent"})
@@ -173,6 +181,19 @@ class TestToolExecutor:
         results = self.executor.execute("search_skills", {"query": ""})
         text = self._text(results)
         assert "请提供" in text
+
+    def test_search_skills_rejects_non_string_query(self):
+        with pytest.raises(ValueError, match="query"):
+            self.executor.execute("search_skills", {"query": 123})
+
+    def test_search_skills_rejects_non_numeric_top_k(self):
+        with pytest.raises(ValueError, match="top_k"):
+            self.executor.execute("search_skills", {"query": "git", "top_k": "many"})
+
+    def test_search_skills_clamps_large_top_k(self):
+        results = self.executor.execute("search_skills", {"query": "git", "top_k": 999})
+        text = self._text(results)
+        assert "git-worktrees" in text
 
     # get_skill
     def test_get_skill_returns_content(self):
@@ -205,6 +226,31 @@ class TestToolExecutor:
         results = self.executor.execute("suggest_combo", {"requirement": ""})
         text = self._text(results)
         assert "请描述" in text
+
+    def test_suggest_combo_rejects_non_numeric_max_combos(self):
+        with pytest.raises(ValueError, match="max_combos"):
+            self.executor.execute("suggest_combo", {"requirement": "git", "max_combos": "many"})
+
+    def test_pipeline_id_path_traversal_rejected(self, tmp_path):
+        pipelines_dir = tmp_path / "pipelines"
+        pipelines_dir.mkdir()
+        outside = tmp_path / "evil.yaml"
+        outside.write_text("id: evil\nname: Evil\nsteps: []\n", encoding="utf-8")
+
+        executor = ToolExecutor(MockRegistry(), pipelines_dir=str(pipelines_dir))
+        with pytest.raises(ValueError, match="pipeline_id"):
+            executor.execute("pipeline_start", {"pipeline_id": "../evil"})
+
+    def test_pipeline_start_rejects_non_object_context(self):
+        with pytest.raises(ValueError, match="context"):
+            self.executor.execute("pipeline_start", {"pipeline_id": "missing", "context": "bad"})
+
+    def test_pipeline_advance_rejects_non_object_context_updates(self):
+        with pytest.raises(ValueError, match="context_updates"):
+            self.executor.execute(
+                "pipeline_advance",
+                {"pipeline_id": "full-dev", "run_id": "run-1", "context_updates": []},
+            )
 
     # 未知工具
     def test_unknown_tool(self):

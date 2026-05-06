@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 
+from skills_orchestrator.security import validate_path_within_root
 from skills_orchestrator.models import Zone, Rule, SkillMeta, Combo, Config
 
 
@@ -206,7 +207,7 @@ class Parser:
     def _parse_skills(self, raw_skills: list) -> list[SkillMeta]:
         skills = []
         for raw in raw_skills:
-            path = self._expand_path(raw["path"])
+            path = self._normalize_explicit_skill_path(raw["path"])
             skills.append(
                 SkillMeta(
                     id=raw["id"],
@@ -236,6 +237,25 @@ class Parser:
 
     def _expand_path(self, path: str) -> str:
         return os.path.expanduser(os.path.expandvars(path))
+
+    def _normalize_explicit_skill_path(self, raw_path: str) -> str:
+        """Expand and validate explicit skills[].path entries."""
+        expanded = self._expand_path(raw_path)
+        candidate = Path(expanded)
+        if not candidate.is_absolute():
+            resolved = validate_path_within_root(self.base_dir / candidate, self.base_dir)
+            return str(resolved.relative_to(self.base_dir.resolve()))
+
+        allowed_root = self.base_dir
+        if raw_path.startswith("${SKILLS_ROOT}") or raw_path.startswith("$SKILLS_ROOT"):
+            skills_root = os.environ.get("SKILLS_ROOT")
+            if not skills_root:
+                raise ValueError("SKILLS_ROOT 未设置，无法解析 skill.path")
+            allowed_root = Path(skills_root)
+        elif "$" in raw_path:
+            raise ValueError("skill.path 仅允许使用 SKILLS_ROOT 环境变量")
+
+        return str(validate_path_within_root(candidate, allowed_root))
 
     def _compute_project_root(self, raw: dict) -> Path:
         """计算项目根目录：config_dir 与所有 skill_dirs resolve 后的最低公共祖先。
@@ -269,9 +289,15 @@ class Parser:
                 break
 
         if not common:
-            return config_dir
+            raise ValueError("skill_dirs 与 config_dir 没有安全的公共项目根")
 
-        return Path(*common)
+        project_root = Path(*common)
+        if project_root == Path(project_root.anchor):
+            raise ValueError(
+                "skill_dirs 与 config_dir 的公共项目根过宽，请将 skills 放在项目目录内"
+            )
+
+        return project_root
 
     def _validate_combos(self, skills: list[SkillMeta], combos: list[Combo]) -> list[SkillMeta]:
         """验证 Combo 引用的 skill 是否存在"""

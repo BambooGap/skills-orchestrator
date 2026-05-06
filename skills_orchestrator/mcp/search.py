@@ -33,6 +33,11 @@ class KeywordSearcher:
     不依赖任何外部库，适合 Phase 2.0。
     """
 
+    def __init__(self):
+        self._field_token_cache: dict[
+            tuple[str, str, tuple[str, ...], str], tuple[set[str], set[str], set[str], set[str]]
+        ] = {}
+
     def search(
         self,
         query: str,
@@ -78,24 +83,20 @@ class KeywordSearcher:
         matched: list[str] = []
         covered: set[str] = set()  # unique query tokens matched across all fields
 
-        id_tokens = self._tokenize(skill.id + " " + skill.name)
+        id_tokens, tag_tokens, sum_tokens, all_field_tokens = self._field_tokens(skill)
         hit_name = self._match(tokens, id_tokens)
         if hit_name:
             score += 0.5 * (len(hit_name) / max(len(tokens), 1))
             matched.append("name")
             covered |= hit_name
 
-        tag_tokens: set[str] = set()
-        for tag in skill.tags:
-            tag_tokens.update(self._tokenize(tag))
         hit_tags = self._match(tokens, tag_tokens)
         if hit_tags:
             score += 0.35 * (len(hit_tags) / max(len(tokens), 1))
             matched.append("tags")
             covered |= hit_tags
 
-        if skill.summary:
-            sum_tokens = self._tokenize(skill.summary)
+        if sum_tokens:
             hit_sum = self._match(tokens, sum_tokens)
             if hit_sum:
                 idf = 1 + math.log(1 + len(hit_sum))
@@ -106,17 +107,27 @@ class KeywordSearcher:
         # coverage bonus: reward skills that match more unique query terms
         # prefix matches contribute 0.6 weight vs exact matches at 1.0
         if score > 0 and len(tokens) > 1:
-            id_tokens = self._tokenize(skill.id + " " + skill.name)
-            tag_tokens: set[str] = set()
-            for tag in skill.tags:
-                tag_tokens.update(self._tokenize(tag))
-            sum_tokens = self._tokenize(skill.summary) if skill.summary else set()
-            all_field_tokens = id_tokens | tag_tokens | sum_tokens
             weighted_covered = self._match_weighted(tokens, all_field_tokens)
             coverage = min(weighted_covered / len(tokens), 1.0)
             score *= 0.7 + 0.3 * coverage
 
         return min(score, 1.0), matched
+
+    def _field_tokens(self, skill: SkillMeta) -> tuple[set[str], set[str], set[str], set[str]]:
+        key = (skill.id, skill.name, tuple(skill.tags), skill.summary)
+        cached = self._field_token_cache.get(key)
+        if cached is not None:
+            return cached
+
+        id_tokens = self._tokenize(skill.id + " " + skill.name)
+        tag_tokens: set[str] = set()
+        for tag in skill.tags:
+            tag_tokens.update(self._tokenize(tag))
+        sum_tokens = self._tokenize(skill.summary) if skill.summary else set()
+        all_field_tokens = id_tokens | tag_tokens | sum_tokens
+        cached = (id_tokens, tag_tokens, sum_tokens, all_field_tokens)
+        self._field_token_cache[key] = cached
+        return cached
 
     @staticmethod
     def _match(query_tokens: set[str], field_tokens: set[str]) -> set[str]:

@@ -4,7 +4,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from skills_orchestrator.models import Zone, Config, Manifest, LoadPlan
-from skills_orchestrator.security import safe_subprocess_env
+from skills_orchestrator.security import safe_subprocess_env, subprocess_text_kwargs
 
 
 class Enforcer:
@@ -54,7 +54,7 @@ class Enforcer:
             result = subprocess.run(
                 ["git", "rev-parse", "--show-toplevel"],
                 capture_output=True,
-                text=True,
+                **subprocess_text_kwargs(),
                 timeout=5,
                 cwd=str(workdir),
                 env=safe_subprocess_env(),
@@ -69,7 +69,7 @@ class Enforcer:
             result = subprocess.run(
                 ["git", "remote", "-v"],
                 capture_output=True,
-                text=True,
+                **subprocess_text_kwargs(),
                 timeout=5,
                 cwd=git_root,
                 env=safe_subprocess_env(),
@@ -81,7 +81,7 @@ class Enforcer:
             result = subprocess.run(
                 ["git", "config", "--list", "--local"],
                 capture_output=True,
-                text=True,
+                **subprocess_text_kwargs(),
                 timeout=5,
                 cwd=git_root,
                 env=safe_subprocess_env(),

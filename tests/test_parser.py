@@ -1,5 +1,6 @@
 import pytest
 import tempfile
+import textwrap
 
 from skills_orchestrator.compiler.parser import Parser
 from skills_orchestrator.compiler.resolver import Resolver
@@ -19,12 +20,12 @@ zones:
 skills:
   - id: skill-a
     name: Skill A
-    path: /path/a
+    path: skills/a.md
     summary: A
     tags: [a]
   - id: skill-b
     name: Skill B
-    path: /path/b
+    path: skills/b.md
     summary: B
     tags: [b]
 combos:
@@ -71,7 +72,7 @@ zones:
 skills:
   - id: skill-a
     name: Skill A
-    path: /path/a
+    path: skills/a.md
     summary: A
     tags: [a]
 """
@@ -236,6 +237,92 @@ skill_dirs:
     config = Parser(str(config_file)).parse()
     with pytest.raises(ValueError, match="循环继承"):
         Resolver(config).resolve()
+
+
+def test_explicit_skill_path_outside_project_rejected(tmp_path):
+    """显式 skills[].path 不应能引用项目根之外的文件。"""
+    outside = tmp_path.parent / "outside-skill.md"
+    outside.write_text("# Outside\n", encoding="utf-8")
+
+    config_file = tmp_path / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            f"""
+            version: "1.0"
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            skills:
+              - id: outside
+                name: Outside
+                path: {outside}
+                summary: s
+                tags: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="路径逃逸"):
+        Parser(str(config_file)).parse()
+
+
+def test_explicit_skill_path_within_project_allowed(tmp_path):
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    skill_file = skills_dir / "inside.md"
+    skill_file.write_text("# Inside\n", encoding="utf-8")
+
+    config_file = tmp_path / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            """
+            version: "1.0"
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            skills:
+              - id: inside
+                name: Inside
+                path: skills/inside.md
+                summary: s
+                tags: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    config = Parser(str(config_file)).parse()
+    assert config.skills[0].path == "skills/inside.md"
+
+
+def test_skill_dirs_common_root_too_broad_rejected(tmp_path):
+    config_file = tmp_path / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            """
+            version: "1.0"
+            skill_dirs:
+              - /
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="公共项目根过宽"):
+        Parser(str(config_file)).parse()
 
 
 def test_exclusive_zone_no_skills_fallback():

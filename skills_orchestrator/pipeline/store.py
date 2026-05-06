@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from skills_orchestrator.security import safe_child_path, validate_identifier
+
 from .models import RunState
+
+STATE_FILENAME_RE = re.compile(
+    r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}_[A-Za-z0-9][A-Za-z0-9_-]{0,63}\.json$"
+)
 
 
 class RunStateStore:
@@ -28,8 +35,7 @@ class RunStateStore:
 
     def save(self, state: RunState) -> Path:
         """保存 RunState 到文件，返回文件路径"""
-        filename = f"{state.pipeline_id}_{state.run_id}.json"
-        filepath = self.runs_dir / filename
+        filepath = self._state_path(state.pipeline_id, state.run_id)
         filepath.write_text(state.to_json(), encoding="utf-8")
         # 更新 latest 记录
         self._update_latest(state)
@@ -37,8 +43,7 @@ class RunStateStore:
 
     def load(self, pipeline_id: str, run_id: str) -> Optional[RunState]:
         """根据 pipeline_id 和 run_id 加载 RunState"""
-        filename = f"{pipeline_id}_{run_id}.json"
-        filepath = self.runs_dir / filename
+        filepath = self._state_path(pipeline_id, run_id)
         if not filepath.exists():
             return None
         return RunState.from_json(filepath.read_text(encoding="utf-8"))
@@ -51,10 +56,14 @@ class RunStateStore:
         latest_file = self.runs_dir / ".latest"
         if latest_file.exists():
             ref = latest_file.read_text(encoding="utf-8").strip()
-            filepath = self.runs_dir / ref
+            if not STATE_FILENAME_RE.fullmatch(ref):
+                raise ValueError(f"非法 latest 记录: {ref!r}")
+            filepath = safe_child_path(self.runs_dir, ref)
             if filepath.exists():
                 state = RunState.from_json(filepath.read_text(encoding="utf-8"))
-                if pipeline_id is None or state.pipeline_id == pipeline_id:
+                if pipeline_id is None or state.pipeline_id == self._validate_pipeline_id(
+                    pipeline_id
+                ):
                     return state
 
         # fallback: 遍历文件按修改时间排序
@@ -64,7 +73,7 @@ class RunStateStore:
         candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
         for filepath in candidates:
             state = RunState.from_json(filepath.read_text(encoding="utf-8"))
-            if pipeline_id is None or state.pipeline_id == pipeline_id:
+            if pipeline_id is None or state.pipeline_id == self._validate_pipeline_id(pipeline_id):
                 return state
         return None
 
@@ -79,7 +88,7 @@ class RunStateStore:
                 state = RunState.from_json(filepath.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, KeyError):
                 continue
-            if pipeline_id and state.pipeline_id != pipeline_id:
+            if pipeline_id and state.pipeline_id != self._validate_pipeline_id(pipeline_id):
                 continue
             results.append(
                 {
@@ -95,8 +104,7 @@ class RunStateStore:
 
     def delete(self, pipeline_id: str, run_id: str) -> bool:
         """删除指定运行记录"""
-        filename = f"{pipeline_id}_{run_id}.json"
-        filepath = self.runs_dir / filename
+        filepath = self._state_path(pipeline_id, run_id)
         if filepath.exists():
             filepath.unlink()
             return True
@@ -104,6 +112,21 @@ class RunStateStore:
 
     def _update_latest(self, state: RunState) -> None:
         """更新 .latest 记录文件"""
-        filename = f"{state.pipeline_id}_{state.run_id}.json"
+        pipeline_id = self._validate_pipeline_id(state.pipeline_id)
+        run_id = self._validate_run_id(state.run_id)
+        filename = f"{pipeline_id}_{run_id}.json"
         latest_file = self.runs_dir / ".latest"
         latest_file.write_text(filename, encoding="utf-8")
+
+    @staticmethod
+    def _validate_pipeline_id(pipeline_id: str) -> str:
+        return validate_identifier(pipeline_id, "pipeline_id")
+
+    @staticmethod
+    def _validate_run_id(run_id: str) -> str:
+        return validate_identifier(run_id, "run_id")
+
+    def _state_path(self, pipeline_id: str, run_id: str) -> Path:
+        pipeline_id = self._validate_pipeline_id(pipeline_id)
+        run_id = self._validate_run_id(run_id)
+        return safe_child_path(self.runs_dir, f"{pipeline_id}_{run_id}.json")

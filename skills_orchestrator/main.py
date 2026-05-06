@@ -10,6 +10,12 @@ import click
 import yaml
 
 from . import __version__
+from .security import (
+    console_safe_symbol,
+    console_safe_text,
+    safe_child_path,
+    validate_identifier,
+)
 from .compiler import Parser, Resolver, Compressor, SkillsLock
 from .enforcer import Enforcer
 from .sync.targets import get_target, SyncEngine, TARGET_REGISTRY
@@ -21,16 +27,20 @@ from .cli.import_cmd import import_skill as _import_cmd
 # ─────────────────────────── helpers ────────────────────────────
 
 
+def _sym(symbol: str, fallback: str) -> str:
+    return console_safe_symbol(symbol, fallback)
+
+
 def _ok(msg: str) -> str:
-    return click.style("✓", fg="green") + f" {msg}"
+    return click.style(console_safe_symbol("✓", "OK"), fg="green") + f" {console_safe_text(msg)}"
 
 
 def _warn(msg: str) -> str:
-    return click.style("⚠", fg="yellow") + f" {msg}"
+    return click.style(console_safe_symbol("⚠", "!"), fg="yellow") + f" {console_safe_text(msg)}"
 
 
 def _err(msg: str) -> str:
-    return click.style("✗", fg="red") + f" {msg}"
+    return click.style(console_safe_symbol("✗", "X"), fg="red") + f" {console_safe_text(msg)}"
 
 
 def _parse_context(context_str: str) -> dict:
@@ -81,7 +91,8 @@ def _load_pipeline(pipeline_id: str, config_path: Optional[str] = None):
     from skills_orchestrator.pipeline.loader import PipelineLoader
 
     pipelines_dir = _resolve_pipelines_dir(config_path)
-    yaml_path = pipelines_dir / f"{pipeline_id}.yaml"
+    pipeline_id = validate_identifier(pipeline_id, "pipeline_id")
+    yaml_path = safe_child_path(pipelines_dir, f"{pipeline_id}.yaml")
     if not yaml_path.exists():
         return None
     loader = PipelineLoader()
@@ -200,14 +211,14 @@ def validate(config: str, zone: Optional[str], check_lock: Optional[str]):
                 f"\n{click.style('Forced', fg='green', bold=True)} ({len(resolved.forced_skills)})"
             )
             for s in resolved.forced_skills:
-                click.echo(f"  {click.style('✓', fg='green')} {s.id}: {s.name}")
+                click.echo(f"  {click.style(_sym('✓', 'OK'), fg='green')} {s.id}: {s.name}")
 
         if resolved.passive_skills:
             click.echo(
                 f"\n{click.style('Passive', fg='yellow', bold=True)} ({len(resolved.passive_skills)})"
             )
             for s in resolved.passive_skills:
-                click.echo(f"  {click.style('○', fg='yellow')} {s.id}: {s.name}")
+                click.echo(f"  {click.style(_sym('○', 'o'), fg='yellow')} {s.id}: {s.name}")
 
         if resolved.blocked_skills:
             click.echo(
@@ -215,8 +226,8 @@ def validate(config: str, zone: Optional[str], check_lock: Optional[str]):
             )
             for s in resolved.blocked_skills:
                 reason = resolved.block_reasons.get(s.id, "冲突声明")
-                click.echo(f"  {click.style('✗', fg='red')} {s.id}: {s.name}")
-                click.echo(f"    {click.style('→', fg='red')} {reason}")
+                click.echo(f"  {click.style(_sym('✗', 'X'), fg='red')} {s.id}: {s.name}")
+                click.echo(f"    {click.style(_sym('→', '->'), fg='red')} {reason}")
 
         # 检查 skills.lock 是否过期
         if check_lock:
@@ -284,34 +295,42 @@ def status(config: str, zone: Optional[str]):
         if target_zone:
             click.echo(f"Zone: {target_zone.name} ({target_zone.id})\n")
 
-        click.echo(f"\n{click.style('Forced Skills', fg='green', bold=True)} — 强制加载")
+        click.echo(
+            console_safe_text(f"\n{click.style('Forced Skills', fg='green', bold=True)} — 强制加载")
+        )
         if resolved.forced_skills:
             for s in resolved.forced_skills:
                 click.echo(
-                    f"  {click.style('✓', fg='green')} {click.style(s.id, bold=True)}: {s.name}"
+                    f"  {click.style(_sym('✓', 'OK'), fg='green')} {click.style(s.id, bold=True)}: {s.name}"
                 )
                 click.echo(f"    priority={s.priority}  tags=[{', '.join(s.tags)}]")
         else:
             click.echo("  （无）")
 
-        click.echo(f"\n{click.style('Passive Skills', fg='yellow', bold=True)} — 按需加载")
+        click.echo(
+            console_safe_text(
+                f"\n{click.style('Passive Skills', fg='yellow', bold=True)} — 按需加载"
+            )
+        )
         if resolved.passive_skills:
             for s in resolved.passive_skills:
                 click.echo(
-                    f"  {click.style('○', fg='yellow')} {click.style(s.id, bold=True)}: {s.name}"
+                    f"  {click.style(_sym('○', 'o'), fg='yellow')} {click.style(s.id, bold=True)}: {s.name}"
                 )
                 click.echo(f"    priority={s.priority}  tags=[{', '.join(s.tags)}]")
         else:
             click.echo("  （无）")
 
-        click.echo(f"\n{click.style('Blocked Skills', fg='red', bold=True)} — 已拦截")
+        click.echo(
+            console_safe_text(f"\n{click.style('Blocked Skills', fg='red', bold=True)} — 已拦截")
+        )
         if resolved.blocked_skills:
             for s in resolved.blocked_skills:
                 reason = resolved.block_reasons.get(s.id, "冲突声明")
                 click.echo(
-                    f"  {click.style('✗', fg='red')} {click.style(s.id, bold=True)}: {s.name}"
+                    f"  {click.style(_sym('✗', 'X'), fg='red')} {click.style(s.id, bold=True)}: {s.name}"
                 )
-                click.echo(f"    {click.style('→', fg='red')} {reason}")
+                click.echo(f"    {click.style(_sym('→', '->'), fg='red')} {reason}")
         else:
             click.echo("  （无）")
 
@@ -434,12 +453,18 @@ def sync(
             if full:
                 all_skills_list = list(resolved.forced_skills) + list(resolved.passive_skills)
                 for skill in all_skills_list:
-                    click.echo(f"  {click.style('✓', fg='green')} {skill.id}: {skill.name} (完整)")
+                    click.echo(
+                        f"  {click.style(_sym('✓', 'OK'), fg='green')} {skill.id}: {skill.name} (完整)"
+                    )
             else:
                 for skill in resolved.forced_skills:
-                    click.echo(f"  {click.style('✓', fg='green')} {skill.id}: {skill.name} (完整)")
+                    click.echo(
+                        f"  {click.style(_sym('✓', 'OK'), fg='green')} {skill.id}: {skill.name} (完整)"
+                    )
                 for skill in resolved.passive_skills:
-                    click.echo(f"  {click.style('○', fg='yellow')} {skill.id}: {skill.name} (摘要)")
+                    click.echo(
+                        f"  {click.style(_sym('○', 'o'), fg='yellow')} {skill.id}: {skill.name} (摘要)"
+                    )
             click.echo(f"\n{click.style('[dry-run]', fg='yellow')} 未写入任何文件")
             return
 
@@ -545,7 +570,7 @@ def mcp_test(tool_name: str, args_json: str, config: str, zone: Optional[str]):
         arguments = json.loads(args_json)
         results = executor.execute(tool_name, arguments)
         for r in results:
-            click.echo(r.text)
+            click.echo(console_safe_text(r.text))
     except json.JSONDecodeError as e:
         click.echo(_err(f"JSON 解析失败: {e}"), err=True)
         raise SystemExit(1)
@@ -598,23 +623,25 @@ def pipeline_list(detail: bool, compact: bool, config: str):
 
                 # 简单的分类图标
                 if step_count <= 2:
-                    icon = "⚡"
+                    icon = console_safe_text("⚡")
                 elif step_count <= 4:
-                    icon = "🛠️"
+                    icon = console_safe_text("🛠️")
                 else:
-                    icon = "📋"
+                    icon = console_safe_text("📋")
 
                 click.echo(
                     f"  {icon} {click.style(pipeline_id, bold=True):20} {name:30} ({step_count}步)"
                 )
             except Exception:
-                click.echo(f"  ❌ {click.style(pipeline_id, bold=True):20} (解析失败)")
+                click.echo(
+                    console_safe_text(f"  ❌ {click.style(pipeline_id, bold=True):20} (解析失败)")
+                )
         return
 
     # 详细版显示
     if detail:
         click.echo("\n" + "=" * 60)
-        click.echo("📋 可用的 Pipeline 模板".center(60))
+        click.echo(console_safe_text("📋 可用的 Pipeline 模板".center(60)))
         click.echo("=" * 60)
 
         for f in yaml_files:
@@ -630,11 +657,11 @@ def pipeline_list(detail: bool, compact: bool, config: str):
 
                 # 分类信息
                 if step_count <= 2:
-                    length_category, length_icon = "短流程", "🟢"
+                    length_category, length_icon = "短流程", console_safe_text("🟢")
                 elif step_count <= 4:
-                    length_category, length_icon = "中流程", "🟡"
+                    length_category, length_icon = "中流程", console_safe_text("🟡")
                 else:
-                    length_category, length_icon = "长流程", "🔴"
+                    length_category, length_icon = "长流程", console_safe_text("🔴")
 
                 # 使用场景分类
                 scenario_map = {
@@ -654,30 +681,40 @@ def pipeline_list(detail: bool, compact: bool, config: str):
                     step_names.append(f"{step_id}({step_skill})")
 
                 # 输出格式
-                click.echo(f"\n🔷 {name}")
+                click.echo(console_safe_text(f"\n🔷 {name}"))
                 click.echo(f"   ID: {pipeline_id}")
-                click.echo(f"   📝 {desc}")
-                click.echo(f"   📊 {length_icon} {length_category} | {step_count} 个步骤")
-                click.echo(f"   🎯 使用场景: {scenario_category}")
-                click.echo(f"   🚀 启动命令: skills-orchestrator pipeline start {pipeline_id}")
+                click.echo(console_safe_text(f"   📝 {desc}"))
+                click.echo(
+                    console_safe_text(
+                        f"   📊 {length_icon} {length_category} | {step_count} 个步骤"
+                    )
+                )
+                click.echo(console_safe_text(f"   🎯 使用场景: {scenario_category}"))
+                click.echo(
+                    console_safe_text(
+                        f"   🚀 启动命令: skills-orchestrator pipeline start {pipeline_id}"
+                    )
+                )
 
                 # 步骤预览（最多显示3个）
                 if step_names:
-                    preview = " → ".join(step_names[:3])
+                    preview = f" {_sym('→', '->')} ".join(step_names[:3])
                     if len(step_names) > 3:
-                        preview += f" → ... (共{step_count}步)"
-                    click.echo(f"   🛣️  流程预览: {preview}")
+                        preview += f" {_sym('→', '->')} ... (共{step_count}步)"
+                    click.echo(console_safe_text(f"   🛣️  流程预览: {preview}"))
 
-                click.echo("   " + "─" * 50)
+                click.echo(console_safe_text("   " + "─" * 50))
 
             except Exception as e:
-                click.echo(f"\n❌ 加载 {pipeline_id} 时出错: {e}")
+                click.echo(console_safe_text(f"\n❌ 加载 {pipeline_id} 时出错: {e}"))
 
         click.echo("\n" + "=" * 60)
-        click.echo("💡 使用提示:")
-        click.echo("  • 使用 'skills-orchestrator pipeline start <ID>' 启动")
-        click.echo("  • 添加 '--context @文件.json' 传递上下文")
-        click.echo('  • 使用 \'--context "{\\"key\\": \\"value\\"}"\' 传递简单上下文')
+        click.echo(console_safe_text("💡 使用提示:"))
+        click.echo(console_safe_text("  • 使用 'skills-orchestrator pipeline start <ID>' 启动"))
+        click.echo(console_safe_text("  • 添加 '--context @文件.json' 传递上下文"))
+        click.echo(
+            console_safe_text('  • 使用 \'--context "{\\"key\\": \\"value\\"}"\' 传递简单上下文')
+        )
         click.echo("=" * 60)
         return
 
@@ -691,12 +728,12 @@ def pipeline_list(detail: bool, compact: bool, config: str):
             desc = data.get("description", "")
             steps = data.get("steps", [])
             step_count = len(steps)
-            click.echo(f"  {click.style(pipeline_id, bold=True)} — {name}")
+            click.echo(console_safe_text(f"  {click.style(pipeline_id, bold=True)} — {name}"))
             click.echo(f"    {desc}")
             click.echo(f"    {step_count} 个步骤")
             click.echo("")
         except Exception:
-            click.echo(f"  {click.style(pipeline_id, bold=True)} — (解析失败)")
+            click.echo(console_safe_text(f"  {click.style(pipeline_id, bold=True)} — (解析失败)"))
             click.echo("")
 
 
@@ -798,7 +835,11 @@ def pipeline_status(
             "步骤历史：",
         ]
         for h in state.step_history:
-            status_icon = {"completed": "✓", "skipped": "⏭", "failed": "✗"}.get(h["status"], "?")
+            status_icon = {
+                "completed": _sym("✓", "OK"),
+                "skipped": _sym("⏭", "SKIP"),
+                "failed": _sym("✗", "X"),
+            }.get(h["status"], "?")
             reason = f" ({h.get('reason', '')})" if h.get("reason") else ""
             lines.append(f"  {status_icon} {h['step']} — {h['status']}{reason}")
 
@@ -814,7 +855,7 @@ def pipeline_status(
             lines.append("")
             lines.append(f"上下文键: {', '.join(state.context.keys())}")
 
-        click.echo("\n".join(lines))
+        click.echo(console_safe_text("\n".join(lines)))
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)
@@ -966,7 +1007,7 @@ def pipeline_resume(
         lines.append(
             "使用 skills-orchestrator pipeline advance <pipeline_id> --run-id <run_id> 推进下一步。"
         )
-        click.echo("\n".join(lines))
+        click.echo(console_safe_text("\n".join(lines)))
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)

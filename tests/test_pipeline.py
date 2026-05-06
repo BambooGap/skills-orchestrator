@@ -522,6 +522,29 @@ class TestPipelineEngine:
         assert len(state.step_history) == 2
         assert all(h["status"] == "skipped" for h in state.step_history)
 
+    def test_deep_consecutive_skips_do_not_recurse(self):
+        """极深连续 skip_if 不应触发 Python 递归深度限制。"""
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+
+        depth = 1500
+        steps = [
+            Step(
+                id=f"s{i}",
+                skill="s",
+                next=[f"s{i + 1}"] if i < depth - 1 else [],
+                skip_if="skip_all",
+            )
+            for i in range(depth)
+        ]
+        pipeline = Pipeline(id="deep-skip", name="深度跳过", steps=steps)
+        engine = PipelineEngine(pipeline)
+
+        state = engine.start(context={"skip_all": True})
+
+        assert state.status == "completed"
+        assert state.current_step is None
+        assert len(state.step_history) == depth
+
 
 # ═══════════════════════════════════════════════════════════
 # Task 6: RunStateStore
@@ -571,6 +594,19 @@ class TestRunStateStore:
             latest = store.load_latest()
             assert latest is not None
             assert latest.run_id == "r2"
+
+    def test_load_latest_rejects_tampered_path_escape(self):
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = RunStateStore(base_dir=tmpdir)
+            with open(f"{store.runs_dir}/.latest", "w", encoding="utf-8") as f:
+                f.write("../outside.json")
+
+            import pytest
+
+            with pytest.raises(ValueError, match="latest"):
+                store.load_latest()
 
     def test_load_latest_by_pipeline(self):
         from skills_orchestrator.pipeline.store import RunStateStore
@@ -636,6 +672,23 @@ class TestRunStateStore:
             loaded = store2.load("test", "r1")
             assert loaded is not None
             assert loaded.context["key"] == "value"
+
+    def test_rejects_path_traversal_identifiers(self):
+        """pipeline_id/run_id 不应能通过 ../ 逃逸 runs 目录。"""
+        import pytest
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = RunStateStore(base_dir=tmpdir)
+
+            with pytest.raises(ValueError, match="非法"):
+                store.save(self._make_state("../evil", "r1"))
+
+            with pytest.raises(ValueError, match="非法"):
+                store.load("test", "../../../etc/passwd")
+
+            with pytest.raises(ValueError, match="非法"):
+                store.delete("../evil", "r1")
 
 
 # ═══════════════════════════════════════════════════════════

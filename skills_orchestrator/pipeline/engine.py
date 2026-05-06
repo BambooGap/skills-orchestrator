@@ -170,21 +170,18 @@ class PipelineEngine:
         return self.pipeline.get_step(state.current_step)
 
     def _auto_skip(self, state: RunState) -> RunState:
-        """自动跳过满足条件的步骤，递归处理连续跳过"""
-        current = self._get_current_step(state)
-        if current is None:
-            return state
-
-        if current.skip_if and state.context.get(current.skip_if):
-            state.skip_current(reason=current.skip_if)
-
-            if current.is_terminal:
-                state.status = "completed"
-                state.current_step = None
+        """自动跳过满足条件的连续步骤。"""
+        while True:
+            current = self._get_current_step(state)
+            if current is None:
                 return state
 
-            # 防御性检查：确保 next 列表不为空
-            if not current.next:
+            if not (current.skip_if and state.context.get(current.skip_if)):
+                return state
+
+            state.skip_current(reason=current.skip_if)
+
+            if current.is_terminal or not current.next:
                 state.status = "completed"
                 state.current_step = None
                 return state
@@ -196,6 +193,3 @@ class PipelineEngine:
                 return state
 
             state.advance_to(next_step_id)
-            return self._auto_skip(state)  # 递归跳过
-
-        return state

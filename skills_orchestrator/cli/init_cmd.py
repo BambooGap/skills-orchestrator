@@ -7,6 +7,8 @@ from pathlib import Path
 import click
 import yaml
 
+from skills_orchestrator.security import console_safe_symbol, console_safe_text
+
 from .helpers import _ok, _warn, _parse_frontmatter
 
 
@@ -83,9 +85,15 @@ def init(skills_dir: str, output: str, non_interactive: bool):
             )
             policy = default_policy
             priority = default_priority
-            click.echo(f"  {md_file.name} → {skill_id} ({policy}, p{priority})")
+            click.echo(
+                console_safe_text(
+                    f"  {md_file.name} {console_safe_symbol('→', '->')} "
+                    f"{skill_id} ({policy}, p{priority})"
+                )
+            )
         else:
-            click.echo(click.style(f"─── {md_file.name} ───", bold=True))
+            sep = console_safe_symbol("─", "-") * 3
+            click.echo(console_safe_text(click.style(f"{sep} {md_file.name} {sep}", bold=True)))
             name = click.prompt("  名称", default=default_name)
             summary = click.prompt("  简介", default=default_summary)
             tags_str = click.prompt("  标签（逗号分隔）", default=default_tags)

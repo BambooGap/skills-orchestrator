@@ -11,7 +11,12 @@ from urllib.parse import urlparse
 import click
 import yaml
 
-from skills_orchestrator.security import safe_subprocess_env
+from skills_orchestrator.security import (
+    console_safe_symbol,
+    console_safe_text,
+    safe_subprocess_env,
+    subprocess_text_kwargs,
+)
 
 from .helpers import (
     _append_skills_to_yaml,
@@ -36,7 +41,7 @@ def _gh_api(api_path: str) -> object:
         result = subprocess.run(
             ["gh", "api", api_path],
             capture_output=True,
-            text=True,
+            **subprocess_text_kwargs(),
             timeout=15,
             env=safe_subprocess_env(),
         )
@@ -165,7 +170,7 @@ def _fetch_github_skills(source: str) -> list[tuple[str, str]]:
             try:
                 content = _fetch_raw(item["download_url"])
                 results.append((item["name"], content))
-                click.echo(f"  ✓ {item['name']}")
+                click.echo(console_safe_text(f"  {console_safe_symbol('✓', 'OK')} {item['name']}"))
             except Exception as e:
                 click.echo(_warn(f"跳过 {item['name']}: {e}"))
 
@@ -182,7 +187,13 @@ def _fetch_github_skills(source: str) -> list[tuple[str, str]]:
                             content = _fetch_raw(sub["download_url"])
                             filename = f"{item['name']}.md"
                             results.append((filename, content))
-                            click.echo(f"  ✓ {item['name']}/SKILL.md → {filename}")
+                            arrow = console_safe_symbol("→", "->")
+                            click.echo(
+                                console_safe_text(
+                                    f"  {console_safe_symbol('✓', 'OK')} "
+                                    f"{item['name']}/SKILL.md {arrow} {filename}"
+                                )
+                            )
             except Exception as e:
                 click.echo(_warn(f"跳过子目录 {item['name']}: {e}"))
 
@@ -266,12 +277,20 @@ def import_skill(source: str, skills_dir: str, config: str, dry_run: bool, force
         else:
             target = skills_path / filename
             if target.exists() and not force:
+                warning = console_safe_symbol("⚠", "!")
                 click.echo(
-                    f"  {click.style('⚠', fg='yellow')} {target} 已存在，跳过（使用 --force 强制覆盖）"
+                    console_safe_text(
+                        f"  {click.style(warning, fg='yellow')} "
+                        f"{target} 已存在，跳过（使用 --force 强制覆盖）"
+                    )
                 )
                 continue
             target.write_text(content, encoding="utf-8")
-            click.echo(f"  {click.style('✓', fg='green')} {target}")
+            click.echo(
+                console_safe_text(
+                    f"  {click.style(console_safe_symbol('✓', 'OK'), fg='green')} {target}"
+                )
+            )
             new_entries.append(entry)
 
     if dry_run:
