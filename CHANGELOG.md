@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-05-07
+
+### Fixed
+- `prepare_context`: required/forced skills now unconditionally enter `active_skills`; `max_skills` now only limits task-relevant passive skills. Previously, forced skills could be displaced from `active_skills` by higher-scoring passive skills, creating a governance hole where enterprise-mandatory rules were silently skipped.
+- Renamed `inactive_previous_skills` → `inactive_skills` in `prepare_context` output and corrected the accompanying note: the field lists skills not selected for the current task, not skills that were "previously loaded".
+
 ## [2.1.0] - 2026-05-07
 
 ### Added

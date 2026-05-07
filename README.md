@@ -131,7 +131,7 @@ skills-orchestrator mcp-test prepare_context \
 | 字段 | 含义 |
 |------|------|
 | `active_skills` | 本轮任务应该遵循的 Skill ID 列表 |
-| `inactive_previous_skills` | 当前 Registry 中未被本轮选中的 Skill；若它们曾在旧任务中出现，本轮应忽略 |
+| `inactive_skills` | 当前 Registry 中未被本轮选中的 Skill，本轮任务不应受其约束 |
 | `Execution Rule` | 明确告诉 Agent：旧 Skill 与本轮 active skills 冲突时，以本轮为准 |
 | `Active Skill Content` | 当 `include_content=true` 时，直接注入本轮所需 Skill 全文 |
 

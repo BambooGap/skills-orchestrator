@@ -51,6 +51,7 @@ class SkillRegistry:
         for skill in resolved.forced_skills + resolved.passive_skills:
             self._skills[skill.id] = skill
 
+        self._forced_ids: set[str] = {s.id for s in resolved.forced_skills}
         self._combos = config.combos
         self._content_cache = {}
         self._base_dir = resolved.base_dir  # 项目根目录，用于解析相对路径
@@ -68,6 +69,14 @@ class SkillRegistry:
 
     def all(self) -> list[SkillMeta]:
         return list(self._skills.values())
+
+    def forced(self) -> list[SkillMeta]:
+        """返回 load_policy=require 的强制 skills（经 zone 策略计算后的结果）。"""
+        return [s for s in self._skills.values() if s.id in self._forced_ids]
+
+    def passive(self) -> list[SkillMeta]:
+        """返回非强制 skills。"""
+        return [s for s in self._skills.values() if s.id not in self._forced_ids]
 
     def combos(self) -> list[Combo]:
         return list(self._combos)

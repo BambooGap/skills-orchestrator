@@ -551,8 +551,14 @@ class ToolExecutor:
         if not task:
             return [types.TextContent(type="text", text="请提供 task。")]
 
-        candidates = self._searcher.search(task, self._registry.all(), top_k=max_skills)
-        if not candidates:
+        # forced skills 无条件进入 active，不受 max_skills 限制
+        forced_skills = self._registry.forced()
+        passive_skills = self._registry.passive()
+
+        # max_skills 仅限制任务相关的 passive skills
+        candidates = self._searcher.search(task, passive_skills, top_k=max_skills)
+
+        if not candidates and not forced_skills:
             return [
                 types.TextContent(
                     type="text",
@@ -564,7 +570,8 @@ class ToolExecutor:
                 )
             ]
 
-        active_skills = [r.skill for r in candidates]
+        passive_active = [r.skill for r in candidates]
+        active_skills = forced_skills + passive_active
         active_ids = [s.id for s in active_skills]
         inactive_ids = [s.id for s in self._registry.all() if s.id not in set(active_ids)]
 
@@ -574,12 +581,12 @@ class ToolExecutor:
             "## Routing Decision",
             "",
             f"active_skills: {', '.join(active_ids)}",
-            f"inactive_previous_skills: {', '.join(inactive_ids) if inactive_ids else '(none)'}",
+            f"inactive_skills: {', '.join(inactive_ids) if inactive_ids else '(none)'}",
             "",
             "## Execution Rule",
             "",
             "本任务只遵循 active_skills 中列出的 skill。",
-            "之前任务加载过但本次未列入 active_skills 的 skill 视为 inactive。",
+            "未列入 active_skills 的 skill 本次视为 inactive，不应影响当前任务。",
             "若历史上下文中的旧 skill 与 active_skills 冲突，以 active_skills 为准。",
             "当用户开启一个新任务或任务目标明显变化时，必须重新调用 prepare_context。",
             "",
@@ -587,12 +594,24 @@ class ToolExecutor:
             "",
         ]
 
-        for result in candidates:
-            skill = result.skill
-            lines.append(f"- **{skill.id}** — {skill.name} ({result.score * 100:.0f}%)")
-            lines.append(f"  摘要: {skill.summary}")
-            lines.append(f"  标签: [{', '.join(skill.tags)}]")
-            lines.append(f"  命中字段: {', '.join(result.matched_fields)}")
+        if forced_skills:
+            lines.append("### Required (强制加载，不受 max_skills 限制)")
+            lines.append("")
+            for skill in forced_skills:
+                lines.append(f"- **{skill.id}** — {skill.name} [REQUIRED]")
+                lines.append(f"  摘要: {skill.summary}")
+                lines.append(f"  标签: [{', '.join(skill.tags)}]")
+            lines.append("")
+
+        if candidates:
+            lines.append(f"### Task-relevant (top {len(candidates)} passive)")
+            lines.append("")
+            for result in candidates:
+                skill = result.skill
+                lines.append(f"- **{skill.id}** — {skill.name} ({result.score * 100:.0f}%)")
+                lines.append(f"  摘要: {skill.summary}")
+                lines.append(f"  标签: [{', '.join(skill.tags)}]")
+                lines.append(f"  命中字段: {', '.join(result.matched_fields)}")
 
         if include_content:
             lines.append("")

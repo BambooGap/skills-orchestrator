@@ -115,6 +115,12 @@ class MockRegistry:
     def all(self):
         return SAMPLE_SKILLS
 
+    def forced(self):
+        return [s for s in SAMPLE_SKILLS if s.load_policy == "require"]
+
+    def passive(self):
+        return [s for s in SAMPLE_SKILLS if s.load_policy != "require"]
+
     def combos(self):
         from skills_orchestrator.models import Combo
 
@@ -244,7 +250,7 @@ class TestToolExecutor:
         assert "Prepared Context" in text
         assert "active_skills:" in text
         assert "git-worktrees" in text
-        assert "inactive_previous_skills:" in text
+        assert "inactive_skills:" in text
         assert "本任务只遵循 active_skills" in text
         assert "Active Skill Content" in text
         assert "# Git Worktrees 工作流" in text
@@ -278,6 +284,41 @@ class TestToolExecutor:
                 "prepare_context",
                 {"task": "git", "include_content": "yes"},
             )
+
+    def test_prepare_context_required_skills_always_in_active(self, tmp_path):
+        """required skills 必须无条件进入 active_skills，即使任务与之无关。"""
+        skill_dir = tmp_path / "skills"
+        skill_dir.mkdir()
+        (skill_dir / "security-check.md").write_text(
+            "---\nid: security-check\nname: Security Check\n"
+            "summary: 安全审查，所有变更必须通过\nload_policy: require\n"
+            "priority: 90\ntags: [security]\n---\n# Security\n",
+            encoding="utf-8",
+        )
+        (skill_dir / "sorting.md").write_text(
+            "---\nid: sorting\nname: Sorting Algorithms\n"
+            "summary: 排序算法实现\nload_policy: free\n"
+            "priority: 50\ntags: [algorithm]\n---\n# Sort\n",
+            encoding="utf-8",
+        )
+        cfg = tmp_path / "skills.yaml"
+        cfg.write_text(f"skill_dirs:\n  - skills\nzones: []\n", encoding="utf-8")
+
+        from skills_orchestrator.mcp.registry import SkillRegistry
+        from skills_orchestrator.mcp.tools import ToolExecutor
+
+        registry = SkillRegistry(str(cfg))
+        executor = ToolExecutor(registry)
+
+        # 任务与 security-check 完全无关，但 required skill 必须出现在 active_skills
+        results = executor.execute(
+            "prepare_context",
+            {"task": "实现快速排序算法", "max_skills": 1, "include_content": False},
+        )
+        text = "\n".join(r.text for r in results)
+        assert "security-check" in text, "required skill 必须出现在 active_skills"
+        assert "REQUIRED" in text, "required skill 应有 [REQUIRED] 标记"
+        assert "sorting" in text, "任务相关的 passive skill 也应出现"
 
     def test_pipeline_id_path_traversal_rejected(self, tmp_path):
         pipelines_dir = tmp_path / "pipelines"
