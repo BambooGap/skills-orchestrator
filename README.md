@@ -78,6 +78,65 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 | MCP Server | Runtime skill loading。对话过程中通过 `prepare_context` / `search_skills` / `get_skill` 动态选择并获取本轮 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
 | Pipeline | Runtime workflow orchestration。把多个 Skill 串成有状态流程，并在每一步自动注入当前步骤 Skill。 | `pipeline start`, MCP pipeline tools |
 
+### 同一会话内如何动态切换 Skills
+
+`AGENTS.md` 不是热更新文件。多数 Agent 只会在 `/new`、新会话、项目重新加载时读取一次它。Skills Orchestrator 的动态能力来自 MCP：`AGENTS.md` 只告诉 Agent 一条固定协议，真正的 Skill 选择在每个任务开始时通过 `prepare_context` 完成。
+
+```text
+/new
+  ↓
+Agent 读取一次 AGENTS.md
+  ↓
+AGENTS.md 提供固定协议：
+  - 不要把所有 available skills 全量塞进上下文
+  - 每个新任务开始或任务目标明显变化时，先调用 MCP prepare_context(task)
+  - 本轮只遵循 prepare_context 返回的 active_skills
+  - 上一轮加载过但本轮未返回的 skills 视为 inactive
+  ↓
+任务 1：用户说“帮我做安全审查”
+  ↓
+Agent 调用：
+  prepare_context({"task": "帮我做安全审查", "max_skills": 3})
+  ↓
+MCP 返回本轮 active_skills，例如：
+  - security-review（安全代码审查）
+  - pr-review（PR Review）
+  - error-handling（错误处理规范）
+  ↓
+Agent 按这组 Skills 执行任务 1
+  ↓
+任务 2：用户说“现在帮我写发版流程”
+  ↓
+Agent 再次调用：
+  prepare_context({"task": "写发版流程", "max_skills": 3})
+  ↓
+MCP 返回新的 active_skills，例如：
+  - deployment-checklist（部署检查清单）
+  - git-commit-conventions（Git 提交规范）
+  - documentation（写文档）
+  ↓
+Agent 按新这组 Skills 执行任务 2，任务 1 的安全审查 Skills 不再作为本轮规则
+```
+
+`prepare_context` 默认会直接返回 active skills 的完整内容，适合让 Agent 立即进入任务。如果只想先看路由结果，可以传 `include_content: false`，再对需要的条目调用 `get_skill(id)`。
+
+```bash
+skills-orchestrator mcp-test prepare_context \
+  '{"task": "帮我做安全审查", "max_skills": 3, "include_content": false}' \
+  --config config/skills.yaml
+```
+
+返回结果包含四类信息：
+
+| 字段 | 含义 |
+|------|------|
+| `active_skills` | 本轮任务应该遵循的 Skill ID 列表 |
+| `inactive_previous_skills` | 当前 Registry 中未被本轮选中的 Skill；若它们曾在旧任务中出现，本轮应忽略 |
+| `Execution Rule` | 明确告诉 Agent：旧 Skill 与本轮 active skills 冲突时，以本轮为准 |
+| `Active Skill Content` | 当 `include_content=true` 时，直接注入本轮所需 Skill 全文 |
+
+这意味着同一个会话可以连续处理多个不同任务，但每个任务边界都要重新路由一次。`prepare_context` 不能删除模型历史上下文里的旧文字，所以它会显式输出 inactive 规则，让 Agent 在行为上切换到新的一组 Skills。
+
 因此，修改 Skill 后通常需要重新 `build` / `sync` 并重启或刷新对应 Agent 会话；如果使用 MCP Server，运行中的 server 也需要重启才能重新加载配置和 Skill 内容。
 
 ### 1. 编译时治理
