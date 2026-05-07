@@ -48,3 +48,16 @@ jobs:
 
       - name: Validate skills config
         run: skills-orchestrator validate --config config/skills.yaml
+
+      - name: CLI smoke checks
+        run: |
+          skills-orchestrator --help
+          skills-orchestrator init --help
+          skills-orchestrator mcp-test --help
+          skills-orchestrator --version
+
+      - name: Build package
+        run: python -m build
+
+      - name: Check package metadata
+        run: twine check dist/*

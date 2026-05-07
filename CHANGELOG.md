@@ -5,6 +5,96 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.9] - 2026-05-07
+
+### Added
+- CI now runs package build, `twine check`, and CLI smoke checks after the Python test matrix.
+- Added `test_version_consistency` to prevent `pyproject.toml` and `skills_orchestrator.__version__` from drifting again.
+
+### Changed
+- Updated README runtime model documentation: `AGENTS.md` is bootstrap guidance, MCP is runtime skill loading, and Pipeline is runtime workflow orchestration.
+- Reworked README roadmap from stale v1.x milestones to the current v2.x stabilization and runtime roadmap.
+- Filled the missing v2.0.1-v2.0.8 release notes in this changelog.
+
+### Fixed
+- Closed the remaining release-engineering gap where reports and package versions were current but CHANGELOG/README/CI protection lagged behind.
+
+## [2.0.8] - 2026-05-07
+
+### Fixed
+- Aligned release bookkeeping after v2.0.7 and backfilled the v2.0.7 test report commit.
+- Kept package metadata, CLI version output, GitHub release, and PyPI publication aligned.
+
+## [2.0.7] - 2026-05-07
+
+### Security
+- Added regression tests for malicious skill IDs in Parser and sync targets.
+- Restored safe Unicode/Chinese skill IDs while continuing to reject path separators, dot segments, and unsafe punctuation.
+- Added regression coverage for arbitrary `skill_dirs` environment-variable rejection and `SKILLS_ROOT` allow-list behavior.
+
+### Fixed
+- Aligned `pyproject.toml` and `skills_orchestrator.__version__`.
+- Added Pipeline validation for unreachable steps so disconnected multi-step pipelines are reported instead of silently completing after the first step.
+- Normalized YAML scalar `next: step_id` to `next: [step_id]`.
+
+## [2.0.6] - 2026-05-07
+
+### Security
+- Patched path traversal via malicious `skill_id` in Hermes, OpenClaw, and Cursor sync targets.
+- Restricted `skill_dirs` environment variable expansion to `SKILLS_ROOT`.
+- Tightened explicit `skills[].path` environment variable checks.
+
+### Known Follow-Up
+- Shipped with package metadata at 2.0.6 while CLI `--version` still reported 2.0.5; fixed in v2.0.7.
+- Security tests for this patch were added in v2.0.7.
+
+## [2.0.5] - 2026-05-07
+
+### Security
+- Hardened MCP and Pipeline path handling for `skill_id`, `pipeline_id`, `run_id`, and `.latest` references.
+- Added MCP tool argument shape validation and numeric bounds for `top_k` / `max_combos`.
+- Tightened parser path resolution for explicit `skill.path` and `SKILLS_ROOT`.
+
+### Changed
+- Replaced recursive Pipeline auto-skip with an iterative loop for deep pipelines.
+- Added keyword search token caching for faster repeated/high-volume searches.
+- Added Windows console compatibility for GBK terminals and explicit UTF-8 subprocess decoding.
+
+## [2.0.4] - 2026-05-05
+
+### Security
+- Hardened GitHub import downloads with size, UTF-8, empty-content, and malformed-frontmatter checks.
+- Preserved compatibility for Markdown without frontmatter when metadata can be inferred.
+
+### Fixed
+- Improved base inheritance cycle diagnostics with the full cycle chain.
+- Added regression coverage for sync generated-overwrite behavior.
+
+## [2.0.3] - 2026-05-04
+
+### Added
+- Added high-frequency CLI smoke coverage for main user-facing commands.
+
+### Changed
+- Strengthened release validation with build, twine check, and CLI version checks.
+
+## [2.0.2] - 2026-05-04
+
+### Added
+- Added mocked GitHub import command tests for blob/raw URL conversion, allow-listing, network errors, invalid markdown, and traversal cases.
+- Added independent release test report indexing.
+
+### Fixed
+- Split migrated init/import command implementations out of `main.py` registration paths.
+- Ensured packaged `tag_categories.yaml` is read through `importlib.resources`.
+- Made `mcp-test get_skill` return a non-zero exit for missing skills through the executor exception path.
+
+## [2.0.1] - 2026-05-04
+
+### Fixed
+- Fixed the first post-2.0.0 bugfix batch found through cross-model review and CLI validation.
+- Kept Python 3.12/3.13 CI and PyPI Trusted Publishing green.
+
 ## [2.0.0] - 2026-05-03
 
 ### Summary

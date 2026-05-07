@@ -2,7 +2,7 @@
 
 **编译时 Skill 治理工具** — 管理 AI 编码助手的行为规范，强制执行冲突检测，按需加载，流程编排。
 
-把分散在各处的 `.md` Skill 文件，编译成 Claude / Cursor / Copilot 能直接读取的 `AGENTS.md`。配合 MCP Server，让 AI 按需动态加载 Skill。通过 Pipeline 编排多个 Skill 成有序工作流，质量门禁保证每步产出。
+把分散在各处的 `.md` Skill 文件治理成可验证、可同步、可按需加载的 Skill 系统。`AGENTS.md` 负责启动引导，MCP Server 负责运行时按需加载，Pipeline 负责编排多步工作流，质量门禁保证每步产出。
 
 ```
 pip install skills-orchestrator
@@ -55,7 +55,7 @@ skills-orchestrator build --config config/skills.yaml
 # ✓ 输出: AGENTS.md
 ```
 
-把生成的 `AGENTS.md` 放到项目根目录，Claude / Cursor 会自动读取。
+把生成的 `AGENTS.md` 放到项目根目录，Claude / Cursor 会在会话启动或项目重新加载时读取。
 
 ### 验证配置
 
@@ -67,6 +67,18 @@ skills-orchestrator validate --config config/skills.yaml
 ---
 
 ## 核心功能
+
+### Runtime Model
+
+Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
+
+| 层 | 作用 | 典型入口 |
+|----|------|----------|
+| `AGENTS.md` | Bootstrap。告诉 Agent 当前项目有哪些 required / available skills，以及如何按需请求更多内容。多数 Agent 只在会话启动或项目重新加载时读取它。 | `build`, `sync agents-md` |
+| MCP Server | Runtime skill loading。对话过程中通过 `list_skills` / `search_skills` / `get_skill` 动态获取完整 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
+| Pipeline | Runtime workflow orchestration。把多个 Skill 串成有状态流程，并在每一步自动注入当前步骤 Skill。 | `pipeline start`, MCP pipeline tools |
+
+因此，修改 Skill 后通常需要重新 `build` / `sync` 并重启或刷新对应 Agent 会话；如果使用 MCP Server，运行中的 server 也需要重启才能重新加载配置和 Skill 内容。
 
 ### 1. 编译时治理
 
@@ -363,27 +375,37 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 
 ## 路线图
 
-### v1.0 — 编译时治理
+### v2.0.x — 稳定主线
 
 - [x] 编译时治理（build / validate / zone / conflict）
 - [x] Auto-Discovery from frontmatter
 - [x] 21 个生产级 Skill 内容库
-
-### v1.1 — 动态加载 & 继承
-
 - [x] MCP Server（list / search / get / suggest_combo）
 - [x] Skill Inheritance（base 字段 + 编译时校验 + 运行时合并）
 - [x] Sync 多工具同步（hermes / openclaw / agents-md / copilot）
-
-### v1.2 — 流程编排
-
 - [x] Pipeline 编排（YAML 定义 + 质量门禁 + 步骤注入 + 状态持久化）
 - [x] MCP Pipeline 工具（pipeline_start / status / advance / resume）
 - [x] init --non-interactive（从 frontmatter 自动生成配置）
 - [x] CI 增强（ruff lint + format check + 多版本矩阵）
 - [x] PyPI 正式发布
+- [x] 发布工程加固（独立测试报告、版本一致性测试、build/twine/CLI smoke）
+- [x] 安全边界加固（路径逃逸、GitHub import、MCP 参数、Windows 编码兼容）
 
-### v1.3+ — 规模化
+### v2.1.x — Runtime MCP 强化
+
+- [ ] MCP 错误响应结构兼容性收口
+- [ ] MCP server reload / restart 指引优化
+- [ ] 更细的 tool 参数 schema 与错误码
+- [ ] Pipeline 运行摘要与恢复体验增强
+
+### v2.2.x — Examples / 多 Agent 适配
+
+- [ ] 更多真实项目 examples
+- [ ] Claude / Cursor / Copilot / Hermes / OpenClaw 适配文档矩阵
+- [ ] Windows 终端与 PowerShell 使用指南
+- [ ] 发布前安全检查清单模板
+
+### Deferred — 规模化与高级能力
 
 - [ ] pgvector 语义检索（skill > 50 个时启用）
 - [ ] Skill 版本管理 & lock file
