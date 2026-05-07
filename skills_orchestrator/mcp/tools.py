@@ -1,4 +1,4 @@
-"""MCP Tool 定义 — list_skills / search_skills / get_skill / suggest_combo"""
+"""MCP Tool 定义 — list/search/get/prepare_context/pipeline tools"""
 
 from __future__ import annotations
 
@@ -105,6 +105,35 @@ TOOL_SUGGEST_COMBO = types.Tool(
     },
 )
 
+TOOL_PREPARE_CONTEXT = types.Tool(
+    name="prepare_context",
+    description=(
+        "为一个新的用户任务动态选择本轮 active skills，并返回执行指令。"
+        "适合每次任务开始或任务目标明显变化时调用，用于替换上一轮 skill 组合。"
+        "它不会依赖 AGENTS.md 热更新，而是在当前会话中通过 MCP 注入本轮所需 skill。"
+    ),
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "task": {
+                "type": "string",
+                "description": "当前用户任务描述，例如 '做安全审查'、'写发版流程'",
+            },
+            "max_skills": {
+                "type": "integer",
+                "description": "本轮最多激活几个 skill，默认 3，范围 1-8",
+                "default": 3,
+            },
+            "include_content": {
+                "type": "boolean",
+                "description": "是否直接返回 active skills 的完整内容，默认 true",
+                "default": True,
+            },
+        },
+        "required": ["task"],
+    },
+)
+
 TOOL_PIPELINE_START = types.Tool(
     name="pipeline_start",
     description=(
@@ -207,6 +236,7 @@ ALL_TOOLS = [
     TOOL_SEARCH_SKILLS,
     TOOL_GET_SKILL,
     TOOL_SUGGEST_COMBO,
+    TOOL_PREPARE_CONTEXT,
     TOOL_PIPELINE_START,
     TOOL_PIPELINE_STATUS,
     TOOL_PIPELINE_ADVANCE,
@@ -263,6 +293,7 @@ class ToolExecutor:
             "search_skills": self._search_skills,
             "get_skill": self._get_skill,
             "suggest_combo": self._suggest_combo,
+            "prepare_context": self._prepare_context,
             "pipeline_start": self._pipeline_start,
             "pipeline_status": self._pipeline_status,
             "pipeline_advance": self._pipeline_advance,
@@ -296,6 +327,13 @@ class ToolExecutor:
         if not isinstance(value, dict):
             raise ValueError(f"{key} 必须是 object")
         return value
+
+    @staticmethod
+    def _get_bool(args: dict[str, Any], key: str, default: bool = False) -> bool:
+        value = args.get(key, default)
+        if isinstance(value, bool):
+            return value
+        raise ValueError(f"{key} 必须是 boolean")
 
     # ── list_skills ───────────────────────────────────────────────
 
@@ -500,6 +538,78 @@ class ToolExecutor:
                     )
 
         return combos[:max_combos]
+
+    # ── prepare_context ──────────────────────────────────────────
+
+    def _prepare_context(self, args: dict) -> list[types.TextContent]:
+        task = self._get_string(args, "task").strip()
+        max_skills = parse_int_in_range(
+            args.get("max_skills"), "max_skills", default=3, minimum=1, maximum=8
+        )
+        include_content = self._get_bool(args, "include_content", default=True)
+
+        if not task:
+            return [types.TextContent(type="text", text="请提供 task。")]
+
+        candidates = self._searcher.search(task, self._registry.all(), top_k=max_skills)
+        if not candidates:
+            return [
+                types.TextContent(
+                    type="text",
+                    text=(
+                        f"未找到与任务「{task}」相关的 skill。\n"
+                        "本轮 active_skills 为空；请先用 list_skills 查看可用 skill，"
+                        "或补充任务描述后再次调用 prepare_context。"
+                    ),
+                )
+            ]
+
+        active_skills = [r.skill for r in candidates]
+        active_ids = [s.id for s in active_skills]
+        inactive_ids = [s.id for s in self._registry.all() if s.id not in set(active_ids)]
+
+        lines = [
+            f"# Prepared Context for Task: {task}",
+            "",
+            "## Routing Decision",
+            "",
+            f"active_skills: {', '.join(active_ids)}",
+            f"inactive_previous_skills: {', '.join(inactive_ids) if inactive_ids else '(none)'}",
+            "",
+            "## Execution Rule",
+            "",
+            "本任务只遵循 active_skills 中列出的 skill。",
+            "之前任务加载过但本次未列入 active_skills 的 skill 视为 inactive。",
+            "若历史上下文中的旧 skill 与 active_skills 冲突，以 active_skills 为准。",
+            "当用户开启一个新任务或任务目标明显变化时，必须重新调用 prepare_context。",
+            "",
+            "## Active Skills",
+            "",
+        ]
+
+        for result in candidates:
+            skill = result.skill
+            lines.append(f"- **{skill.id}** — {skill.name} ({result.score * 100:.0f}%)")
+            lines.append(f"  摘要: {skill.summary}")
+            lines.append(f"  标签: [{', '.join(skill.tags)}]")
+            lines.append(f"  命中字段: {', '.join(result.matched_fields)}")
+
+        if include_content:
+            lines.append("")
+            lines.append("## Active Skill Content")
+            for skill in active_skills:
+                content = self._registry.get_content(skill.id)
+                if content is None:
+                    continue
+                lines.append("")
+                lines.append(f"═══ Active Skill: {skill.id} — {skill.name} ═══")
+                lines.append(content)
+                lines.append("═══════════════════════════════════")
+        else:
+            lines.append("")
+            lines.append("使用 `get_skill(id)` 加载 active_skills 中任意 skill 的完整内容。")
+
+        return [types.TextContent(type="text", text="\n".join(lines))]
 
     # ── pipeline_start ────────────────────────────────────────────
 

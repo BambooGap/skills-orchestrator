@@ -75,7 +75,7 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 | 层 | 作用 | 典型入口 |
 |----|------|----------|
 | `AGENTS.md` | Bootstrap。告诉 Agent 当前项目有哪些 required / available skills，以及如何按需请求更多内容。多数 Agent 只在会话启动或项目重新加载时读取它。 | `build`, `sync agents-md` |
-| MCP Server | Runtime skill loading。对话过程中通过 `list_skills` / `search_skills` / `get_skill` 动态获取完整 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
+| MCP Server | Runtime skill loading。对话过程中通过 `prepare_context` / `search_skills` / `get_skill` 动态选择并获取本轮 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
 | Pipeline | Runtime workflow orchestration。把多个 Skill 串成有状态流程，并在每一步自动注入当前步骤 Skill。 | `pipeline start`, MCP pipeline tools |
 
 因此，修改 Skill 后通常需要重新 `build` / `sync` 并重启或刷新对应 Agent 会话；如果使用 MCP Server，运行中的 server 也需要重启才能重新加载配置和 Skill 内容。
@@ -88,7 +88,7 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 - **冲突检测**：编译时 `conflict_with` 强制报错，不会运行时才发现
 - **Auto-Discovery**：从 frontmatter 自动发现 Skill，无需手动注册
 
-### 2. MCP Server（8 个工具）
+### 2. MCP Server（9 个工具）
 
 让 Claude 在对话中按需动态加载 Skill，上下文零浪费。
 
@@ -98,10 +98,13 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 | `search_skills` | 按需求搜索相关 Skill |
 | `get_skill` | 加载完整 Skill 内容到上下文 |
 | `suggest_combo` | 根据任务描述推荐 Skill 组合 |
+| `prepare_context` | 每个新任务动态选择本轮 active skills，并可直接注入完整内容 |
 | `pipeline_start` | 启动一个工作流，注入当前步骤指导 |
 | `pipeline_status` | 查看工作流进度和当前步骤 |
 | `pipeline_advance` | 完成当前步骤，推进到下一步 |
 | `pipeline_resume` | 恢复中断的工作流 |
+
+推荐在 `AGENTS.md` 中固定写入这条规则：每次新任务开始或任务目标明显变化时，先调用 `prepare_context(task)`；本轮只遵循返回的 `active_skills`，之前任务加载过但本次未返回的 Skill 视为 inactive。
 
 启动方式：
 
@@ -327,6 +330,8 @@ skills-orchestrator import    <github-url>                # 从 GitHub 导入 Sk
 # MCP Server
 skills-orchestrator serve     --config <path>            # 启动 MCP Server
 skills-orchestrator mcp-test  <tool> <args>              # 测试 MCP 工具
+# 示例：为一个新任务动态选择本轮 skills
+skills-orchestrator mcp-test prepare_context '{"task": "做安全审查", "max_skills": 3}'
 
 # Pipeline 编排
 skills-orchestrator pipeline start    <pipeline-id>      # 启动工作流
@@ -380,7 +385,7 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - [x] 编译时治理（build / validate / zone / conflict）
 - [x] Auto-Discovery from frontmatter
 - [x] 21 个生产级 Skill 内容库
-- [x] MCP Server（list / search / get / suggest_combo）
+- [x] MCP Server（list / search / get / suggest_combo / prepare_context）
 - [x] Skill Inheritance（base 字段 + 编译时校验 + 运行时合并）
 - [x] Sync 多工具同步（hermes / openclaw / agents-md / copilot）
 - [x] Pipeline 编排（YAML 定义 + 质量门禁 + 步骤注入 + 状态持久化）

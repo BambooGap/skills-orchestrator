@@ -6,7 +6,7 @@ import pytest
 from skills_orchestrator.models import SkillMeta
 from skills_orchestrator.mcp.search import KeywordSearcher
 from skills_orchestrator.mcp.registry import SkillRegistry
-from skills_orchestrator.mcp.tools import ToolExecutor
+from skills_orchestrator.mcp.tools import ALL_TOOLS, ToolExecutor
 
 
 # ── 测试 fixtures ────────────────────────────────────────────────
@@ -230,6 +230,54 @@ class TestToolExecutor:
     def test_suggest_combo_rejects_non_numeric_max_combos(self):
         with pytest.raises(ValueError, match="max_combos"):
             self.executor.execute("suggest_combo", {"requirement": "git", "max_combos": "many"})
+
+    # prepare_context
+    def test_prepare_context_is_exposed(self):
+        assert "prepare_context" in {tool.name for tool in ALL_TOOLS}
+
+    def test_prepare_context_returns_active_skills_and_content(self):
+        results = self.executor.execute(
+            "prepare_context",
+            {"task": "需要 git 分支并行工作和提交规范", "max_skills": 2},
+        )
+        text = self._text(results)
+        assert "Prepared Context" in text
+        assert "active_skills:" in text
+        assert "git-worktrees" in text
+        assert "inactive_previous_skills:" in text
+        assert "本任务只遵循 active_skills" in text
+        assert "Active Skill Content" in text
+        assert "# Git Worktrees 工作流" in text
+
+    def test_prepare_context_can_return_summary_only(self):
+        results = self.executor.execute(
+            "prepare_context",
+            {"task": "git workflow", "max_skills": 2, "include_content": False},
+        )
+        text = self._text(results)
+        assert "active_skills:" in text
+        assert "Active Skill Content" not in text
+        assert "使用 `get_skill(id)`" in text
+
+    def test_prepare_context_empty_task(self):
+        results = self.executor.execute("prepare_context", {"task": ""})
+        text = self._text(results)
+        assert "请提供 task" in text
+
+    def test_prepare_context_rejects_non_string_task(self):
+        with pytest.raises(ValueError, match="task"):
+            self.executor.execute("prepare_context", {"task": 123})
+
+    def test_prepare_context_rejects_non_numeric_max_skills(self):
+        with pytest.raises(ValueError, match="max_skills"):
+            self.executor.execute("prepare_context", {"task": "git", "max_skills": "many"})
+
+    def test_prepare_context_rejects_non_boolean_include_content(self):
+        with pytest.raises(ValueError, match="include_content"):
+            self.executor.execute(
+                "prepare_context",
+                {"task": "git", "include_content": "yes"},
+            )
 
     def test_pipeline_id_path_traversal_rejected(self, tmp_path):
         pipelines_dir = tmp_path / "pipelines"

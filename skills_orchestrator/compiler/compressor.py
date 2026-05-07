@@ -75,8 +75,7 @@ class Compressor:
         else:
             lines.append("> 当前 Zone 无可选 skills。")
 
-        lines.append("")
-        lines.append('如需使用某个 skill，请说明"使用 [skill-name] skill"，系统将加载完整内容。')
+        lines.extend(_runtime_skill_loading_lines())
 
         return "\n".join(lines)
 
@@ -111,3 +110,21 @@ class Compressor:
             tags = ", ".join(skill.tags)
             rows.append(f"| {skill.name} | {skill.summary} | {tags} |")
         return "\n".join(rows)
+
+
+def _runtime_skill_loading_lines() -> list[str]:
+    """Runtime protocol appended to generated AGENTS.md files."""
+    return [
+        "",
+        "## Runtime Skill Loading",
+        "",
+        "> AGENTS.md 是启动引导，不会在当前会话中热更新。",
+        "> 如当前环境已配置 Skills Orchestrator MCP，每个新任务开始或任务目标明显变化时：",
+        "",
+        '1. 调用 `prepare_context({"task": "<用户任务>"})` 获取本轮 active_skills。',
+        "2. 本轮只遵循 active_skills；之前任务加载过但本次未返回的 skills 视为 inactive。",
+        '3. 如需单个完整 Skill，可调用 `get_skill({"id": "<skill-id>"})`。',
+        "4. 多步骤任务优先使用 `pipeline_start` / `pipeline_advance`。",
+        "",
+        '未配置 MCP 时，可说明"使用 [skill-name] skill"，由宿主环境加载完整内容。',
+    ]

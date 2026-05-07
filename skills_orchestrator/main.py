@@ -556,6 +556,7 @@ def mcp_test(tool_name: str, args_json: str, config: str, zone: Optional[str]):
       skills-orchestrator mcp-test search_skills '{"query": "git branch workflow"}'
       skills-orchestrator mcp-test get_skill '{"id": "karpathy-guidelines"}'
       skills-orchestrator mcp-test suggest_combo '{"requirement": "部署 Node.js 微服务"}'
+      skills-orchestrator mcp-test prepare_context '{"task": "做安全审查"}'
       skills-orchestrator mcp-test pipeline_start '{"pipeline_id": "full-dev"}'
       skills-orchestrator mcp-test list_skills '{}' -z enterprise
     """

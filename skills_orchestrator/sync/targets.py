@@ -20,6 +20,7 @@ import yaml
 
 from skills_orchestrator.models import ResolvedConfig, SkillMeta
 from skills_orchestrator.compiler.content_resolver import SkillContentResolver
+from skills_orchestrator.compiler.compressor import _runtime_skill_loading_lines
 from skills_orchestrator.compiler.policies import compute_effective_load_policy
 from skills_orchestrator.security import safe_child_path, validate_identifier, validate_skill_id
 
@@ -372,8 +373,7 @@ class AgentsMdTarget(SyncTarget):
             lines.append("")
             lines.append("\n\n".join(self._passive_parts))
 
-        lines.append("")
-        lines.append('如需使用某个 skill，请说明"使用 [skill-name] skill"，系统将加载完整内容。')
+        lines.extend(_runtime_skill_loading_lines())
 
         self.output_path.write_text("\n".join(lines), encoding="utf-8")
         return self._forced_count + self._passive_count
