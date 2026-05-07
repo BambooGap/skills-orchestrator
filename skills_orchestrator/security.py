@@ -9,6 +9,7 @@ from pathlib import Path
 
 DEFAULT_SAFE_PATH = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin"
 SAFE_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
+SAFE_SKILL_ID_RE = re.compile(r"^[\w\u4e00-\u9fff][\w\u4e00-\u9fff-]{0,127}$")
 CONSOLE_FALLBACKS = {
     "✓": "OK",
     "⚠": "!",
@@ -81,6 +82,22 @@ def validate_identifier(value: str, field_name: str = "id") -> str:
     if not SAFE_IDENTIFIER_RE.fullmatch(value):
         raise ValueError(
             f"非法 {field_name}: {value!r}。仅允许字母、数字、下划线、连字符，长度 1-64。"
+        )
+    return value
+
+
+def validate_skill_id(value: str, field_name: str = "skill_id") -> str:
+    """Validate skill IDs before registration or filesystem output.
+
+    Skill IDs are part of the user-facing skill ecosystem and may contain
+    Unicode word characters such as Chinese. They still must be a single safe
+    path segment: no slash, dot, shell punctuation, or empty values.
+    """
+    if not isinstance(value, str):
+        raise ValueError(f"非法 {field_name}: 必须是字符串")
+    if not SAFE_SKILL_ID_RE.fullmatch(value):
+        raise ValueError(
+            f"非法 {field_name}: {value!r}。仅允许字母、数字、中文、下划线、连字符，长度 1-128。"
         )
     return value
 

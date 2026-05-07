@@ -154,6 +154,26 @@ class TestPipeline:
         errors = pipeline.validate()
         assert len(errors) == 0
 
+    def test_validate_unreachable_step(self):
+        """未被 first step 链路引用的 step 应被标记，避免只执行第一步。"""
+        steps = [
+            Step(id="a", skill="s1", next=[]),
+            Step(id="b", skill="s2", next=[]),
+            Step(id="c", skill="s3", next=[]),
+        ]
+        pipeline = Pipeline(id="unreachable", name="不可达", steps=steps)
+        errors = pipeline.validate()
+        assert any("Step 'b' 不可达" in e for e in errors)
+        assert any("Step 'c' 不可达" in e for e in errors)
+
+    def test_validate_rejects_non_list_next_on_direct_model(self):
+        """直接构造模型时 next 类型错误应报清楚。"""
+        step = Step(id="a", skill="s1")
+        step.next = "b"  # type: ignore[assignment]
+        pipeline = Pipeline(id="bad-next", name="坏 next", steps=[step])
+        errors = pipeline.validate()
+        assert any("next 必须是列表" in e for e in errors)
+
 
 # ═══════════════════════════════════════════════════════════
 # Task 3: RunState
@@ -286,6 +306,24 @@ steps:
         pipeline = loader.load_string(yaml_str)
         assert pipeline.id == "test"
         assert len(pipeline.steps) == 2
+
+    def test_load_string_scalar_next_is_normalized(self):
+        from skills_orchestrator.pipeline.loader import PipelineLoader
+
+        yaml_str = """
+id: test
+name: 测试
+steps:
+  - id: a
+    skill: s1
+    next: b
+  - id: b
+    skill: s2
+"""
+        loader = PipelineLoader()
+        pipeline = loader.load_string(yaml_str)
+        assert pipeline.get_step("a").next == ["b"]
+        assert pipeline.validate() == []
 
     def test_validate_skills_missing(self):
         from skills_orchestrator.pipeline.loader import PipelineLoader

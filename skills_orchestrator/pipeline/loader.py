@@ -40,7 +40,7 @@ class PipelineLoader:
             step = Step(
                 id=step_raw["id"],
                 skill=step_raw["skill"],
-                next=step_raw.get("next", []),
+                next=self._parse_next(step_raw.get("next", []), step_raw["id"]),
                 skip_if=step_raw.get("skip_if"),
                 gate=gate,
                 on_gate_failure=step_raw.get("on_gate_failure"),  # 新增
@@ -53,6 +53,21 @@ class PipelineLoader:
             description=raw.get("description", ""),
             steps=steps,
         )
+
+    def _parse_next(self, raw_next: object, step_id: str) -> List[str]:
+        """Normalize next edges from YAML.
+
+        The documented form is `next: [step_id]`, but accepting `next: step_id`
+        prevents a common YAML authoring mistake from becoming a character-level
+        edge list.
+        """
+        if raw_next is None:
+            return []
+        if isinstance(raw_next, str):
+            return [raw_next]
+        if isinstance(raw_next, list) and all(isinstance(item, str) for item in raw_next):
+            return raw_next
+        raise ValueError(f"Step '{step_id}' 的 next 必须是字符串或字符串列表")
 
     def validate_skills(self, pipeline: Pipeline, known_skills: Set[str]) -> List[str]:
         """检查 Pipeline 引用的 skill 是否存在，返回缺失的 skill ID 列表"""

@@ -88,7 +88,16 @@ class Pipeline:
 
         # 检查 next 引用完整性
         for step in self.steps:
-            for next_id in step.next:
+            next_ids: List[str] = []
+            if not isinstance(step.next, list):
+                errors.append(f"Step '{step.id}' 的 next 必须是列表")
+            else:
+                next_ids = step.next
+
+            for next_id in next_ids:
+                if not isinstance(next_id, str):
+                    errors.append(f"Step '{step.id}' 的 next 包含非字符串引用")
+                    continue
                 if next_id not in step_ids:
                     errors.append(f"Step '{step.id}' 的 next='{next_id}' 不存在")
 
@@ -120,7 +129,7 @@ class Pipeline:
             path.add(sid)
             step = self.get_step(sid)
             if step:
-                for nid in step.next:
+                for nid in step.next if isinstance(step.next, list) else []:
                     _dfs(nid)
                 # 也遍历 on_failure 分支
                 if step.gate and step.gate.on_failure:
@@ -131,6 +140,29 @@ class Pipeline:
 
         for s in self.steps:
             _dfs(s.id)
+
+        # 可达性检测：Pipeline 从第一个 step 开始执行，未被任何边引用的
+        # 后续 step 会被静默跳过，通常是配置错误。
+        if self.first_step:
+            reachable: Set[str] = set()
+
+            def _walk(sid: str) -> None:
+                if sid in reachable or sid not in step_ids:
+                    return
+                reachable.add(sid)
+                step = self.get_step(sid)
+                if not step:
+                    return
+                for nid in step.next if isinstance(step.next, list) else []:
+                    _walk(nid)
+                if step.gate and step.gate.on_failure:
+                    _walk(step.gate.on_failure)
+                if step.on_gate_failure:
+                    _walk(step.on_gate_failure)
+
+            _walk(self.first_step.id)
+            for sid in sorted(step_ids - reachable):
+                errors.append(f"Step '{sid}' 不可达：未从 first step '{self.first_step.id}' 引用")
 
         return errors
 

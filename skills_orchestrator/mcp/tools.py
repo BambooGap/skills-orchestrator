@@ -531,6 +531,16 @@ class ToolExecutor:
         if pipeline is None:
             return [types.TextContent(type="text", text=f"找不到 Pipeline: '{pipeline_id}'")]
 
+        structure_errors = pipeline.validate()
+        if structure_errors:
+            return [
+                types.TextContent(
+                    type="text",
+                    text=f"Pipeline '{pipeline_id}' 定义无效:\n"
+                    + "\n".join(f"- {error}" for error in structure_errors),
+                )
+            ]
+
         # 校验 pipeline 引用的 skill 是否存在于 registry
         from skills_orchestrator.pipeline.loader import PipelineLoader
 

@@ -13,6 +13,7 @@ from skills_orchestrator.sync.targets import (
     OpenClawTarget,
     CopilotTarget,
     AgentsMdTarget,
+    CursorTarget,
     SyncEngine,
     get_target,
     TARGET_REGISTRY,
@@ -174,6 +175,20 @@ class TestHermesTarget:
         target = HermesTarget()
         assert target.base_dir == Path(os.path.expanduser("~/.hermes/skills"))
 
+    def test_rejects_path_traversal_skill_id(self, tmp_path):
+        target = HermesTarget(base_dir=str(tmp_path / "skills"))
+        target.prepare()
+        with pytest.raises(ValueError, match="非法 skill_id"):
+            target.write("../../../etc/pwned", "# Evil", {"name": "Evil", "summary": "s"})
+        assert not (tmp_path / "etc").exists()
+
+    def test_allows_chinese_skill_id(self, tmp_path):
+        target = HermesTarget(base_dir=str(tmp_path / "skills"))
+        target.prepare()
+        target.write("安全重构", "# 安全重构", {"name": "安全重构", "summary": "s"})
+        target.finalize()
+        assert (tmp_path / "skills" / "general" / "安全重构" / "SKILL.md").exists()
+
 
 # ── OpenClawTarget 测试 ──────────────────────────────────────────
 
@@ -249,6 +264,36 @@ summary: 这是个摘要
     def test_default_base_dir(self):
         target = OpenClawTarget()
         assert target.base_dir == Path(os.path.expanduser("~/.openclaw/workspace/skills"))
+
+    def test_rejects_path_traversal_skill_id(self, tmp_path):
+        target = OpenClawTarget(base_dir=str(tmp_path / "skills"))
+        target.prepare()
+        with pytest.raises(ValueError, match="非法 skill_id"):
+            target.write("../../../etc/pwned", "# Evil", {"name": "Evil", "summary": "s"})
+        assert not (tmp_path / "etc").exists()
+
+    def test_allows_chinese_skill_id(self, tmp_path):
+        target = OpenClawTarget(base_dir=str(tmp_path / "skills"))
+        target.prepare()
+        target.write("安全重构", "# 安全重构", {"name": "安全重构", "summary": "s"})
+        target.finalize()
+        assert (tmp_path / "skills" / "安全重构" / "SKILL.md").exists()
+
+
+class TestCursorTarget:
+    def test_rejects_path_traversal_skill_id(self, tmp_path):
+        target = CursorTarget(output_dir=str(tmp_path))
+        target.prepare()
+        with pytest.raises(ValueError, match="非法 skill_id"):
+            target.write("../../../etc/pwned", "# Evil", {"name": "Evil", "summary": "s"})
+        assert not (tmp_path / "etc").exists()
+
+    def test_allows_chinese_skill_id(self, tmp_path):
+        target = CursorTarget(output_dir=str(tmp_path))
+        target.prepare()
+        target.write("安全重构", "# 安全重构", {"name": "安全重构", "summary": "s"})
+        target.finalize()
+        assert (tmp_path / ".cursor" / "rules" / "安全重构.mdc").exists()
 
 
 # ── CopilotTarget 测试 ───────────────────────────────────────────

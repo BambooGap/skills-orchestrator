@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from skills_orchestrator.security import validate_path_within_root, validate_identifier
+from skills_orchestrator.security import validate_path_within_root, validate_skill_id
 from skills_orchestrator.models import Zone, Rule, SkillMeta, Combo, Config
 
 
@@ -95,7 +95,7 @@ class Parser:
         content = md_file.read_text(encoding="utf-8")
         meta = self._read_frontmatter(content)
 
-        skill_id = validate_identifier(meta.get("id", md_file.stem), "skill id")
+        skill_id = validate_skill_id(meta.get("id", md_file.stem), "skill id")
         name = meta.get("name", md_file.stem.replace("-", " ").title())
 
         # description 是 karpathy-skills 等外部仓库的字段名
@@ -210,7 +210,7 @@ class Parser:
             path = self._normalize_explicit_skill_path(raw["path"])
             skills.append(
                 SkillMeta(
-                    id=validate_identifier(raw["id"], "skill id"),
+                    id=validate_skill_id(raw["id"], "skill id"),
                     name=raw["name"],
                     path=path,
                     summary=raw["summary"],

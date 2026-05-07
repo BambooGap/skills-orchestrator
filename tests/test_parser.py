@@ -302,6 +302,154 @@ def test_explicit_skill_path_within_project_allowed(tmp_path):
     assert config.skills[0].path == "skills/inside.md"
 
 
+def test_skill_id_path_traversal_rejected_from_frontmatter(tmp_path):
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    skill_file = skills_dir / "evil.md"
+    skill_file.write_text(
+        "---\nid: ../../../etc/pwned\nname: Evil\nsummary: s\n---\n# Evil\n",
+        encoding="utf-8",
+    )
+
+    config_file = tmp_path / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            """
+            version: "1.0"
+            skill_dirs:
+              - skills
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="非法 skill id"):
+        Parser(str(config_file)).parse()
+
+
+def test_skill_id_path_traversal_rejected_from_explicit_skills(tmp_path):
+    skill_file = tmp_path / "skill.md"
+    skill_file.write_text("# Skill\n", encoding="utf-8")
+
+    config_file = tmp_path / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            """
+            version: "1.0"
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            skills:
+              - id: ../../../etc/pwned
+                name: Evil
+                path: skill.md
+                summary: s
+                tags: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="非法 skill id"):
+        Parser(str(config_file)).parse()
+
+
+def test_chinese_skill_id_allowed_from_frontmatter(tmp_path):
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    skill_file = skills_dir / "安全重构.md"
+    skill_file.write_text(
+        "---\nid: 安全重构\nname: 安全重构\nsummary: s\n---\n# 安全重构\n",
+        encoding="utf-8",
+    )
+
+    config_file = tmp_path / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            """
+            version: "1.0"
+            skill_dirs:
+              - skills
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    config = Parser(str(config_file)).parse()
+    assert config.skills[0].id == "安全重构"
+
+
+def test_skill_dirs_arbitrary_env_var_rejected(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECRET_FOR_SO_TEST", "leak-value")
+    config_file = tmp_path / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            """
+            version: "1.0"
+            skill_dirs:
+              - ${SECRET_FOR_SO_TEST}/skills
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="SKILLS_ROOT"):
+        Parser(str(config_file)).parse()
+
+
+def test_skill_dirs_skills_root_allowed(tmp_path, monkeypatch):
+    skills_root = tmp_path / "external"
+    skills_dir = skills_root / "skills"
+    skills_dir.mkdir(parents=True)
+    (skills_dir / "safe.md").write_text(
+        "---\nid: safe\nname: Safe\nsummary: s\n---\n# Safe\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("SKILLS_ROOT", str(skills_root))
+
+    config_file = tmp_path / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            """
+            version: "1.0"
+            skill_dirs:
+              - ${SKILLS_ROOT}/skills
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    config = Parser(str(config_file)).parse()
+    assert config.skills[0].id == "safe"
+
+
 def test_skill_dirs_common_root_too_broad_rejected(tmp_path):
     config_file = tmp_path / "skills.yaml"
     config_file.write_text(

@@ -9,6 +9,7 @@ from skills_orchestrator.security import (
     safe_child_path,
     subprocess_text_kwargs,
     validate_identifier,
+    validate_skill_id,
     validate_path_within_root,
 )
 
@@ -27,6 +28,17 @@ def test_validate_identifier_rejects_slashes_and_empty_values():
     for value in ("", "a/b", "/absolute", "a.b"):
         with pytest.raises(ValueError, match="非法"):
             validate_identifier(value, "id")
+
+
+def test_validate_skill_id_allows_chinese_ids():
+    assert validate_skill_id("安全重构") == "安全重构"
+    assert validate_skill_id("code-style_测试") == "code-style_测试"
+
+
+def test_validate_skill_id_rejects_path_traversal_and_punctuation():
+    for value in ("../evil", "a/b", "/absolute", "a.b", "bad:name"):
+        with pytest.raises(ValueError, match="非法"):
+            validate_skill_id(value)
 
 
 def test_validate_path_within_root_rejects_escape(tmp_path):
