@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Added a composite GitHub Action for running `skills-orchestrator check` in CI and optionally uploading SARIF to GitHub Code Scanning.
+- Added GitHub Action usage documentation.
+- Added Dependabot coverage for GitHub Actions and Python dependencies.
+
+### Changed
+- Hardened CI with a local action smoke test.
+- Hardened PyPI publishing with explicit `contents: read` permission and release tag/package version verification.
+- Hardened MCP debug logging so tool argument values are not logged.
+
 ## [2.2.0] - 2026-06-19
 
 ### Added

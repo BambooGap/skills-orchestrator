@@ -63,6 +63,26 @@ skills-orchestrator check --config config/skills.yaml --format json
 skills-orchestrator check --config config/skills.yaml --format sarif
 ```
 
+也可以直接在 GitHub Actions 中运行：
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: BambooGap/skills-orchestrator@v2.2.0
+        with:
+          config: config/skills.yaml
+          upload-sarif: true
+```
+
+更多输入参数见 [GitHub Action 文档](docs/github-action.md)。
+
 ### 编译生成 AGENTS.md
 
 ```bash

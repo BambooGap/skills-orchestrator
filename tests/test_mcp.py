@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from skills_orchestrator.models import SkillMeta
+from skills_orchestrator.mcp.server import _argument_keys
 from skills_orchestrator.mcp.search import KeywordSearcher
 from skills_orchestrator.mcp.registry import SkillRegistry
 from skills_orchestrator.mcp.tools import ALL_TOOLS, ToolExecutor
@@ -149,6 +150,11 @@ class TestToolExecutor:
 
     def _text(self, results) -> str:
         return "\n".join(r.text for r in results)
+
+    def test_argument_keys_excludes_values_for_safe_logging(self):
+        keys = _argument_keys({"token": "secret", "task": "write docs"})
+        assert keys == ["task", "token"]
+        assert "secret" not in repr(keys)
 
     # list_skills
     def test_execute_rejects_non_object_arguments(self):

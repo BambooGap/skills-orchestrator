@@ -268,6 +268,28 @@ def test_check_fail_on_warning_exits_for_warning(workspace):
     assert "SO004" in result.output
 
 
+def test_pipeline_list_runs_text_and_json(workspace, monkeypatch):
+    from skills_orchestrator.pipeline.models import RunState
+    from skills_orchestrator.pipeline.store import RunStateStore
+
+    monkeypatch.setenv("HOME", str(workspace["root"]))
+    state = RunState(pipeline_id="test-pipeline", run_id="run1")
+    state.advance_to("step1")
+    RunStateStore().save(state)
+
+    runner = CliRunner()
+    text_result = runner.invoke(cli, ["pipeline", "list-runs"])
+    assert text_result.exit_code == 0
+    assert "test-pipeline" in text_result.output
+    assert "run1" in text_result.output
+
+    json_result = runner.invoke(cli, ["pipeline", "list-runs", "test-pipeline", "--json"])
+    assert json_result.exit_code == 0
+    payload = json.loads(json_result.output)
+    assert payload["runs"][0]["pipeline_id"] == "test-pipeline"
+    assert payload["runs"][0]["run_id"] == "run1"
+
+
 def test_status_happy_path(workspace):
     runner = CliRunner()
     result = runner.invoke(cli, ["status", "--config", workspace["config"]])

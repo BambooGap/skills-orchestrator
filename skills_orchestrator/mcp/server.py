@@ -14,6 +14,12 @@ from .tools import ALL_TOOLS, ToolExecutor
 logger = logging.getLogger(__name__)
 
 
+def _argument_keys(arguments: dict | None) -> list[str]:
+    if not isinstance(arguments, dict):
+        return []
+    return sorted(str(key) for key in arguments.keys())
+
+
 def create_server(
     config_path: str, zone_id: str | None = None, pipelines_dir: str | None = None
 ) -> tuple[Server, ToolExecutor]:
@@ -37,7 +43,7 @@ def create_server(
     async def call_tool(
         name: str, arguments: dict
     ) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
-        logger.debug(f"call_tool: {name}({arguments})")
+        logger.debug("call_tool: %s(argument_keys=%s)", name, _argument_keys(arguments))
         return executor.execute(name, arguments or {})
 
     return server, executor

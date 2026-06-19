@@ -1,0 +1,108 @@
+name: Skills Orchestrator Check
+description: Check AI-agent skills and optionally upload SARIF to GitHub Code Scanning.
+
+inputs:
+  config:
+    description: Path to skills.yaml.
+    default: config/skills.yaml
+    required: false
+  zone:
+    description: Optional zone id to validate.
+    default: ""
+    required: false
+  check-lock:
+    description: Optional skills.lock.json path to check for drift.
+    default: ""
+    required: false
+  format:
+    description: Output format when upload-sarif is false.
+    default: text
+    required: false
+  fail-on:
+    description: Severity threshold that returns a non-zero exit code.
+    default: error
+    required: false
+  max-skill-bytes:
+    description: Skill file size threshold for SO005 oversized-skill diagnostics.
+    default: "20000"
+    required: false
+  upload-sarif:
+    description: "Upload SARIF to GitHub Code Scanning. Requires security-events: write."
+    default: "false"
+    required: false
+  sarif-file:
+    description: SARIF output path used when upload-sarif is true.
+    default: skills-orchestrator.sarif
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Install Skills Orchestrator
+      shell: bash
+      run: |
+        set -euo pipefail
+        python -m pip install "$GITHUB_ACTION_PATH"
+
+    - name: Run skill checks
+      id: check
+      shell: bash
+      env:
+        CONFIG: ${{ inputs.config }}
+        ZONE: ${{ inputs.zone }}
+        CHECK_LOCK: ${{ inputs.check-lock }}
+        FORMAT: ${{ inputs.format }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        MAX_SKILL_BYTES: ${{ inputs.max-skill-bytes }}
+        UPLOAD_SARIF: ${{ inputs.upload-sarif }}
+        SARIF_FILE: ${{ inputs.sarif-file }}
+      run: |
+        set -euo pipefail
+
+        args=(
+          --config "$CONFIG"
+          --fail-on "$FAIL_ON"
+          --max-skill-bytes "$MAX_SKILL_BYTES"
+        )
+
+        if [ -n "$ZONE" ]; then
+          args+=(--zone "$ZONE")
+        fi
+
+        if [ -n "$CHECK_LOCK" ]; then
+          args+=(--check-lock "$CHECK_LOCK")
+        fi
+
+        if [ "$UPLOAD_SARIF" = "true" ]; then
+          case "$SARIF_FILE" in
+            ""|/*|*..*|*$'\n'*|*$'\r'*)
+              echo "Invalid sarif-file input: must be a relative path without '..' or newlines" >&2
+              exit 2
+              ;;
+          esac
+
+          sarif_root="${RUNNER_TEMP:-.}/skills-orchestrator"
+          sarif_path="$sarif_root/$SARIF_FILE"
+          mkdir -p "$(dirname "$sarif_path")"
+
+          set +e
+          skills-orchestrator check "${args[@]}" --format sarif > "$sarif_path"
+          status=$?
+          set -e
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          echo "sarif_file=$sarif_path" >> "$GITHUB_OUTPUT"
+        else
+          skills-orchestrator check "${args[@]}" --format "$FORMAT"
+          echo "exit_code=0" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Upload SARIF
+      if: ${{ inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ steps.check.outputs.sarif_file }}
+
+    - name: Fail after SARIF upload
+      if: ${{ inputs.upload-sarif == 'true' && steps.check.outputs.exit_code != '0' }}
+      shell: bash
+      run: exit "${{ steps.check.outputs.exit_code }}"

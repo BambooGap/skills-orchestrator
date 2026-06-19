@@ -896,6 +896,55 @@ def pipeline_status(
         raise SystemExit(1)
 
 
+@pipeline.command("list-runs")
+@click.argument("pipeline_id", required=False, default=None)
+@click.option("--limit", default=20, show_default=True, help="最多显示多少条运行记录")
+@click.option("--json", "as_json", is_flag=True, help="输出 JSON，便于 Agent/CI 读取")
+def pipeline_list_runs(pipeline_id: Optional[str], limit: int, as_json: bool):
+    """列出 Pipeline 运行记录
+
+    \b
+    示例：
+      skills-orchestrator pipeline list-runs
+      skills-orchestrator pipeline list-runs quick-fix
+      skills-orchestrator pipeline list-runs --json
+    """
+    from skills_orchestrator.pipeline.store import RunStateStore
+
+    try:
+        store = RunStateStore()
+        rows = store.list_runs(pipeline_id)
+        rows.sort(key=lambda row: row.get("updated_at") or "", reverse=True)
+        rows = rows[: max(limit, 0)]
+
+        if as_json:
+            click.echo(json.dumps({"runs": rows}, ensure_ascii=False, indent=2))
+            return
+
+        if not rows:
+            if pipeline_id:
+                click.echo(_warn(f"没有找到 Pipeline '{pipeline_id}' 的运行记录。"))
+            else:
+                click.echo(_warn("没有找到 Pipeline 运行记录。"))
+            return
+
+        click.echo(f"\nPipeline 运行记录（{len(rows)} 条）：\n")
+        for row in rows:
+            current_step = row.get("current_step") or "(已完成)"
+            click.echo(
+                console_safe_text(
+                    f"  {click.style(row['pipeline_id'], bold=True)} "
+                    f"run={row['run_id']} status={row['status']} current={current_step}"
+                )
+            )
+            click.echo(f"    started: {row['started_at']}")
+            click.echo(f"    updated: {row['updated_at']}")
+            click.echo("")
+    except Exception as e:
+        click.echo(_err(str(e)), err=True)
+        raise SystemExit(1)
+
+
 @pipeline.command("advance")
 @click.argument("pipeline_id")
 @click.option("--run-id", "-r", default=None, help="运行 ID（不传则自动使用最近一次进行中的运行）")
