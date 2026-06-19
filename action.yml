@@ -42,7 +42,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        python -m pip install "$GITHUB_ACTION_PATH"
+        python -m pip install -c "$GITHUB_ACTION_PATH/constraints.txt" "$GITHUB_ACTION_PATH"
 
     - name: Run skill checks
       id: check
@@ -98,7 +98,7 @@ runs:
 
     - name: Upload SARIF
       if: ${{ inputs.upload-sarif == 'true' }}
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
       with:
         sarif_file: ${{ steps.check.outputs.sarif_file }}
 

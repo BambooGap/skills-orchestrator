@@ -23,6 +23,8 @@ from .models import Manifest
 from .cli.init_cmd import init as _init_cmd
 from .cli.import_cmd import import_skill as _import_cmd
 from .cli.check_cmd import check as _check_cmd
+from .cli.manifest_cmd import manifest as _manifest_cmd
+from .cli.policy_cmd import policy as _policy_cmd
 from .checker import fatal_error_report, run_check
 from .diagnostic import DiagnosticSeverity
 from .formatters import format_diagnostics_json, format_diagnostics_sarif
@@ -128,6 +130,10 @@ cli.add_command(_import_cmd)
 
 # Register structured check command from cli/check_cmd.py
 cli.add_command(_check_cmd)
+
+# Register instruction inventory and policy export commands
+cli.add_command(_manifest_cmd)
+cli.add_command(_policy_cmd)
 
 
 @cli.command()

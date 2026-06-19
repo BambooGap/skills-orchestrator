@@ -4,8 +4,30 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    labels:
+      - dependencies
+      - security
+    commit-message:
+      prefix: deps
+      include: scope
 
   - package-ecosystem: pip
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-runtime:
+        patterns:
+          - "*"
+    labels:
+      - dependencies
+      - security
+    commit-message:
+      prefix: deps
+      include: scope

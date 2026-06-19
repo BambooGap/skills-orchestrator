@@ -1,6 +1,7 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v2.2.0 shipped on GitHub and PyPI.
+> Status: v2.3.0 in progress: GitHub Action, SARIF, instruction manifest, policy export, and
+> release hardening are implemented in `main`.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
 > by existing CI and supply-chain tooling.
@@ -79,6 +80,8 @@ Initial rules:
 
 ## Phase 1: GitHub Action and Code Scanning
 
+Status: implemented for v2.3.0.
+
 Goal: let another project adopt the checker in one CI block.
 
 Deliver:
@@ -101,18 +104,22 @@ Default:
 
 ## Phase 2: Instruction Manifest
 
+Status: implemented for v2.3.0.
+
 Goal: make instruction inventories visible to external supply-chain tools.
 
 Deliver:
 
 - Keep `skills.lock.json` as the local reproducibility lock.
-- Add `manifest --format json` for the native instruction manifest.
-- Add `manifest --format cyclonedx` as experimental output.
+- `manifest --format json` for the native instruction manifest.
+- `manifest --format cyclonedx` as experimental output.
 - Defer SPDX until field mapping and consumer behavior are tested.
 
 Do not claim GitHub Dependency Graph or Dependency-Track support until tested with real output.
 
 ## Phase 3: Policy Export
+
+Status: implemented for v2.3.0.
 
 Goal: connect to policy-as-code without replacing the current resolver.
 
@@ -128,12 +135,17 @@ system; OPA should be a proof and integration surface, not a second source of tr
 
 ## Phase 4: Distribution Hardening
 
+Status: partially implemented for v2.3.0; Docker image and signed SBOM remain future work.
+
 Goal: remove adoption friction for enterprise and CI users.
 
 Deliver:
 
 - Docker image for the CLI.
 - GitHub Action pinned to released versions.
+- Third-party workflow actions pinned to commit SHAs.
+- `constraints.txt` for the action/CI/publish runtime dependency set.
+- GitHub artifact attestation for wheel and sdist during publishing.
 - Release checklist that verifies GitHub Release, PyPI, wheel, sdist, CLI version, and package
   metadata.
 - Optional signed provenance only after the release flow is stable.

@@ -13,19 +13,22 @@ jobs:
     permissions:
       contents: read
       id-token: write  # OIDC trusted publishing，不需要存 PYPI_TOKEN
+      attestations: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install build tools
-        run: pip install build twine
+        run: pip install -c constraints.txt build twine
 
-      - name: Verify release tag matches package version
+      - name: Verify release tag and changelog match package version
         run: |
           VERSION="$(python - <<'PY'
           import tomllib
@@ -34,18 +37,43 @@ jobs:
               print(tomllib.load(f)["project"]["version"])
           PY
           )"
+          test "$(git describe --exact-match --tags "$GITHUB_SHA")" = "${GITHUB_REF_NAME}"
           test "v${VERSION}" = "${GITHUB_REF_NAME}"
+          grep -F "## [${VERSION}]" CHANGELOG.md
 
       - name: Run tests before publish
         run: |
-          pip install -e ".[dev]"
+          pip install -c constraints.txt -e ".[dev]"
           pytest tests/ -v --tb=short
 
       - name: Build package
-        run: python -m build
+        run: PIP_CONSTRAINT=constraints.txt python -m build
 
       - name: Check package metadata
         run: twine check dist/*
 
+      - name: Verify dist artifact names
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tomllib
+
+          with open("pyproject.toml", "rb") as f:
+              version = tomllib.load(f)["project"]["version"]
+          expected = {
+              f"skills_orchestrator-{version}-py3-none-any.whl",
+              f"skills_orchestrator-{version}.tar.gz",
+          }
+          actual = {path.name for path in Path("dist").iterdir()}
+          missing = expected - actual
+          if missing:
+              raise SystemExit(f"missing expected dist artifacts: {sorted(missing)}")
+          PY
+
+      - name: Generate artifact attestation
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4
+        with:
+          subject-path: "dist/*"
+
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1

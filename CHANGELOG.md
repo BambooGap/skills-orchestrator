@@ -7,15 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-06-20
+
 ### Added
 - Added a composite GitHub Action for running `skills-orchestrator check` in CI and optionally uploading SARIF to GitHub Code Scanning.
 - Added GitHub Action usage documentation.
 - Added Dependabot coverage for GitHub Actions and Python dependencies.
+- Added `skills-orchestrator manifest --format json|cyclonedx` for native instruction inventory and experimental CycloneDX export.
+- Added `skills-orchestrator policy export --format opa-input|rego-test` for OPA/Rego proof exports without adding an OPA runtime backend.
+- Added runtime dependency constraints for the composite action, CI, and publish workflow.
+- Added a release artifact attestation step for wheel and sdist provenance.
+- Added a CI guard that checks third-party GitHub Actions are pinned to full commit SHAs.
 
 ### Changed
 - Hardened CI with a local action smoke test.
 - Hardened PyPI publishing with explicit `contents: read` permission and release tag/package version verification.
 - Hardened MCP debug logging so tool argument values are not logged.
+- Pinned third-party GitHub Actions in CI, publish, and the composite action to full commit SHAs.
+- Bumped the next release version to `2.3.0` because the GitHub Action and export surfaces are new release content after the `v2.2.0` tag.
 
 ## [2.2.0] - 2026-06-19
 

@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.2.0
+      - uses: BambooGap/skills-orchestrator@v2.3.0
         with:
           config: config/skills.yaml
 ```
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.2.0
+      - uses: BambooGap/skills-orchestrator@v2.3.0
         with:
           config: config/skills.yaml
           upload-sarif: true
@@ -53,6 +53,9 @@ jobs:
 
 Private and internal repositories may require GitHub Code Security to be enabled before SARIF
 uploads are accepted.
+
+The action installs the local action source with `constraints.txt`, so the CLI runtime dependency
+set is constrained for a given action revision. It is not a hash-locked install yet.
 
 ## Inputs
 

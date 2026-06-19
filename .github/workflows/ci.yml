@@ -13,15 +13,15 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -c constraints.txt -e ".[dev]"
 
       - name: Ruff lint
         run: ruff check skills_orchestrator/ tests/
@@ -36,15 +36,15 @@ jobs:
         python-version: ["3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -c constraints.txt -e ".[dev]"
 
       - name: Run tests
         run: pytest tests/ -v --tb=short
@@ -57,6 +57,10 @@ jobs:
           skills-orchestrator --help
           skills-orchestrator init --help
           skills-orchestrator mcp-test --help
+          skills-orchestrator manifest --config config/skills.yaml --format json | python -m json.tool >/dev/null
+          skills-orchestrator manifest --config config/skills.yaml --format cyclonedx | python -m json.tool >/dev/null
+          skills-orchestrator policy export --config config/skills.yaml --format opa-input | python -m json.tool >/dev/null
+          skills-orchestrator policy export --config config/skills.yaml --format rego-test >/dev/null
           skills-orchestrator --version
 
       - name: Build package
@@ -68,7 +72,7 @@ jobs:
   action-smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Run local action
         uses: ./
@@ -86,3 +90,11 @@ jobs:
         run: |
           skills-orchestrator check --config config/skills.yaml --format sarif > skills-orchestrator.sarif
           python -m json.tool skills-orchestrator.sarif >/dev/null
+
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Check third-party action pinning
+        run: python scripts/check_action_pins.py
