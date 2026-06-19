@@ -1,63 +1,92 @@
-# Skills Orchestrator Roadmap: Agent Instruction Supply Chain
+# Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Version: 2026-06 final execution plan
+> Status: v2.2.0 shipped on GitHub and PyPI.
 >
-> Goal: evolve Skills Orchestrator from a compile-time skill governance tool into a practical
-> Agent Instruction Supply Chain utility, without replacing existing Linux Foundation or CNCF
-> projects.
+> Product direction: make agent instructions checkable, reproducible, routable, and consumable
+> by existing CI and supply-chain tooling.
 
-## Positioning
+## Product Description
 
-Skills Orchestrator should remain a glue layer. It should not define a competing skill format,
-policy runtime, SBOM standard, or agent protocol.
+Short description:
 
-The durable product role is:
+> Skills Orchestrator is a SkillOps CLI for governing AI-agent instructions across projects,
+> CI, and coding-agent runtimes.
 
-> Govern agent instructions by checking provenance, conflicts, policy, routing, and distribution
-> across coding-agent surfaces.
+Long description:
 
-The practical entry point remains:
+> Skills Orchestrator turns scattered Markdown skills into a governed instruction system. It
+> checks metadata, duplicate ids, conflict declarations, lock drift, and oversized instructions;
+> emits text, JSON, and SARIF reports; builds AGENTS.md bootstrap files; serves skills through
+> MCP for runtime routing; and coordinates multi-step workflows through pipelines.
 
-```bash
-skills-orchestrator check .
-```
+The project should not position itself as a new agent standard, a replacement policy engine, or a
+new SBOM format. It should remain the glue layer that makes agent instructions visible to tools
+that teams already use.
 
-Everything else should make that command easier to trust, automate, or integrate.
+## Capability Boundary
 
-## Phase 1: Diagnostics And Machine-Readable Output
+Own:
 
-Scope:
+- Static instruction diagnostics.
+- Runtime skill routing through MCP.
+- Reproducible instruction locks.
+- Machine-readable reports for CI.
+- Distribution to coding-agent surfaces such as AGENTS.md, Cursor, Copilot, Hermes, and OpenClaw.
 
-- Add a dedicated `check` command.
-- Introduce a shared `Diagnostic` model for check findings.
-- Add `--format text|json|sarif`.
-- Keep existing `validate` and `build` text behavior compatible.
-- Treat SARIF as a GitHub Code Scanning projection of diagnostics, not the internal source of
-  truth.
+Do not own:
 
-Initial rule set:
+- A universal skill specification.
+- A competing policy runtime.
+- A replacement for CycloneDX, SPDX, OPA, SARIF, or GitHub Code Scanning.
+- Claims of security-scanner completeness before the rule model is mature.
+
+## Spider-Web Strategy
+
+The durable market path is to connect Skills Orchestrator to established ecosystem surfaces:
+
+| Surface | Role | Practical connection |
+| --- | --- | --- |
+| GitHub Code Scanning | Developer-facing trust channel | SARIF output from `skills-orchestrator check` |
+| GitHub Actions | Low-friction adoption | One-step CI action with optional SARIF upload |
+| PyPI | Python CLI distribution | Trusted Publishing from GitHub Release |
+| CycloneDX / SPDX | Supply-chain vocabulary | Experimental instruction manifest export |
+| OPA / Rego | Policy-as-code vocabulary | Export inputs/tests, not a second runtime backend |
+| OpenSSF / LF AI & Data / CNCF | Community and enterprise narrative | Evidence-backed article and integration examples |
+
+## Phase 0: Shipped in v2.2.0
+
+Delivered:
+
+- `skills-orchestrator check`.
+- Shared diagnostic model.
+- `--format text|json|sarif`.
+- `validate --format json|sarif`.
+- Rule docs under `docs/rules/`.
+- GitHub Release v2.2.0.
+- PyPI v2.2.0 through Trusted Publishing.
+
+Initial rules:
 
 | Rule | Name | Severity | Notes |
 | --- | --- | --- | --- |
-| SO001 | missing-description | warning | Missing `summary` / official `description`. |
-| SO002 | duplicate-skill-id | warning | Warning first because parser currently keeps first-seen ids. |
+| SO000 | fatal-error | error | Keeps JSON/SARIF valid when parsing fails. |
+| SO001 | missing-description | warning | Missing `summary` or official `description`. |
+| SO002 | duplicate-skill-id | warning | Parser keeps the first occurrence today. |
 | SO003 | unresolved-conflict | error | Resolver cannot decide a declared conflict. |
-| SO004 | asymmetric-conflict-declaration | warning | One-way conflicts are valid today, but weaker for auditability. |
-| SO005 | oversized-skill | info | Flags large skill files before they become context-heavy. |
-| SO007 | lock-drift | warning | Existing lock differs from current resolved state. |
+| SO004 | asymmetric-conflict-declaration | warning | One-way conflicts remain valid but weaker for audit. |
+| SO005 | oversized-skill | info | Large skill file deserves review before runtime injection. |
+| SO007 | lock-drift | warning | Current resolved skills differ from lock. |
 
-Deferred:
+## Phase 1: GitHub Action and Code Scanning
 
-- Unsafe instruction pattern detection. There is no stable public standard yet, so this should
-  not be claimed as an authoritative security rule.
+Goal: let another project adopt the checker in one CI block.
 
-## Phase 2: GitHub Action And Code Scanning
+Deliver:
 
-Scope:
-
-- Publish a GitHub Action after Phase 1 output formats are stable.
-- The action should support optional SARIF upload through `upload-sarif: true`.
-- README must show required permissions explicitly:
+- Composite GitHub Action.
+- `upload-sarif: true|false` option.
+- README examples for normal CI and Code Scanning.
+- Permission documentation:
 
 ```yaml
 permissions:
@@ -65,61 +94,78 @@ permissions:
   security-events: write
 ```
 
-Default behavior:
+Default:
 
-- `upload-sarif: false` by default to avoid hidden permission failures.
-- Documentation should present a complete Code Scanning example using `upload-sarif: true`.
+- Keep `upload-sarif` explicit. Hidden upload attempts create confusing permission failures.
+- Provide a complete one-step example for teams that do want Code Scanning.
 
-Implementation note:
+## Phase 2: Instruction Manifest
 
-- Start with a composite action that installs the PyPI package.
-- Docker action can follow later for stricter enterprise/offline distribution.
+Goal: make instruction inventories visible to external supply-chain tools.
 
-## Phase 3: Instruction Manifest
+Deliver:
 
-Scope:
+- Keep `skills.lock.json` as the local reproducibility lock.
+- Add `manifest --format json` for the native instruction manifest.
+- Add `manifest --format cyclonedx` as experimental output.
+- Defer SPDX until field mapping and consumer behavior are tested.
 
-- Keep `skills.lock.json` as the project-local reproducibility lock.
-- Add `manifest --format json` for a native instruction manifest.
-- Add `manifest --format cyclonedx` as experimental external-tooling output.
+Do not claim GitHub Dependency Graph or Dependency-Track support until tested with real output.
 
-Do not claim GitHub Dependency Graph support unless tested.
+## Phase 3: Policy Export
 
-CycloneDX is the first external format because its BOM model is more flexible for non-code
-assets. SPDX can follow once field mapping is proven.
+Goal: connect to policy-as-code without replacing the current resolver.
 
-## Phase 4: OPA/Rego Proof, Not Runtime Replacement
+Deliver:
 
-Scope:
+- `policy export --format opa-input`.
+- `policy export --format rego-test`.
+- Examples proving `conflict_with`, `priority`, `load_policy`, and `zones` can be expressed as
+  policy fixtures.
 
-- Add `policy export --format opa-input`.
-- Add `policy export --format rego-test`.
-- Do not add OPA as a runtime decision backend.
+Do not add OPA as a runtime backend yet. The existing resolver is the authoritative decision
+system; OPA should be a proof and integration surface, not a second source of truth.
 
-Reason:
+## Phase 4: Distribution Hardening
 
-The current `conflict_with + priority + load_policy + zones` model is already the authoritative
-decision system. OPA integration should prove that these decisions can be expressed as
-policy-as-code, not create a second source of truth.
+Goal: remove adoption friction for enterprise and CI users.
+
+Deliver:
+
+- Docker image for the CLI.
+- GitHub Action pinned to released versions.
+- Release checklist that verifies GitHub Release, PyPI, wheel, sdist, CLI version, and package
+  metadata.
+- Optional signed provenance only after the release flow is stable.
+
+Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the next bottleneck;
+distribution and CI integration are.
 
 ## Phase 5: Community Narrative
 
-Write externally only after the tool has a working integration path:
+Write publicly only after the GitHub Action and SARIF path are live.
 
-- `check`
-- JSON/SARIF
-- GitHub Action
-
-Suggested title:
+Suggested article title:
 
 > Agent Instructions Need a Supply Chain
 
-The article should include real output from this repository rather than only conceptual framing.
+The article should lead with concrete output:
 
-## Current Release Constraint
+- A 21-skill repository check.
+- A SARIF report in GitHub Code Scanning.
+- A lock-drift example.
+- Why asymmetric conflicts are warnings, not errors.
+- How the project complements OpenSSF / LF AI & Data / CNCF surfaces instead of replacing them.
 
-Local implementation, tests, and commits can be completed in this workspace.
+## Release Note
 
-GitHub push, GitHub Release creation, and PyPI release require valid GitHub authentication. At
-the time this roadmap was written, `gh auth status` reported invalid local tokens for the
-configured GitHub accounts, so remote release operations are blocked until re-authentication.
+PyPI publication is automated by `.github/workflows/publish.yml`.
+
+Publishing flow:
+
+1. Create a GitHub Release.
+2. The `release.published` workflow runs tests and builds the package.
+3. `pypa/gh-action-pypi-publish` publishes through PyPI Trusted Publishing using OIDC.
+
+This means maintainers may not need to log in to PyPI or keep a PyPI token locally, but the PyPI
+project must keep its Trusted Publisher configuration aligned with the GitHub repository.
