@@ -1,3 +1,3 @@
-"""Skills Orchestrator - 编译时治理工具"""
+"""Skills Orchestrator - Agent Skills SkillOps 工具"""
 
-__version__ = "2.1.1"
+__version__ = "2.2.0"

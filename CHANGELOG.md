@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-06-19
+
+### Added
+- Added `skills-orchestrator check` for structured skill diagnostics.
+- Added diagnostic rules for missing descriptions, duplicate skill ids, unresolved conflicts, asymmetric conflict declarations, oversized skills, and lock drift.
+- Added JSON and SARIF output for `check` and structured `validate --format json|sarif` usage.
+- Added rule documentation under `docs/rules/` for GitHub Code Scanning help links.
+- Added the Agent Instruction Supply Chain roadmap under `docs/instruction-supply-chain-roadmap.md`.
+
+### Changed
+- Repositioned README around SkillOps, static diagnostics, and machine-readable CI output.
+- Kept existing `validate` text output and resolver behavior compatible by default.
+
 ## [2.1.1] - 2026-05-07
 
 ### Fixed

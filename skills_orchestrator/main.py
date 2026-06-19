@@ -22,6 +22,10 @@ from .sync.targets import get_target, SyncEngine, TARGET_REGISTRY
 from .models import Manifest
 from .cli.init_cmd import init as _init_cmd
 from .cli.import_cmd import import_skill as _import_cmd
+from .cli.check_cmd import check as _check_cmd
+from .checker import fatal_error_report, run_check
+from .diagnostic import DiagnosticSeverity
+from .formatters import format_diagnostics_json, format_diagnostics_sarif
 
 
 # ─────────────────────────── helpers ────────────────────────────
@@ -122,6 +126,9 @@ cli.add_command(_init_cmd, "init")
 # Register migrated import command from cli/import_cmd.py
 cli.add_command(_import_cmd)
 
+# Register structured check command from cli/check_cmd.py
+cli.add_command(_check_cmd)
+
 
 @cli.command()
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
@@ -184,9 +191,29 @@ def build(config: str, output: str, zone: Optional[str], lock: bool):
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则使用 default zone")
 @click.option("--check-lock", default=None, help="检查 skills.lock.json 是否过期")
-def validate(config: str, zone: Optional[str], check_lock: Optional[str]):
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json", "sarif"]),
+    default="text",
+    show_default=True,
+    help="输出格式；text 保持原有行为",
+)
+def validate(config: str, zone: Optional[str], check_lock: Optional[str], output_format: str):
     """验证配置合法性（不生成文件）"""
     try:
+        if output_format != "text":
+            report = run_check(config, zone_id=zone, check_lock=check_lock)
+            if output_format == "json":
+                click.echo(console_safe_text(format_diagnostics_json(report)), nl=False)
+            else:
+                click.echo(console_safe_text(format_diagnostics_sarif(report)), nl=False)
+            if any(d.severity == DiagnosticSeverity.ERROR for d in report.diagnostics):
+                raise SystemExit(1)
+            if check_lock and any(d.rule_id == "SO007" for d in report.diagnostics):
+                raise SystemExit(1)
+            return
+
         parser = Parser(config)
         cfg = parser.parse()
 
@@ -248,6 +275,13 @@ def validate(config: str, zone: Optional[str], check_lock: Optional[str]):
                     click.echo(_ok("Lock 校验通过: 所有 skill 与 lock 一致"))
 
     except Exception as e:
+        if output_format != "text":
+            report = fatal_error_report(str(e), config_path=config)
+            if output_format == "json":
+                click.echo(console_safe_text(format_diagnostics_json(report)), nl=False)
+            else:
+                click.echo(console_safe_text(format_diagnostics_sarif(report)), nl=False)
+            raise SystemExit(1)
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)
 

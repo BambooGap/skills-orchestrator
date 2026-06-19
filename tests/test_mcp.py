@@ -302,7 +302,7 @@ class TestToolExecutor:
             encoding="utf-8",
         )
         cfg = tmp_path / "skills.yaml"
-        cfg.write_text(f"skill_dirs:\n  - skills\nzones: []\n", encoding="utf-8")
+        cfg.write_text("skill_dirs:\n  - skills\nzones: []\n", encoding="utf-8")
 
         from skills_orchestrator.mcp.registry import SkillRegistry
         from skills_orchestrator.mcp.tools import ToolExecutor

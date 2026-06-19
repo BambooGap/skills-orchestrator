@@ -1,11 +1,12 @@
 # Skills Orchestrator
 
-**编译时 Skill 治理工具** — 管理 AI 编码助手的行为规范，强制执行冲突检测，按需加载，流程编排。
+**Agent Skills 的 SkillOps 工具** — 检查冲突、生成机器可读报告、按任务路由 skills，并同步到 AI 编码助手。
 
-把分散在各处的 `.md` Skill 文件治理成可验证、可同步、可按需加载的 Skill 系统。`AGENTS.md` 负责启动引导，MCP Server 负责运行时按需加载，Pipeline 负责编排多步工作流，质量门禁保证每步产出。
+把分散在各处的 `.md` Skill 文件治理成可检查、可同步、可按需加载的 Skill 系统。先用 `check` 找出 metadata、冲突声明和 lock 漂移问题，再用 `AGENTS.md` 启动引导、MCP Server 运行时按需加载、Pipeline 编排多步工作流。
 
-```
+```bash
 pip install skills-orchestrator
+skills-orchestrator check --config config/skills.yaml
 ```
 
 ---
@@ -16,6 +17,7 @@ pip install skills-orchestrator
 |------|--------------------------|----------|
 | Skill 越来越多 | 手动维护 AGENTS.md，容易遗漏或冲突 | `build` 一条命令自动生成 |
 | 不同项目用不同规范 | 到处复制粘贴，版本不同步 | Zone 机制，目录自动对应规范 |
+| CI 只能看退出码 | 终端输出无法被工具链消费 | `check --format json/sarif` 生成机器可读报告 |
 | 上下文窗口有限 | 所有 Skill 全量注入，浪费 token | MCP Server 按需加载，500 个 Skill 和 5 个消耗相同 |
 | 两个 Skill 互相冲突 | 运行时才发现，模型行为不确定 | 编译时 `conflict_with` 强制报错 |
 | 多步骤工作流无保证 | AI 靠自觉推进，容易跳步或遗漏 | Pipeline 编排 + 质量门禁，每步必须产出 |
@@ -46,6 +48,21 @@ skills-orchestrator init --non-interactive
 skills-orchestrator init
 ```
 
+### 检查 Skills
+
+```bash
+skills-orchestrator check --config config/skills.yaml
+# Skills check
+#   Findings: 0 errors, 0 warnings, 0 infos
+```
+
+CI 或 GitHub Code Scanning 可以使用机器可读输出：
+
+```bash
+skills-orchestrator check --config config/skills.yaml --format json
+skills-orchestrator check --config config/skills.yaml --format sarif
+```
+
 ### 编译生成 AGENTS.md
 
 ```bash
@@ -56,13 +73,6 @@ skills-orchestrator build --config config/skills.yaml
 ```
 
 把生成的 `AGENTS.md` 放到项目根目录，Claude / Cursor 会在会话启动或项目重新加载时读取。
-
-### 验证配置
-
-```bash
-skills-orchestrator validate --config config/skills.yaml
-# ✓ 配置合法：21 skills，无冲突
-```
 
 ---
 
@@ -75,6 +85,7 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 | 层 | 作用 | 典型入口 |
 |----|------|----------|
 | `AGENTS.md` | Bootstrap。告诉 Agent 当前项目有哪些 required / available skills，以及如何按需请求更多内容。多数 Agent 只在会话启动或项目重新加载时读取它。 | `build`, `sync agents-md` |
+| Check Reports | Static diagnostics。检查 metadata、重复 id、冲突声明、lock drift，并输出 text / JSON / SARIF。 | `check`, `validate --format json` |
 | MCP Server | Runtime skill loading。对话过程中通过 `prepare_context` / `search_skills` / `get_skill` 动态选择并获取本轮 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
 | Pipeline | Runtime workflow orchestration。把多个 Skill 串成有状态流程，并在每一步自动注入当前步骤 Skill。 | `pipeline start`, MCP pipeline tools |
 

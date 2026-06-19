@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from click.testing import CliRunner
 
@@ -88,6 +90,39 @@ def test_validate_happy_path(workspace):
     assert "配置验证通过" in result.output
 
 
+def test_validate_json_format_happy_path(workspace):
+    runner = CliRunner()
+    result = runner.invoke(cli, ["validate", "--config", workspace["config"], "--format", "json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["tool"]["name"] == "skills-orchestrator"
+    assert payload["summary"]["skills"] == 1
+
+
+def test_validate_sarif_format_reports_fatal_errors(workspace):
+    bad_config = workspace["root"] / "config" / "bad-skills.yaml"
+    bad_config.write_text(
+        """
+version: "2.0"
+skill_dirs:
+  - missing-skills
+zones:
+  - id: default
+    name: Default
+    load_policy: free
+    rules: []
+""",
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["validate", "--config", str(bad_config), "--format", "sarif"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["runs"][0]["results"][0]["ruleId"] == "SO000"
+
+
 def test_validate_error_path(workspace):
     runner = CliRunner()
     result = runner.invoke(
@@ -95,6 +130,142 @@ def test_validate_error_path(workspace):
     )
     assert result.exit_code != 0
     assert "不存在" in result.output
+
+
+def test_check_json_format_happy_path(workspace):
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", "--config", workspace["config"], "--format", "json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "1.0"
+    assert payload["summary"]["skills"] == 1
+
+
+def test_check_json_format_reports_fatal_errors(workspace):
+    bad_config = workspace["root"] / "config" / "bad-skills.yaml"
+    bad_config.write_text(
+        """
+version: "2.0"
+skill_dirs:
+  - missing-skills
+zones:
+  - id: default
+    name: Default
+    load_policy: free
+    rules: []
+""",
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", "--config", str(bad_config), "--format", "json"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["diagnostics"][0]["rule_id"] == "SO000"
+
+
+def test_check_sarif_format_happy_path(workspace):
+    runner = CliRunner()
+    result = runner.invoke(cli, ["check", "--config", workspace["config"], "--format", "sarif"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["version"] == "2.1.0"
+    assert payload["runs"][0]["tool"]["driver"]["name"] == "skills-orchestrator"
+
+
+def test_check_lock_drift_exits_nonzero_by_default(workspace):
+    runner = CliRunner()
+    output_md = workspace["root"] / "AGENTS.md"
+    lock_path = workspace["root"] / "skills.lock.json"
+    build_result = runner.invoke(
+        cli,
+        [
+            "build",
+            "--config",
+            workspace["config"],
+            "--output",
+            str(output_md),
+            "--lock",
+        ],
+    )
+    assert build_result.exit_code == 0
+
+    skill_path = workspace["root"] / "skills" / "test-skill.md"
+    skill_path.write_text(skill_path.read_text(encoding="utf-8") + "\nExtra content\n")
+
+    result = runner.invoke(
+        cli,
+        ["check", "--config", workspace["config"], "--check-lock", str(lock_path)],
+    )
+    assert result.exit_code == 1
+    assert "SO007" in result.output
+
+
+def test_check_lock_drift_fail_on_never_allows_zero(workspace):
+    runner = CliRunner()
+    output_md = workspace["root"] / "AGENTS.md"
+    lock_path = workspace["root"] / "skills.lock.json"
+    build_result = runner.invoke(
+        cli,
+        [
+            "build",
+            "--config",
+            workspace["config"],
+            "--output",
+            str(output_md),
+            "--lock",
+        ],
+    )
+    assert build_result.exit_code == 0
+
+    skill_path = workspace["root"] / "skills" / "test-skill.md"
+    skill_path.write_text(skill_path.read_text(encoding="utf-8") + "\nExtra content\n")
+
+    result = runner.invoke(
+        cli,
+        [
+            "check",
+            "--config",
+            workspace["config"],
+            "--check-lock",
+            str(lock_path),
+            "--fail-on",
+            "never",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "SO007" in result.output
+
+
+def test_check_fail_on_warning_exits_for_warning(workspace):
+    skill_path = workspace["root"] / "skills" / "test-skill.md"
+    skill_path.write_text(
+        "---\n"
+        "id: test-skill\n"
+        "name: Test Skill\n"
+        "summary: Sum\n"
+        "priority: 10\n"
+        "load_policy: free\n"
+        "zones: [default]\n"
+        "conflict_with: [other-skill]\n"
+        "---\n"
+        "# Content\n",
+        encoding="utf-8",
+    )
+    other_skill = workspace["root"] / "skills" / "other-skill.md"
+    other_skill.write_text(
+        "---\nid: other-skill\nname: Other Skill\nsummary: Other\nzones: [default]\n---\n# Other\n",
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        ["check", "--config", workspace["config"], "--fail-on", "warning"],
+    )
+    assert result.exit_code == 1
+    assert "SO004" in result.output
 
 
 def test_status_happy_path(workspace):
