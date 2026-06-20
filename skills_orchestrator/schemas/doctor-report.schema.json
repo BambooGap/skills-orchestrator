@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/doctor-report.schema.json",
+  "title": "Skills Orchestrator Doctor Report",
+  "type": "object",
+  "required": ["schema_version", "summary", "score", "evidence", "issues"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.doctor.v1" },
+    "generated_at": { "type": "string" },
+    "tool": { "type": "object" },
+    "config": { "type": "string" },
+    "zone": { "type": "string" },
+    "summary": { "type": "object" },
+    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "rating": { "type": "string" },
+    "evidence": { "type": "object" },
+    "issues": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "additionalProperties": true
+}

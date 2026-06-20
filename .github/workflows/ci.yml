@@ -72,6 +72,13 @@ jobs:
       - name: Check package metadata
         run: twine check dist/*
 
+      - name: Smoke packaged schema resources
+        run: |
+          python -m venv /tmp/skills-orchestrator-wheel-smoke
+          /tmp/skills-orchestrator-wheel-smoke/bin/python -m pip install dist/*.whl
+          /tmp/skills-orchestrator-wheel-smoke/bin/skills-orchestrator schema list --format json | python -m json.tool >/dev/null
+          /tmp/skills-orchestrator-wheel-smoke/bin/skills-orchestrator schema validate --kind config --input config/skills.yaml
+
   action-smoke:
     runs-on: ubuntu-latest
     steps:

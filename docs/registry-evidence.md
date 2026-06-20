@@ -1,11 +1,12 @@
 # Registry And Evidence
 
-`v2.5.x` adds the commercial evidence layer for SkillOps teams:
+`v2.6.x` hardens the commercial evidence layer for SkillOps teams:
 
 - `doctor`: local readiness score and actionable findings.
 - `registry build`: organization-level skill inventory from one or more configs.
-- `registry diff`: PR/release review between two registry snapshots.
+- `registry diff`: PR/release review between two registry snapshots, including Markdown output.
 - `evidence export`: release evidence bundle for CI artifacts, audits, or customer handoff.
+- `schema validate`: machine-checkable JSON Schema contracts for generated files.
 - `integrations list`: adjacent ecosystem catalog for agent runtimes, memory layers, and visualization tools.
 
 ## Team Doctor
@@ -55,7 +56,34 @@ skills-orchestrator registry diff \
   --format json
 ```
 
+For PR review, generate Markdown instead of wiring the CLI to GitHub APIs:
+
+```bash
+skills-orchestrator registry diff \
+  registry-before.json \
+  registry-after.json \
+  --format markdown \
+  --output registry-diff.md
+```
+
 The registry is file-based by design. It does not run agents, index code, or require a database.
+
+## Schema Validation
+
+Validate config and generated JSON artifacts independently in CI:
+
+```bash
+skills-orchestrator schema validate --kind config --input config/skills.yaml
+skills-orchestrator schema validate --kind check --input evidence/check.json
+skills-orchestrator schema validate --kind manifest --input evidence/instruction-manifest.json
+skills-orchestrator schema validate --kind policy-opa-input --input evidence/policy-opa-input.json
+skills-orchestrator schema validate --kind doctor --input evidence/doctor.json
+skills-orchestrator schema validate --kind registry --input evidence/skill-registry.json
+skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
+```
+
+SARIF and CycloneDX keep using their upstream schemas; Skills Orchestrator only owns its native
+config and artifact contracts.
 
 ## Evidence Bundle
 

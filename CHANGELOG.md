@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-06-21
+
+### Added
+- Added `skills-orchestrator schema list` and `schema validate` for native config, check, manifest, policy OPA input, doctor, registry, registry diff, and evidence bundle contracts.
+- Added packaged JSON Schema files under `skills_orchestrator/schemas/` and declared `jsonschema` as a direct runtime dependency.
+- Added `init --template team-standard` to generate a portable team starter kit with governed skills, a review pipeline, CI workflow, and evidence directory.
+- Added `registry diff --format markdown` plus `--output` for PR/release review files.
+
+### Changed
+- Updated README, Quick Start, team standardization, registry/evidence, install, CI, policy pack, and GitHub Action docs for the v2.6.0 commercial workflow.
+- Regenerated the repository `AGENTS.md` with v2.6.0 metadata.
+
+### Security
+- The generated team-standard workflow defaults to read-only permissions and does not enable SARIF upload unless teams opt into the documented GitHub Action settings.
+- Template initialization now rejects output path traversal and symlink targets, and registry diff output no longer overwrites existing files unless `--force` is passed.
+- Schema validation now caps input size and reported validation errors.
+
 ## [2.5.1] - 2026-06-21
 
 ### Changed

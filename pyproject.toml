@@ -1,6 +1,6 @@
 [project]
 name = "skills-orchestrator"
-version = "2.5.1"
+version = "2.6.0"
 description = "SkillOps / instruction-supply-chain control plane for AI-agent teams: policy packs, registry, evidence bundles, SARIF/CI, and MCP runtime."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -30,6 +30,7 @@ classifiers = [
 dependencies = [
     "pyyaml>=6.0",
     "click>=8.0",
+    "jsonschema>=4.20",
     "mcp>=1.0",
 ]
 
@@ -59,7 +60,7 @@ where = ["."]
 include = ["skills_orchestrator", "skills_orchestrator.*"]
 
 [tool.setuptools.package-data]
-"skills_orchestrator" = ["py.typed", "config/*.yaml"]
+"skills_orchestrator" = ["py.typed", "config/*.yaml", "schemas/*.schema.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/skill-registry.schema.json",
+  "title": "Skills Orchestrator Skill Registry",
+  "type": "object",
+  "required": ["schema_version", "tool", "summary", "duplicates", "owners", "configs"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.registry.v1" },
+    "generated_at": { "type": "string" },
+    "tool": { "type": "object" },
+    "summary": {
+      "type": "object",
+      "required": ["configs", "skill_refs", "unique_skills", "duplicate_skill_ids"],
+      "additionalProperties": { "type": "integer" }
+    },
+    "duplicates": {
+      "type": "object",
+      "additionalProperties": { "type": "integer" }
+    },
+    "owners": {
+      "type": "object",
+      "additionalProperties": { "type": "integer" }
+    },
+    "configs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/configEntry" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "configEntry": {
+      "type": "object",
+      "required": ["path", "base_dir", "zone", "summary", "skills"],
+      "properties": {
+        "path": { "type": "string" },
+        "base_dir": { "type": "string" },
+        "zone": { "type": "object" },
+        "summary": { "type": "object" },
+        "skills": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/skill" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "skill": {
+      "type": "object",
+      "required": ["registry_key", "id", "name", "status", "path", "governance", "content_hash", "missing_file"],
+      "properties": {
+        "registry_key": { "type": "string" },
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "enum": ["forced", "passive", "blocked"] },
+        "path": { "type": "string" },
+        "governance": { "type": "object" },
+        "content_hash": { "type": "object" },
+        "missing_file": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

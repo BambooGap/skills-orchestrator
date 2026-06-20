@@ -25,6 +25,7 @@ from .cli.import_cmd import import_skill as _import_cmd
 from .cli.check_cmd import check as _check_cmd
 from .cli.manifest_cmd import manifest as _manifest_cmd
 from .cli.policy_cmd import policy as _policy_cmd
+from .cli.schema_cmd import schema as _schema_cmd
 from .checker import fatal_error_report, run_check
 from .diagnostic import DiagnosticSeverity
 from .formatters import format_diagnostics_json, format_diagnostics_sarif
@@ -134,6 +135,7 @@ cli.add_command(_check_cmd)
 # Register instruction inventory and policy export commands
 cli.add_command(_manifest_cmd)
 cli.add_command(_policy_cmd)
+cli.add_command(_schema_cmd)
 
 
 @cli.command()
@@ -803,35 +805,53 @@ def registry_build(config_globs: tuple[str, ...], zone: str | None, output: str 
 @click.option(
     "--format",
     "output_format",
-    type=click.Choice(["text", "json"]),
+    type=click.Choice(["text", "json", "markdown"]),
     default="text",
     show_default=True,
 )
-def registry_diff(base: str, head: str, output_format: str):
+@click.option("--output", "-o", default=None, help="写入 diff 文件；默认输出到 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的 diff 输出文件")
+def registry_diff(base: str, head: str, output_format: str, output: str | None, force: bool):
     """比较两个 registry JSON 文件。"""
-    from skills_orchestrator.org_registry import diff_registries
+    from skills_orchestrator.org_registry import diff_registries, format_registry_diff_markdown
 
     try:
         base_payload = json.loads(Path(base).read_text(encoding="utf-8"))
         head_payload = json.loads(Path(head).read_text(encoding="utf-8"))
         diff = diff_registries(base_payload, head_payload)
         if output_format == "json":
-            click.echo(json.dumps(diff, ensure_ascii=False, indent=2))
+            rendered = json.dumps(diff, ensure_ascii=False, indent=2) + "\n"
+        elif output_format == "markdown":
+            rendered = format_registry_diff_markdown(diff)
+        else:
+            summary = diff["summary"]
+            lines = [
+                "Registry diff: "
+                f"{summary['added']} added, {summary['removed']} removed, "
+                f"{summary['changed']} changed"
+            ]
+            for item in diff["changed"]:
+                lines.append(
+                    f"  changed: {item['registry_key']} ({', '.join(item['changes'].keys())})"
+                )
+            for item in diff["added"]:
+                lines.append(f"  added: {item['registry_key']}")
+            for item in diff["removed"]:
+                lines.append(f"  removed: {item['registry_key']}")
+            for item in diff.get("duplicate_id_changes", []):
+                lines.append(f"  duplicate-id: {item['id']} {item['before']} -> {item['after']}")
+            rendered = "\n".join(lines) + "\n"
+
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"Registry diff written: {output_path}"))
             return
-        summary = diff["summary"]
-        click.echo(
-            "Registry diff: "
-            f"{summary['added']} added, {summary['removed']} removed, "
-            f"{summary['changed']} changed"
-        )
-        for item in diff["changed"]:
-            click.echo(f"  changed: {item['registry_key']} ({', '.join(item['changes'].keys())})")
-        for item in diff["added"]:
-            click.echo(f"  added: {item['registry_key']}")
-        for item in diff["removed"]:
-            click.echo(f"  removed: {item['registry_key']}")
-        for item in diff.get("duplicate_id_changes", []):
-            click.echo(f"  duplicate-id: {item['id']} {item['before']} -> {item['after']}")
+        click.echo(console_safe_text(rendered), nl=False)
     except Exception as exc:
         click.echo(_err(str(exc)), err=True)
         raise SystemExit(1)

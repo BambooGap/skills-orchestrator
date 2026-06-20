@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import click
 import yaml
 
+from skills_orchestrator import __version__
 from skills_orchestrator.security import console_safe_symbol, console_safe_text
 
 from .helpers import _ok, _warn, _parse_frontmatter
@@ -17,20 +19,37 @@ from .helpers import _ok, _warn, _parse_frontmatter
 
 @click.command()
 @click.option("--skills-dir", "-d", default="./skills", help="Skills 目录")
-@click.option("--output", "-o", default="skills.yaml", help="输出配置文件路径")
+@click.option("--output", "-o", default=None, help="输出配置文件路径")
 @click.option(
     "--non-interactive",
     "-y",
     is_flag=True,
     help="非交互模式：直接从 frontmatter 生成配置，不逐一询问",
 )
-def init(skills_dir: str, output: str, non_interactive: bool):
+@click.option(
+    "--template",
+    type=click.Choice(["team-standard"]),
+    default=None,
+    help="生成团队标准化 starter kit，而不是扫描现有 skills 目录",
+)
+@click.option("--force", is_flag=True, help="覆盖 template 已存在的目标文件")
+def init(
+    skills_dir: str,
+    output: str | None,
+    non_interactive: bool,
+    template: str | None,
+    force: bool,
+):
     """初始化，从本地 skills 目录生成 skills.yaml
 
     默认为交互式模式（逐一询问每个 skill 的配置）。
     使用 --non-interactive 可直接从 frontmatter 自动生成配置，
     仅对缺少 frontmatter 的字段使用默认值。
     """
+    if template == "team-standard":
+        _init_team_standard(output=output, force=force)
+        return
+
     skills_path = Path(skills_dir)
 
     if not skills_path.exists():
@@ -120,6 +139,14 @@ def init(skills_dir: str, output: str, non_interactive: bool):
                 "priority": priority,
                 "zones": meta.get("zones", ["default"]),
                 "conflict_with": meta.get("conflict_with", []),
+                "base": meta.get("base", ""),
+                "owner": meta.get("owner", ""),
+                "source": meta.get("source", ""),
+                "version": meta.get("version", ""),
+                "lifecycle": meta.get("lifecycle", "active"),
+                "approvers": _coerce_list(meta.get("approvers", [])),
+                "reviewed_at": meta.get("reviewed_at", ""),
+                "expires_at": meta.get("expires_at", ""),
             }
         )
 
@@ -138,7 +165,7 @@ def init(skills_dir: str, output: str, non_interactive: bool):
         "combos": [],
     }
 
-    output_path = Path(output)
+    output_path = Path(output or "skills.yaml")
     with open(output_path, "w", encoding="utf-8") as f:
         yaml.dump(config, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
@@ -149,3 +176,217 @@ def init(skills_dir: str, output: str, non_interactive: bool):
     click.echo("\n下一步：")
     click.echo(f"  export SKILLS_ROOT={skills_path.resolve()}")
     click.echo(f"  skills-orchestrator build --config {output_path}")
+
+
+def _init_team_standard(*, output: str | None, force: bool) -> None:
+    """Generate a team-standard starter kit using the existing init entrypoint."""
+    project_root = Path.cwd().resolve()
+    config_path = _template_config_path(output, project_root)
+    skills_dir = project_root / "skills"
+    team_skills_dir = skills_dir / "team"
+    workflows_dir = project_root / ".github" / "workflows"
+    evidence_dir = project_root / "evidence"
+    pipelines_dir = config_path.parent / "pipelines"
+
+    targets = {
+        config_path: _team_standard_config(config_path, skills_dir),
+        team_skills_dir / "engineering-standards.md": _team_engineering_standards_skill(),
+        team_skills_dir / "code-review.md": _team_code_review_skill(),
+        team_skills_dir / "release-checklist.md": _team_release_checklist_skill(),
+        pipelines_dir / "team-review.yaml": _team_review_pipeline(),
+        workflows_dir / "skills-orchestrator.yml": _team_standard_workflow(),
+        evidence_dir / ".gitkeep": "",
+    }
+
+    for path in targets:
+        _reject_symlink_target(path, project_root)
+        if path.exists() and not force:
+            raise click.ClickException(f"目标文件已存在，未覆盖: {path}（如需覆盖请加 --force）")
+
+    for path, content in targets.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+    click.echo(_ok("生成 team-standard starter kit"))
+    click.echo(f"  config: {config_path}")
+    click.echo(f"  skills: {team_skills_dir}")
+    click.echo(f"  pipeline: {pipelines_dir / 'team-review.yaml'}")
+    click.echo(f"  workflow: {workflows_dir / 'skills-orchestrator.yml'}")
+    click.echo(f"  evidence: {evidence_dir}")
+    click.echo("\n下一步：")
+    click.echo(
+        f"  skills-orchestrator check --config {config_path} --policy-pack builtin/team-standard"
+    )
+    click.echo(f"  skills-orchestrator build --config {config_path} --lock")
+
+
+def _team_standard_config(config_path: Path, skills_dir: Path) -> str:
+    relative_skills_dir = Path(
+        os.path.relpath(skills_dir, config_path.parent or Path("."))
+    ).as_posix()
+    config = {
+        "version": "2.0",
+        "skill_dirs": [relative_skills_dir],
+        "zones": [
+            {
+                "id": "default",
+                "name": "Default",
+                "load_policy": "free",
+                "priority": 0,
+                "rules": [],
+            }
+        ],
+        "overrides": [],
+        "combos": [
+            {
+                "id": "team-review",
+                "name": "Team Review",
+                "skills": ["team-code-review", "team-release-checklist"],
+                "description": "Run code review and release readiness checks together.",
+            }
+        ],
+    }
+    return yaml.dump(config, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+
+def _team_engineering_standards_skill() -> str:
+    return """---
+id: team-engineering-standards
+name: Team Engineering Standards
+summary: Shared engineering standards for agent-assisted work in this repository.
+tags: [team-standard, engineering, agent]
+load_policy: free
+priority: 70
+zones: [default]
+owner: agent-platform
+source: repo://skills/team/engineering-standards.md
+version: 1.0.0
+lifecycle: active
+---
+
+# Team Engineering Standards
+
+Use repo-local commands, keep changes scoped, and update tests and docs with behavior changes.
+Record skipped verification with the exact command and reason.
+"""
+
+
+def _team_code_review_skill() -> str:
+    return """---
+id: team-code-review
+name: Team Code Review
+summary: Required code review checklist for changes made by agents or humans.
+tags: [team-standard, review, quality]
+load_policy: require
+priority: 100
+zones: [default]
+owner: agent-platform
+source: repo://skills/team/code-review.md
+version: 1.0.0
+lifecycle: active
+approvers: [agent-platform]
+---
+
+# Team Code Review
+
+Review diffs for behavioral regressions, missing tests, unsafe file operations, and stale docs.
+Findings must include file paths, impact, and a concrete fix direction.
+"""
+
+
+def _team_release_checklist_skill() -> str:
+    return """---
+id: team-release-checklist
+name: Team Release Checklist
+summary: Required release readiness checks for SkillOps-controlled repositories.
+tags: [team-standard, release, ci]
+load_policy: require
+priority: 90
+zones: [default]
+owner: release-owner
+source: repo://skills/team/release-checklist.md
+version: 1.0.0
+lifecycle: active
+approvers: [release-owner]
+---
+
+# Team Release Checklist
+
+Before release, verify policy checks, schema validation, registry diff review, and rollback notes.
+Attach generated evidence files when the change affects runtime instructions.
+"""
+
+
+def _team_review_pipeline() -> str:
+    pipeline = {
+        "id": "team-review",
+        "name": "Team Review",
+        "steps": [
+            {"id": "code-review", "skill": "team-code-review"},
+            {"id": "release-checklist", "skill": "team-release-checklist"},
+        ],
+    }
+    return yaml.dump(pipeline, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+
+def _team_standard_workflow() -> str:
+    return f"""name: skills-orchestrator
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  skillops:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: BambooGap/skills-orchestrator@v{__version__}
+        with:
+          config: config/skills.yaml
+          policy-pack: builtin/team-standard
+"""
+
+
+def _template_config_path(output: str | None, project_root: Path) -> Path:
+    raw_path = Path("config/skills.yaml") if output is None else Path(output)
+    if raw_path.is_absolute():
+        raise click.ClickException("--output 必须是当前项目内的相对路径")
+    if any(part == ".." for part in raw_path.parts):
+        raise click.ClickException("--output 不允许包含 '..'")
+    resolved = (project_root / raw_path).resolve()
+    try:
+        resolved.relative_to(project_root)
+    except ValueError as exc:
+        raise click.ClickException("--output 必须位于当前项目目录内") from exc
+    return resolved
+
+
+def _reject_symlink_target(path: Path, project_root: Path) -> None:
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(project_root)
+    except ValueError as exc:
+        raise click.ClickException(f"目标路径逃逸当前项目目录: {path}") from exc
+
+    cursor = project_root
+    try:
+        relative_parts = path.relative_to(project_root).parts
+    except ValueError:
+        relative_parts = path.resolve().relative_to(project_root).parts
+    for part in relative_parts:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise click.ClickException(f"目标路径包含符号链接，未写入: {cursor}")
+
+
+def _coerce_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]

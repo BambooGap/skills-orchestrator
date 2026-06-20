@@ -21,6 +21,14 @@ AGENTS.md
 skills.lock.json
 ```
 
+Bootstrap the source files with:
+
+```bash
+skills-orchestrator init --template team-standard
+skills-orchestrator check --config config/skills.yaml --policy-pack builtin/team-standard
+skills-orchestrator build --config config/skills.yaml --lock
+```
+
 Generated files such as `AGENTS.md` and `skills.lock.json` may either be committed for review or
 generated in CI. Pick one policy and keep it consistent across the organization.
 
@@ -51,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.5.1
+      - uses: BambooGap/skills-orchestrator@v2.6.0
         with:
           config: config/skills.yaml
           check-lock: skills.lock.json
@@ -132,12 +140,15 @@ The audit log stores routing hashes and skill IDs, not raw task text or skill co
 ## Rollout Sequence
 
 1. Start with `check --format text` locally.
-2. Add the GitHub Action without SARIF upload.
-3. Generate and review `skills.lock.json`.
-4. Enable `builtin/team-standard` without `--fail-on warning`; fix governance metadata.
-5. Turn on SARIF upload when repository permissions allow `security-events: write`.
-6. Add `doctor`, `registry build`, and `evidence export` to release evidence.
-7. Enable MCP for runtime routing after CI is stable.
+2. For new repos, run `init --template team-standard`; for existing repos, run
+   `init --non-interactive`.
+3. Add the GitHub Action without SARIF upload.
+4. Generate and review `skills.lock.json`.
+5. Enable `builtin/team-standard` without `--fail-on warning`; fix governance metadata.
+6. Turn on SARIF upload when repository permissions allow `security-events: write`.
+7. Add `doctor`, `registry build`, `registry diff --format markdown`, `schema validate`, and
+   `evidence export` to release evidence.
+8. Enable MCP for runtime routing after CI is stable.
 
 ## Acceptance Criteria
 

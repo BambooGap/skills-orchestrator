@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import glob
+import html
 import json
+import re
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -103,6 +105,29 @@ def diff_registries(base: dict, head: dict) -> dict[str, Any]:
     }
 
 
+def format_registry_diff_markdown(diff: dict[str, Any]) -> str:
+    """Render a registry diff as PR-review-friendly Markdown."""
+    summary = diff.get("summary", {})
+    lines = [
+        "# Registry Diff",
+        "",
+        "## Summary",
+        "",
+        "| Metric | Count |",
+        "|---|---:|",
+        f"| Added | {summary.get('added', 0)} |",
+        f"| Removed | {summary.get('removed', 0)} |",
+        f"| Changed | {summary.get('changed', 0)} |",
+        f"| Duplicate skill ID changes | {summary.get('duplicate_id_changes', 0)} |",
+        "",
+    ]
+    lines.extend(_skills_table("Changed Skills", _changed_rows(diff.get("changed", []))))
+    lines.extend(_skills_table("Added Skills", _skill_rows(diff.get("added", []))))
+    lines.extend(_skills_table("Removed Skills", _skill_rows(diff.get("removed", []))))
+    lines.extend(_duplicate_changes_table(diff.get("duplicate_id_changes", [])))
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def _expand_config_globs(config_globs: tuple[str, ...] | list[str]) -> list[str]:
     patterns = list(config_globs) or ["config/skills.yaml"]
     paths: list[str] = []
@@ -178,3 +203,128 @@ def _duplicate_id_changes(base: dict, head: dict) -> list[dict[str, Any]]:
         if before != after:
             changed.append({"id": skill_id, "before": before, "after": after})
     return changed
+
+
+def _skills_table(title: str, rows: list[list[str]]) -> list[str]:
+    lines = [f"## {title}", ""]
+    if not rows:
+        return [*lines, "No entries.", ""]
+    lines.extend(
+        [
+            "| Skill | Status | Owner | Path | Registry key | Details |",
+            "|---|---|---|---|---|---|",
+        ]
+    )
+    for row in rows:
+        lines.append("| " + " | ".join(_escape_markdown_cell(cell) for cell in row) + " |")
+    lines.append("")
+    return lines
+
+
+def _skill_rows(skills: list[dict[str, Any]]) -> list[list[str]]:
+    rows = []
+    for skill in skills:
+        governance = skill.get("governance") or {}
+        rows.append(
+            [
+                skill.get("id", ""),
+                skill.get("status", ""),
+                governance.get("owner", ""),
+                _redact_path_like(skill.get("path", "")),
+                _redact_registry_key(skill.get("registry_key", "")),
+                skill.get("name", ""),
+            ]
+        )
+    return rows
+
+
+def _changed_rows(changed: list[dict[str, Any]]) -> list[list[str]]:
+    rows = []
+    for item in changed:
+        change_fields = ", ".join(sorted(item.get("changes", {})))
+        details = _change_details(item.get("changes", {}))
+        rows.append(
+            [
+                item.get("id", ""),
+                "changed",
+                "",
+                "",
+                _redact_registry_key(item.get("registry_key", "")),
+                f"{change_fields}: {details}" if details else change_fields,
+            ]
+        )
+    return rows
+
+
+def _change_details(changes: dict[str, Any]) -> str:
+    detail_parts = []
+    governance = changes.get("governance")
+    if governance:
+        before_owner = (governance.get("before") or {}).get("owner", "")
+        after_owner = (governance.get("after") or {}).get("owner", "")
+        if before_owner != after_owner:
+            detail_parts.append(f"owner {before_owner} -> {after_owner}")
+    status = changes.get("status")
+    if status:
+        detail_parts.append(f"status {status.get('before', '')} -> {status.get('after', '')}")
+    content_hash = changes.get("content_hash")
+    if content_hash:
+        before_hash = _hash_short(content_hash.get("before"))
+        after_hash = _hash_short(content_hash.get("after"))
+        detail_parts.append(f"hash {before_hash} -> {after_hash}")
+    return "; ".join(detail_parts)
+
+
+def _duplicate_changes_table(changes: list[dict[str, Any]]) -> list[str]:
+    lines = ["## Duplicate Skill ID Changes", ""]
+    if not changes:
+        return [*lines, "No entries.", ""]
+    lines.extend(["| Skill ID | Before | After |", "|---|---:|---:|"])
+    for item in changes:
+        lines.append(
+            "| "
+            + " | ".join(
+                _escape_markdown_cell(str(value))
+                for value in (item.get("id", ""), item.get("before", ""), item.get("after", ""))
+            )
+            + " |"
+        )
+    lines.append("")
+    return lines
+
+
+def _hash_short(value: Any) -> str:
+    if isinstance(value, dict):
+        value = value.get("value", "")
+    if not value:
+        return ""
+    return str(value)[:12]
+
+
+def _escape_markdown_cell(value: Any) -> str:
+    text = "" if value is None else str(value)
+    text = _strip_control_chars(text)
+    text = html.escape(text, quote=False)
+    text = text.replace("\\", "\\\\").replace("|", "\\|").replace("\n", "<br>")
+    if not text:
+        return ""
+    return f"<code>{text}</code>"
+
+
+def _redact_registry_key(value: Any) -> str:
+    text = "" if value is None else str(value)
+    return "::".join(_redact_path_like(part) for part in text.split("::"))
+
+
+def _redact_path_like(value: Any) -> str:
+    text = "" if value is None else str(value)
+    if not text:
+        return ""
+    if not text.startswith(("/", "~")):
+        return text
+    name = Path(text).name
+    return f".../{name}" if name else "..."
+
+
+def _strip_control_chars(value: str) -> str:
+    return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", value)
