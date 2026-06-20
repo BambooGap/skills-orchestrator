@@ -542,43 +542,21 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 
 ## 路线图
 
-### v2.0.x — 稳定主线
+### 已完成主线
 
-- [x] 编译时治理（build / validate / zone / conflict）
-- [x] Auto-Discovery from frontmatter
-- [x] 21 个生产级 Skill 内容库
-- [x] MCP Server（list / search / get / suggest_combo / prepare_context）
-- [x] Skill Inheritance（base 字段 + 编译时校验 + 运行时合并）
-- [x] Sync 多工具同步（hermes / openclaw / agents-md / copilot）
-- [x] Pipeline 编排（YAML 定义 + 质量门禁 + 步骤注入 + 状态持久化）
-- [x] MCP Pipeline 工具（pipeline_start / status / advance / resume）
-- [x] init --non-interactive（从 frontmatter 自动生成配置）
-- [x] CI 增强（ruff lint + format check + 多版本矩阵）
-- [x] PyPI 正式发布
-- [x] 发布工程加固（独立测试报告、版本一致性测试、build/twine/CLI smoke）
-- [x] 安全边界加固（路径逃逸、GitHub import、MCP 参数、Windows 编码兼容）
+- v2.0.x：稳定了 build / validate / zone / conflict、frontmatter discovery、MCP Server、Skill Inheritance、sync targets、Pipeline 编排、PyPI 发布和基础安全边界。
+- 检查诊断与机器报告阶段：补齐 `check` 诊断面，输出 JSON / SARIF，并把项目定位收敛到 SkillOps 和 instruction supply chain。
+- v2.3.x：发布 GitHub Action、CycloneDX / native manifest、OPA/Rego proof export、Action SHA pinning、artifact attestation 和 PyPI 发布防护。
+- v2.4.x：补齐 Docker 交付、团队标准化文档、MCP runtime decision record、usage audit、pipeline recovery 和本地运行证据。
+- v2.5.x：补齐 `builtin/team-standard` policy pack、治理元数据、`doctor` 商业 readiness、组织级 `registry`、`evidence export`、integration catalog、MCP 内容上限、audit HMAC 和 pipeline 状态脱敏。
 
-### v2.1.x — Runtime MCP 强化
+### 下一阶段
 
-- [ ] MCP 错误响应结构兼容性收口
-- [ ] MCP server reload / restart 指引优化
-- [ ] 更细的 tool 参数 schema 与错误码
-- [ ] Pipeline 运行摘要与恢复体验增强
-
-### v2.2.x — Examples / 多 Agent 适配
-
-- [ ] 更多真实项目 examples
-- [ ] Claude / Cursor / Copilot / Hermes / OpenClaw 适配文档矩阵
-- [ ] Windows 终端与 PowerShell 使用指南
-- [ ] 发布前安全检查清单模板
-
-### Deferred — 规模化与高级能力
-
-- [ ] pgvector 语义检索（skill > 50 个时启用）
-- [ ] Skill 版本管理 & lock file
-- [ ] watch 模式（文件变更自动 build / sync）
-- [ ] `sync --prefix` 命名空间隔离
-- [ ] 中文搜索 bigram 分词优化
+- v2.6.x：发布稳定 JSON Schema、manifest 兼容策略、golden fixtures 和 schema validation 命令。
+- v2.6.x：补齐 `init --template team-standard`，让新团队 30 秒内生成 config、示例 skills、CI workflow 和 evidence 目录。
+- v2.7.x：增加依赖/CVE 扫描、SBOM、GHCR 镜像、cosign/SLSA provenance 和 release verification 自动化。
+- v2.7.x：提供 Superpowers、CodeGraph、supermemory-service、Understand-Anything、Omnigent 的 adapter examples，但保持 Skills Orchestrator 只做 SkillOps 控制层。
+- v2.8.x：做组织级 registry 的多仓输入、路径脱敏、diff review comment 和 dashboard handoff，而不是内置长期记忆或多 Agent 调度。
 
 ---
 
