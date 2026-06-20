@@ -13,7 +13,8 @@ For a fixed zone:
 ```bash
 skills-orchestrator serve \
   --config /absolute/path/to/config/skills.yaml \
-  --zone enterprise
+  --zone enterprise \
+  --max-content-bytes 40000
 ```
 
 ## Client Configuration
@@ -54,7 +55,8 @@ The response contains:
 - `active_skills`: skills that apply to the current task,
 - `inactive_skills`: registry skills not selected for this task,
 - `Decision Record (JSON)`: structured routing evidence with `routing_id`, `task_hash`,
-  registry generation, active/inactive skills, and content hashes,
+  `task_hash_alg`, registry generation, active/inactive skills, content hashes, and truncation
+  metadata,
 - an execution rule that says old skills from prior tasks should not control the current task,
 - optional full skill content when `include_content` is true.
 
@@ -72,8 +74,16 @@ skills-orchestrator serve \
 
 The audit log is JSONL at `events.jsonl`. It records tool names, argument keys, outcomes, routing
 hashes, active skill IDs, zone, and registry generation. It does not store raw task text or skill
-content. `task_hash` is a deterministic SHA-256 value, so it is useful for correlation but should
-be treated as a pseudonymous identifier, not a privacy-preserving secret.
+content.
+
+By default `task_hash` is deterministic SHA-256 for local correlation. For commercial or multi-tenant
+audit logs, set a private salt so hashes use HMAC-SHA256:
+
+```bash
+export SKILLS_ORCHESTRATOR_AUDIT_SALT="$(openssl rand -hex 32)"
+```
+
+Audit directories and files are written with private permissions where the OS supports chmod.
 
 Generate a compact report:
 
@@ -81,6 +91,22 @@ Generate a compact report:
 skills-orchestrator usage report --audit-dir /absolute/path/to/.skills-audit
 skills-orchestrator usage report --audit-dir /absolute/path/to/.skills-audit --json
 ```
+
+## Runtime Content Limits
+
+`get_skill`, `prepare_context`, and Pipeline step injection enforce a per-skill content byte limit.
+The default is `40000` bytes. Configure it with either CLI or environment:
+
+```bash
+skills-orchestrator serve \
+  --config /absolute/path/to/config/skills.yaml \
+  --max-content-bytes 30000
+
+export SKILLS_ORCHESTRATOR_MAX_CONTENT_BYTES=30000
+```
+
+Set `--max-content-bytes 0` only for trusted local debugging. Truncated responses include a visible
+notice and the decision record lists `content_limits.truncated_skill_ids`.
 
 ## Local Tool Testing
 

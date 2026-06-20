@@ -1,7 +1,7 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v2.4.0 release slice: team standardization, Docker hardening, structured MCP decision
-> records, and opt-in runtime audit.
+> Status: v2.5.0 release slice: registry and evidence, built-in team policy pack, commercial
+> readiness doctor, integration catalog, and hardened runtime audit boundaries.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
 > by existing CI and supply-chain tooling.
@@ -156,11 +156,11 @@ distribution and CI integration are.
 
 ## Phase 6: Team Standardization And Runtime Governance
 
-Status: in progress on `main`.
+Status: implemented across v2.4.0 and v2.5.0.
 
 Goal: move from advisory docs to a team-standard product loop.
 
-Delivered in the current unreleased slice:
+Delivered:
 
 - Team standardization guide and role-based documentation index.
 - Structured `prepare_context` decision records with routing ID, task hash, registry generation,
@@ -168,12 +168,15 @@ Delivered in the current unreleased slice:
 - Opt-in MCP audit JSONL and `usage report`.
 - MCP `pipeline_list_runs`.
 - Pipeline gates that support multiple required artifacts.
+- Built-in `builtin/team-standard` policy pack for owner/source/version/lifecycle/approver fields.
+- `doctor`, `registry build`, `registry diff`, `evidence export`, and `integrations list`.
+- Configurable runtime skill-content byte limits.
+- Optional HMAC task hashing for MCP audit logs.
+- Pipeline context redaction before state persistence.
 
 Next:
 
-- Built-in policy packs for owner, approver, status, source, and version fields.
 - Manifest JSON Schema and compatibility policy.
-- Org-level registry build/diff/export commands.
 - Docker image publishing, SBOM, signing, and provenance.
 
 ## Phase 5: Community Narrative

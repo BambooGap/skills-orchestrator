@@ -20,6 +20,9 @@ skills-orchestrator check --config config/skills.yaml
 | CI 只能看退出码 | 终端输出无法被工具链消费 | `check --format json/sarif` 生成机器可读报告 |
 | Instruction 没有清单 | 供应链工具看不到 agent 规则资产 | `manifest --format json/cyclonedx` 导出 instruction inventory |
 | Policy 团队无法审计 | Resolver 结果只在 CLI 里可见 | `policy export --format opa-input/rego-test` 导出 OPA/Rego proof |
+| 团队规则不可执行 | owner/source/version 只写在文档里 | `check --policy-pack builtin/team-standard` 强制团队治理元数据 |
+| 多仓 Skill 无法盘点 | 每个 repo 各查各的 | `registry build` / `registry diff` 导出组织级 skill registry |
+| 商用审计缺证据包 | 发布时到处找 CI、manifest、SARIF | `evidence export` 一次导出审计证据 |
 | 上下文窗口有限 | 所有 Skill 全量注入，浪费 token | MCP Server 按需加载，500 个 Skill 和 5 个消耗相同 |
 | 两个 Skill 互相冲突 | 运行时才发现，模型行为不确定 | 编译时 `conflict_with` 强制报错 |
 | 多步骤工作流无保证 | AI 靠自觉推进，容易跳步或遗漏 | Pipeline 编排 + 质量门禁，每步必须产出 |
@@ -58,6 +61,15 @@ skills-orchestrator check --config config/skills.yaml
 #   Findings: 0 errors, 0 warnings, 0 infos
 ```
 
+启用团队标准规则：
+
+```bash
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack builtin/team-standard \
+  --fail-on warning
+```
+
 CI 或 GitHub Code Scanning 可以使用机器可读输出：
 
 ```bash
@@ -77,9 +89,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.4.0
+      - uses: BambooGap/skills-orchestrator@v2.5.0
         with:
           config: config/skills.yaml
+          policy-pack: builtin/team-standard
           upload-sarif: true
 ```
 
@@ -87,6 +100,26 @@ jobs:
 [Documentation Index](docs/INDEX.md)。
 
 Docker 运行方式见 [Docker Usage](docs/docker.md)。
+
+### 商用 Readiness 与证据包
+
+```bash
+skills-orchestrator doctor --config config/skills.yaml
+
+skills-orchestrator evidence export \
+  --config config/skills.yaml \
+  --out evidence
+
+skills-orchestrator registry build \
+  --config-glob "config/skills.yaml" \
+  --output skill-registry.json
+
+skills-orchestrator integrations list
+```
+
+`doctor` 给出本地商用 readiness 分数和缺口；`evidence export` 写出 `check.json`、
+`check.sarif`、`instruction-manifest.json`、`policy-opa-input.json`、`policy-proof.rego`、
+`doctor.json` 和 `skill-registry.json`，适合 CI artifact、审计归档或客户交付。
 
 ### 导出 Instruction Manifest
 
@@ -129,8 +162,10 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 |----|------|----------|
 | `AGENTS.md` | Bootstrap。告诉 Agent 当前项目有哪些 required / available skills，以及如何按需请求更多内容。多数 Agent 只在会话启动或项目重新加载时读取它。 | `build`, `sync agents-md` |
 | Check Reports | Static diagnostics。检查 metadata、重复 id、冲突声明、lock drift，并输出 text / JSON / SARIF。 | `check`, `validate --format json` |
+| Policy Packs | Team governance。把 owner/source/version/lifecycle/approver 等团队规则变成可执行检查。 | `check --policy-pack builtin/team-standard` |
 | Instruction Manifest | Inventory export。导出 native JSON 和实验性 CycloneDX BOM，便于把 agent instructions 纳入供应链资产清单。 | `manifest` |
 | Policy Export | Policy proof。导出 OPA input 和 Rego test fixture，证明 resolver 事实可被 policy-as-code 审计。 | `policy export` |
+| Registry & Evidence | Commercial evidence。生成组织级 registry、doctor readiness 报告和发布审计证据包。 | `registry`, `doctor`, `evidence export` |
 | MCP Server | Runtime skill loading。对话过程中通过 `prepare_context` / `search_skills` / `get_skill` 动态选择并获取本轮 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
 | Pipeline | Runtime workflow orchestration。把多个 Skill 串成有状态流程，并在每一步自动注入当前步骤 Skill。 | `pipeline start`, MCP pipeline tools |
 
@@ -190,7 +225,7 @@ skills-orchestrator mcp-test prepare_context \
 |------|------|
 | `active_skills` | 本轮任务应该遵循的 Skill ID 列表 |
 | `inactive_skills` | 当前 Registry 中未被本轮选中的 Skill，本轮任务不应受其约束 |
-| `Decision Record (JSON)` | 结构化路由记录，包含 `routing_id`、`task_hash`、registry generation、active/inactive skills 和内容哈希 |
+| `Decision Record (JSON)` | 结构化路由记录，包含 `routing_id`、`task_hash_alg`、registry generation、active/inactive skills、内容哈希和截断信息 |
 | `Execution Rule` | 明确告诉 Agent：旧 Skill 与本轮 active skills 冲突时，以本轮为准 |
 | `Active Skill Content` | 当 `include_content=true` 时，直接注入本轮所需 Skill 全文 |
 

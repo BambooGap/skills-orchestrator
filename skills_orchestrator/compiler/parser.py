@@ -9,6 +9,27 @@ from skills_orchestrator.security import validate_path_within_root, validate_ski
 from skills_orchestrator.models import Zone, Rule, SkillMeta, Combo, Config
 
 
+_SKILL_FRONTMATTER_FIELDS = {
+    "id",
+    "name",
+    "summary",
+    "description",
+    "tags",
+    "load_policy",
+    "priority",
+    "zones",
+    "conflict_with",
+    "base",
+    "owner",
+    "source",
+    "version",
+    "lifecycle",
+    "approvers",
+    "reviewed_at",
+    "expires_at",
+}
+
+
 class Parser:
     """解析 skills.yaml 配置文件"""
 
@@ -138,6 +159,14 @@ class Parser:
             zones=zones,
             conflict_with=conflict_with,
             base=base,
+            owner=str(meta.get("owner", "")),
+            source=str(meta.get("source", "")),
+            version=str(meta.get("version", "")),
+            lifecycle=str(meta.get("lifecycle", "active")),
+            approvers=_coerce_list(meta.get("approvers", [])),
+            reviewed_at=str(meta.get("reviewed_at", "")),
+            expires_at=str(meta.get("expires_at", "")),
+            metadata=_extra_metadata(meta),
         )
 
     @staticmethod
@@ -175,6 +204,14 @@ class Parser:
                     zones=o.get("zones", skill.zones),
                     conflict_with=o.get("conflict_with", skill.conflict_with),
                     base=skill.base,  # base 只从文件 frontmatter 读取，不可被 overrides 覆盖
+                    owner=o.get("owner", skill.owner),
+                    source=o.get("source", skill.source),
+                    version=o.get("version", skill.version),
+                    lifecycle=o.get("lifecycle", skill.lifecycle),
+                    approvers=o.get("approvers", skill.approvers),
+                    reviewed_at=o.get("reviewed_at", skill.reviewed_at),
+                    expires_at=o.get("expires_at", skill.expires_at),
+                    metadata=skill.metadata,
                 )
             )
         return result
@@ -220,6 +257,14 @@ class Parser:
                     zones=raw.get("zones", []),
                     conflict_with=raw.get("conflict_with", []),
                     base=raw.get("base", ""),
+                    owner=raw.get("owner", ""),
+                    source=raw.get("source", ""),
+                    version=raw.get("version", ""),
+                    lifecycle=raw.get("lifecycle", "active"),
+                    approvers=_coerce_list(raw.get("approvers", [])),
+                    reviewed_at=raw.get("reviewed_at", ""),
+                    expires_at=raw.get("expires_at", ""),
+                    metadata=_extra_metadata(raw),
                 )
             )
         return skills
@@ -318,3 +363,17 @@ class Parser:
                 if skill_id not in skill_ids:
                     raise ValueError(f"Combo '{combo.id}' 引用了不存在的 skill: {skill_id}")
         return skills
+
+
+def _coerce_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        return [item.strip() for item in value.split(",") if item.strip()]
+    return [value]
+
+
+def _extra_metadata(raw: dict) -> dict:
+    return {key: value for key, value in raw.items() if key not in _SKILL_FRONTMATTER_FIELDS}

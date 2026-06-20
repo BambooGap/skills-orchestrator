@@ -23,6 +23,11 @@ def _manifest_workspace(tmp_path):
         "name: Child Skill\n"
         "summary: Child guidance\n"
         "base: base\n"
+        "owner: platform-team\n"
+        "source: internal://child\n"
+        "version: 1.0.0\n"
+        "lifecycle: active\n"
+        "approvers: [staff-engineering]\n"
         "tags: [child]\n"
         "---\n"
         "# Child\n",
@@ -74,6 +79,8 @@ def test_build_instruction_manifest_records_full_hash_and_base(tmp_path):
     assert len(child["content_hash"]["value"]) == 64
     assert child["size_bytes"] > 0
     assert child["missing_file"] is False
+    assert child["governance"]["owner"] == "platform-team"
+    assert child["governance"]["approvers"] == ["staff-engineering"]
 
 
 def test_instruction_manifest_cyclonedx_maps_skills_and_dependencies(tmp_path):
@@ -92,6 +99,7 @@ def test_instruction_manifest_cyclonedx_maps_skills_and_dependencies(tmp_path):
     assert child["type"] == "data"
     assert len(child["hashes"][0]["content"]) == 64
     assert {"ref": "skill:child", "dependsOn": ["skill:base"]} in bom["dependencies"]
+    assert any(prop["name"] == "skills-orchestrator:governance" for prop in child["properties"])
     assert any(prop["name"] == "skills-orchestrator:experimental" for prop in bom["properties"])
 
 

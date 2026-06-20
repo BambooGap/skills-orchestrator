@@ -7,6 +7,10 @@ load_policy: free
 priority: 60
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/docs/documentation.md
+version: 1.0.0
+lifecycle: active
 ---
 # 写文档 Skill
 

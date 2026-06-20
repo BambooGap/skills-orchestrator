@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import json
 import os
+import hmac
+import hashlib
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 AUDIT_DIR_ENV = "SKILLS_ORCHESTRATOR_AUDIT_DIR"
+AUDIT_SALT_ENV = "SKILLS_ORCHESTRATOR_AUDIT_SALT"
 EVENTS_FILENAME = "events.jsonl"
 
 
@@ -47,12 +50,28 @@ class AuditLogger:
         if path is None:
             return
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
+            path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            path.parent.chmod(0o700)
             payload = {"timestamp": utc_now_iso(), **event}
             with path.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+            path.chmod(0o600)
         except OSError:
             return
+
+
+def hash_task(task: str) -> dict[str, str]:
+    """Return a task hash without storing raw task text.
+
+    Set SKILLS_ORCHESTRATOR_AUDIT_SALT to use HMAC-SHA256 and avoid dictionary
+    matching across audit logs. Unsalted SHA-256 remains the default for
+    backwards-compatible local correlation.
+    """
+    salt = os.environ.get(AUDIT_SALT_ENV)
+    if salt:
+        digest = hmac.new(salt.encode("utf-8"), task.encode("utf-8"), hashlib.sha256).hexdigest()
+        return {"alg": "HMAC-SHA256", "value": digest}
+    return {"alg": "SHA-256", "value": hashlib.sha256(task.encode("utf-8")).hexdigest()}
 
 
 def load_events(audit_dir: str | os.PathLike[str] | None = None) -> list[dict[str, Any]]:

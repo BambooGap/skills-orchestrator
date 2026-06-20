@@ -94,6 +94,8 @@ def _skill_properties(skill: dict[str, Any]) -> list[dict[str, str]]:
         "tags": skill["tags"],
         "base": skill["base"],
         "conflict_with": skill["conflict_with"],
+        "governance": skill.get("governance", {}),
+        "metadata": skill.get("metadata", {}),
         "block_reason": skill["block_reason"],
         "size_bytes": skill["size_bytes"],
         "missing_file": skill["missing_file"],

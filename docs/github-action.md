@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.4.0
+      - uses: BambooGap/skills-orchestrator@v2.5.0
         with:
           config: config/skills.yaml
 ```
@@ -45,9 +45,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.4.0
+      - uses: BambooGap/skills-orchestrator@v2.5.0
         with:
           config: config/skills.yaml
+          policy-pack: builtin/team-standard
           upload-sarif: true
 ```
 
@@ -76,6 +77,8 @@ jobs:
         with:
           config: config/skills.yaml
           check-lock: skills.lock.json
+          policy-pack: builtin/team-standard
+          fail-on: warning
           upload-sarif: true
 ```
 
@@ -91,5 +94,6 @@ jobs:
 | `format` | `text` | Output format when `upload-sarif` is false: `text`, `json`, or `sarif`. |
 | `fail-on` | `error` | Exit threshold: `error`, `warning`, or `never`. |
 | `max-skill-bytes` | `20000` | Threshold for SO005 oversized-skill diagnostics. |
+| `policy-pack` | empty | Optional built-in policy pack, for example `builtin/team-standard`. |
 | `upload-sarif` | `false` | Upload SARIF to GitHub Code Scanning. |
 | `sarif-file` | `skills-orchestrator.sarif` | SARIF file path used for uploads. |

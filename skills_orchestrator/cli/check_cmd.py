@@ -39,6 +39,12 @@ from skills_orchestrator.security import console_safe_text
     show_default=True,
     help="超过该字节数的 skill 标记为 oversized",
 )
+@click.option(
+    "--policy-pack",
+    "policy_packs",
+    multiple=True,
+    help="启用内置治理规则包，例如 builtin/team-standard。可重复传入。",
+)
 def check(
     config: str,
     zone: str | None,
@@ -46,6 +52,7 @@ def check(
     output_format: str,
     fail_on: str,
     max_skill_bytes: int,
+    policy_packs: tuple[str, ...],
 ):
     """检查 skill 元数据、冲突声明和可选 lock 差异。"""
     try:
@@ -54,6 +61,7 @@ def check(
             zone_id=zone,
             check_lock=check_lock,
             max_skill_bytes=max_skill_bytes,
+            policy_packs=policy_packs,
         )
     except Exception as exc:
         if output_format != "text":

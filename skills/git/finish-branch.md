@@ -7,6 +7,10 @@ load_policy: free
 priority: 80
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/git/finish-branch.md
+version: 1.0.0
+lifecycle: active
 ---
 # 完成分支 Skill
 

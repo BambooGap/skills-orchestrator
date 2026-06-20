@@ -7,6 +7,10 @@ load_policy: free
 priority: 75
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/ops/environment-setup.md
+version: 1.0.0
+lifecycle: active
 ---
 # 环境管理规范 Skill
 

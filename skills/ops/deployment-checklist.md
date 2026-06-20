@@ -7,6 +7,10 @@ load_policy: free
 priority: 90
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/ops/deployment-checklist.md
+version: 1.0.0
+lifecycle: active
 ---
 # 部署检查清单 Skill
 

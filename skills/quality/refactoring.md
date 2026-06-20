@@ -7,6 +7,10 @@ load_policy: free
 priority: 100
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/quality/refactoring.md
+version: 1.0.0
+lifecycle: active
 ---
 # 安全重构 Skill
 

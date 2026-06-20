@@ -31,12 +31,14 @@ class RunStateStore:
         if base_dir is None:
             base_dir = os.path.expanduser("~/.skills-orchestrator")
         self.runs_dir = Path(base_dir) / "runs"
-        self.runs_dir.mkdir(parents=True, exist_ok=True)
+        self.runs_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.runs_dir.chmod(0o700)
 
     def save(self, state: RunState) -> Path:
         """保存 RunState 到文件，返回文件路径"""
         filepath = self._state_path(state.pipeline_id, state.run_id)
         filepath.write_text(state.to_json(), encoding="utf-8")
+        filepath.chmod(0o600)
         # 更新 latest 记录
         self._update_latest(state)
         return filepath
@@ -117,6 +119,7 @@ class RunStateStore:
         filename = f"{pipeline_id}_{run_id}.json"
         latest_file = self.runs_dir / ".latest"
         latest_file.write_text(filename, encoding="utf-8")
+        latest_file.chmod(0o600)
 
     @staticmethod
     def _validate_pipeline_id(pipeline_id: str) -> str:

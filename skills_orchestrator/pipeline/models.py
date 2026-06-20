@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
+
+
+SENSITIVE_CONTEXT_KEY_RE = re.compile(
+    r"(secret|token|password|passwd|credential|authorization|cookie|api[_-]?key|private[_-]?key)",
+    re.IGNORECASE,
+)
+MAX_PERSISTED_STRING_CHARS = 2_000
 
 
 @dataclass
@@ -281,8 +289,9 @@ class RunState:
         self.updated_at = now.isoformat()
         self.status = "failed"
 
-    def to_json(self) -> str:
+    def to_json(self, *, redact_context: bool = True) -> str:
         """序列化为 JSON"""
+        context = redact_pipeline_context(self.context) if redact_context else self.context
         return json.dumps(
             {
                 "pipeline_id": self.pipeline_id,
@@ -290,7 +299,7 @@ class RunState:
                 "current_step": self.current_step,
                 "status": self.status,
                 "step_history": self.step_history,
-                "context": self.context,
+                "context": context,
                 "started_at": self.started_at,
                 "updated_at": self.updated_at,
             },
@@ -312,3 +321,16 @@ class RunState:
             started_at=data.get("started_at", ""),
             updated_at=data.get("updated_at", ""),
         )
+
+
+def redact_pipeline_context(value: Any, *, key: str = "") -> Any:
+    """Redact sensitive or oversized context values before disk persistence."""
+    if key and SENSITIVE_CONTEXT_KEY_RE.search(key):
+        return "[REDACTED]"
+    if isinstance(value, dict):
+        return {str(k): redact_pipeline_context(v, key=str(k)) for k, v in value.items()}
+    if isinstance(value, list):
+        return [redact_pipeline_context(item) for item in value]
+    if isinstance(value, str) and len(value) > MAX_PERSISTED_STRING_CHARS:
+        return value[:MAX_PERSISTED_STRING_CHARS] + "\n[TRUNCATED for pipeline state persistence]"
+    return value

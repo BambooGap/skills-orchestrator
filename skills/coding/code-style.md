@@ -7,6 +7,10 @@ load_policy: free
 priority: 70
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/coding/code-style.md
+version: 1.0.0
+lifecycle: active
 ---
 # 代码风格规范 Skill
 

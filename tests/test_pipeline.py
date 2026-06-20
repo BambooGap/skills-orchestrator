@@ -251,6 +251,20 @@ class TestRunState:
         assert restored.context["scope_is_trivial"] is True
         assert restored.context["implementation_plan"] == "do stuff"
 
+    def test_sensitive_context_is_redacted_before_persistence(self):
+        state = RunState(pipeline_id="test", run_id="r1")
+        state.context["api_token"] = "secret-token"
+        state.context["nested"] = {"password": "secret-password"}
+        state.context["normal"] = "safe"
+
+        json_str = state.to_json()
+        restored = RunState.from_json(json_str)
+
+        assert restored.context["api_token"] == "[REDACTED]"
+        assert restored.context["nested"]["password"] == "[REDACTED]"
+        assert restored.context["normal"] == "safe"
+        assert "secret-token" not in json_str
+
 
 # ═══════════════════════════════════════════════════════════
 # Task 4: PipelineLoader
@@ -774,7 +788,7 @@ class TestRunStateStore:
 class TestPipelineMCPTools:
     """测试 Pipeline MCP 工具的 ToolExecutor 集成"""
 
-    def _make_executor(self):
+    def _make_executor(self, *, max_content_bytes=None):
         from skills_orchestrator.mcp.tools import ToolExecutor
         from skills_orchestrator.mcp.registry import SkillRegistry
         import os
@@ -782,7 +796,9 @@ class TestPipelineMCPTools:
         config_path = os.path.join(os.path.dirname(__file__), "..", "config", "skills.yaml")
         registry = SkillRegistry(config_path)
         pipelines_dir = os.path.join(os.path.dirname(__file__), "..", "config", "pipelines")
-        return ToolExecutor(registry, pipelines_dir=pipelines_dir)
+        return ToolExecutor(
+            registry, pipelines_dir=pipelines_dir, max_content_bytes=max_content_bytes
+        )
 
     def test_pipeline_start_full_dev(self):
         executor = self._make_executor()
@@ -832,6 +848,21 @@ class TestPipelineMCPTools:
         text2 = result2[0].text
         assert "full-dev" in text2
         assert run_id in text2
+
+    def test_pipeline_resume_applies_content_byte_limit(self):
+        import re
+
+        executor = self._make_executor(max_content_bytes=5)
+        result = executor.execute("pipeline_start", {"pipeline_id": "full-dev"})
+        text = result[0].text
+        assert "TRUNCATED" in text
+        run_id = re.search(r"Run ID: (\w+)", text).group(1)
+
+        resumed = executor.execute(
+            "pipeline_resume", {"run_id": run_id, "pipeline_id": "full-dev"}
+        )[0].text
+
+        assert "TRUNCATED" in resumed
 
     def test_pipeline_status_no_runs(self):
         with tempfile.TemporaryDirectory() as tmpdir:

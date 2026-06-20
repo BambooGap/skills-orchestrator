@@ -7,6 +7,10 @@ load_policy: free
 priority: 80
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/quality/performance-optimization.md
+version: 1.0.0
+lifecycle: active
 ---
 # 性能优化方法论 Skill
 

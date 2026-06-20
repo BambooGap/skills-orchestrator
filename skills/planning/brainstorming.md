@@ -7,6 +7,10 @@ load_policy: free
 priority: 70
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/planning/brainstorming.md
+version: 1.0.0
+lifecycle: active
 ---
 # 结构化头脑风暴 Skill
 

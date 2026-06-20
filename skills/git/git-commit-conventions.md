@@ -8,6 +8,10 @@ priority: 55
 zones: [default]
 conflict_with: []
 base: git-operations
+owner: skills-orchestrator-core
+source: repo://skills/git/git-commit-conventions.md
+version: 1.0.0
+lifecycle: active
 ---
 # Git 提交规范
 

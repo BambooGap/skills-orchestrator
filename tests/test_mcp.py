@@ -224,6 +224,15 @@ class TestToolExecutor:
         assert "Karpathy Guidelines" in text
         assert "减少 LLM 编码错误" in text
 
+    def test_get_skill_applies_content_byte_limit(self):
+        executor = ToolExecutor(MockRegistry(), max_content_bytes=12)
+
+        results = executor.execute("get_skill", {"id": "karpathy-guidelines"})
+        text = self._text(results)
+
+        assert "truncated: true" in text
+        assert "[TRUNCATED by skills-orchestrator" in text
+
     def test_get_skill_not_found(self):
         with pytest.raises(ValueError) as exc_info:
             self.executor.execute("get_skill", {"id": "nonexistent-skill"})
@@ -273,9 +282,22 @@ class TestToolExecutor:
         decision = self._decision_record(text)
         assert decision["schema_version"] == "skills-orchestrator.prepare_context.v1"
         assert decision["task_hash"]
+        assert decision["task_hash_alg"] in {"SHA-256", "HMAC-SHA256"}
+        assert decision["content_limits"]["max_content_bytes"] == 40000
         assert decision["registry_generation"] == "test-generation"
         assert {skill["id"] for skill in decision["active_skills"]} >= {"git-worktrees"}
         assert decision["content_hashes"]["git-worktrees"]
+
+    def test_prepare_context_uses_hmac_task_hash_when_salt_is_configured(self, monkeypatch):
+        monkeypatch.setenv("SKILLS_ORCHESTRATOR_AUDIT_SALT", "test-salt")
+
+        results = self.executor.execute(
+            "prepare_context",
+            {"task": "git workflow", "max_skills": 1, "include_content": False},
+        )
+        decision = self._decision_record(self._text(results))
+
+        assert decision["task_hash_alg"] == "HMAC-SHA256"
 
     def test_prepare_context_can_return_summary_only(self):
         results = self.executor.execute(

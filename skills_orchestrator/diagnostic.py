@@ -80,6 +80,41 @@ RULES: dict[str, DiagnosticRule] = {
         category=DiagnosticCategory.LOCK,
         description="Current resolved skills differ from the lock file.",
     ),
+    "SO008": DiagnosticRule(
+        rule_id="SO008",
+        name="missing-owner",
+        severity=DiagnosticSeverity.WARNING,
+        category=DiagnosticCategory.METADATA,
+        description="Team policy requires skill owner metadata.",
+    ),
+    "SO009": DiagnosticRule(
+        rule_id="SO009",
+        name="missing-source",
+        severity=DiagnosticSeverity.WARNING,
+        category=DiagnosticCategory.METADATA,
+        description="Team policy requires skill source metadata.",
+    ),
+    "SO010": DiagnosticRule(
+        rule_id="SO010",
+        name="missing-version",
+        severity=DiagnosticSeverity.WARNING,
+        category=DiagnosticCategory.METADATA,
+        description="Team policy requires skill version metadata.",
+    ),
+    "SO011": DiagnosticRule(
+        rule_id="SO011",
+        name="invalid-lifecycle",
+        severity=DiagnosticSeverity.ERROR,
+        category=DiagnosticCategory.METADATA,
+        description="Team policy only allows supported skill lifecycle states.",
+    ),
+    "SO012": DiagnosticRule(
+        rule_id="SO012",
+        name="required-skill-without-approver",
+        severity=DiagnosticSeverity.WARNING,
+        category=DiagnosticCategory.METADATA,
+        description="Required runtime skills should carry approver metadata.",
+    ),
 }
 
 

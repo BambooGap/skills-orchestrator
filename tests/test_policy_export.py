@@ -19,6 +19,10 @@ def _policy_workspace(tmp_path):
         "load_policy: require\n"
         "priority: 20\n"
         "conflict_with: [beta]\n"
+        "owner: platform-team\n"
+        "source: internal://alpha\n"
+        "version: 1.0.0\n"
+        "lifecycle: active\n"
         "---\n"
         "# Alpha\n",
         encoding="utf-8",
@@ -64,6 +68,7 @@ def test_build_opa_input_exports_resolver_facts(tmp_path):
     alpha = next(skill for skill in payload["skills"] if skill["id"] == "alpha")
     beta = next(skill for skill in payload["skills"] if skill["id"] == "beta")
     assert alpha["effective_load_policy"] == "require"
+    assert alpha["governance"]["owner"] == "platform-team"
     assert beta["status"] == "blocked"
     assert beta["block_reason"]
 

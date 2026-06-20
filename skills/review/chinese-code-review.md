@@ -7,6 +7,11 @@ load_policy: require
 priority: 200
 zones: [enterprise]
 conflict_with: [pr-review]
+owner: skills-orchestrator-core
+source: repo://skills/review/chinese-code-review.md
+version: 1.0.0
+lifecycle: active
+approvers: [skills-orchestrator-maintainers]
 ---
 # 中文代码审查 Skill
 

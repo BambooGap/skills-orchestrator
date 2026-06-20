@@ -6,7 +6,8 @@ Use Skills Orchestrator as a team control plane for agent instructions:
 2. check them in CI,
 3. lock and review instruction changes,
 4. export manifests for audit,
-5. route runtime context through MCP.
+5. export registry/evidence bundles for release review,
+6. route runtime context through MCP.
 
 ## Repository Contract
 
@@ -33,8 +34,8 @@ Every team should name owners for three surfaces:
 | `config/skills.yaml` | Platform or repo owner | Zones, load policies, and team defaults. |
 | CI / release artifacts | Release owner | SARIF upload, lock drift, manifest, policy exports. |
 
-Required skills should have an explicit owner and reviewer in frontmatter, even before built-in
-policy packs enforce those fields.
+Required skills should have explicit owner/source/version/lifecycle and approvers in frontmatter.
+`builtin/team-standard` enforces that contract.
 
 ## Required CI Gate
 
@@ -50,17 +51,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.4.0
+      - uses: BambooGap/skills-orchestrator@v2.5.0
         with:
           config: config/skills.yaml
           check-lock: skills.lock.json
+          policy-pack: builtin/team-standard
           upload-sarif: true
 ```
 
 Teams that do not use GitHub Code Scanning can run the same gate without SARIF upload:
 
 ```bash
-skills-orchestrator check --config config/skills.yaml --check-lock skills.lock.json
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --check-lock skills.lock.json \
+  --policy-pack builtin/team-standard \
+  --fail-on warning
 ```
 
 ## Review Contract
@@ -68,7 +74,8 @@ skills-orchestrator check --config config/skills.yaml --check-lock skills.lock.j
 Treat skill changes like code changes. A reviewer should check:
 
 - frontmatter includes `id`, `name`, `summary`, and intentional `load_policy`,
-- shared or required skills have an owner and approval trail,
+- shared or required skills have `owner`, `source`, `version`, `lifecycle`, and required-skill
+  `approvers`,
 - required skills are narrowly scoped,
 - `conflict_with` is symmetrical unless the one-way relation is intentional,
 - lock drift is either regenerated or explicitly rejected,
@@ -89,19 +96,15 @@ Mixing both modes across repos makes review and rollback harder.
 Generate these artifacts for release or internal audit:
 
 ```bash
-skills-orchestrator manifest --config config/skills.yaml --format json \
-  --output instruction-manifest.json
-
-skills-orchestrator manifest --config config/skills.yaml --format cyclonedx \
-  --output instruction-manifest.cdx.json
-
-skills-orchestrator policy export --config config/skills.yaml --format opa-input \
-  --output policy-input.json
+skills-orchestrator evidence export \
+  --config config/skills.yaml \
+  --policy-pack builtin/team-standard \
+  --out evidence
 ```
 
 The native JSON manifest is the authoritative instruction inventory. CycloneDX is an experimental
 adapter for existing supply-chain vocabulary. OPA/Rego exports are proof fixtures, not a second
-runtime policy engine.
+runtime policy engine. `evidence export` writes all of these plus doctor and registry artifacts.
 
 ## Runtime Contract
 
@@ -115,32 +118,35 @@ returned as inactive for this task.
 
 This keeps old instructions from silently carrying into unrelated tasks.
 
-Enable runtime audit when a team needs usage evidence:
+Enable runtime audit when a team needs usage evidence. For commercial logs, set an audit salt so
+task hashes use HMAC-SHA256:
 
 ```bash
+export SKILLS_ORCHESTRATOR_AUDIT_SALT="$(openssl rand -hex 32)"
 skills-orchestrator serve --config config/skills.yaml --audit-dir .skills-audit
 skills-orchestrator usage report --audit-dir .skills-audit
 ```
 
-The audit log stores routing hashes and skill IDs, not raw task text or skill content. Task hashes
-are deterministic pseudonymous identifiers and can be correlated across logs.
+The audit log stores routing hashes and skill IDs, not raw task text or skill content.
 
 ## Rollout Sequence
 
 1. Start with `check --format text` locally.
 2. Add the GitHub Action without SARIF upload.
 3. Generate and review `skills.lock.json`.
-4. Turn on SARIF upload when repository permissions allow `security-events: write`.
-5. Add manifest and policy exports to release evidence.
-6. Enable MCP for runtime routing after CI is stable.
+4. Enable `builtin/team-standard` without `--fail-on warning`; fix governance metadata.
+5. Turn on SARIF upload when repository permissions allow `security-events: write`.
+6. Add `doctor`, `registry build`, and `evidence export` to release evidence.
+7. Enable MCP for runtime routing after CI is stable.
 
 ## Acceptance Criteria
 
 A repository is team-standardized when:
 
-- `check --fail-on warning` passes in CI,
+- `check --policy-pack builtin/team-standard --fail-on warning` passes in CI,
 - lock drift is reviewed or blocked,
 - SARIF is uploaded where Code Scanning is enabled,
-- release evidence includes manifest and policy exports,
+- release evidence includes an `evidence export` bundle and registry snapshot,
+- `doctor` meets the team's score threshold,
 - runtime MCP usage has a documented audit policy,
 - rollback is clear: revert the skill/config change and regenerate affected artifacts.

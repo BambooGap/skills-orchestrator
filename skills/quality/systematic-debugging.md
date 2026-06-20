@@ -7,6 +7,10 @@ load_policy: free
 priority: 100
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/quality/systematic-debugging.md
+version: 1.0.0
+lifecycle: active
 ---
 # 系统化调试 Skill
 

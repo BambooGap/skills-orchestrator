@@ -117,6 +117,16 @@ def _skill_entry(
         "zones": list(skill.zones),
         "conflict_with": list(skill.conflict_with),
         "base": skill.base,
+        "governance": {
+            "owner": skill.owner,
+            "source": skill.source,
+            "version": skill.version,
+            "lifecycle": skill.lifecycle,
+            "approvers": list(skill.approvers),
+            "reviewed_at": skill.reviewed_at,
+            "expires_at": skill.expires_at,
+        },
+        "metadata": dict(skill.metadata),
         "block_reason": block_reasons.get(skill.id, ""),
     }
 

@@ -7,6 +7,10 @@ load_policy: free
 priority: 95
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/review/security-review.md
+version: 1.0.0
+lifecycle: active
 ---
 # 安全代码审查 Skill
 

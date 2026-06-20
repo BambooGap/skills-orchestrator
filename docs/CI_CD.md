@@ -12,9 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.4.0
+      - uses: BambooGap/skills-orchestrator@v2.5.0
         with:
           config: config/skills.yaml
+          policy-pack: builtin/team-standard
           check-lock: skills.lock.json
           upload-sarif: true
 ```

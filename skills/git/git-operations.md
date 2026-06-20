@@ -7,6 +7,10 @@ load_policy: free
 priority: 50
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/git/git-operations.md
+version: 1.0.0
+lifecycle: active
 ---
 # Git 操作规范 Skill
 

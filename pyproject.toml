@@ -1,6 +1,6 @@
 [project]
 name = "skills-orchestrator"
-version = "2.4.0"
+version = "2.5.0"
 description = "Agent Skills 的 SkillOps 工具 — 检查冲突，生成 JSON/SARIF 报告，按需加载"
 readme = "README.md"
 requires-python = ">=3.12"

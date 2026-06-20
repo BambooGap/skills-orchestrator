@@ -7,6 +7,10 @@ load_policy: free
 priority: 100
 zones: [default]
 conflict_with: [chinese-code-review]
+owner: skills-orchestrator-core
+source: repo://skills/review/pr-review.md
+version: 1.0.0
+lifecycle: active
 ---
 # PR Review Skill
 

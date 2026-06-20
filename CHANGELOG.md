@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-06-21
+
+### Added
+- Added `builtin/team-standard` policy pack for owner/source/version/lifecycle/approver governance checks.
+- Added governance metadata parsing for skills and exported it in native manifests, CycloneDX properties, and OPA input.
+- Added `skills-orchestrator doctor` for local commercial-readiness scoring.
+- Added `skills-orchestrator registry build` and `registry diff` for organization-level skill inventory and PR review.
+- Added `skills-orchestrator evidence export` to write check, SARIF, manifest, OPA, Rego, doctor, and registry evidence bundles.
+- Added `skills-orchestrator integrations list` for adjacent agent-tooling ecosystem positioning.
+- Added GitHub Action `policy-pack` input for one-line team-standard CI enforcement.
+
+### Changed
+- Hardened MCP runtime injection with a configurable per-skill content byte limit.
+- Hardened MCP audit task hashing with optional HMAC via `SKILLS_ORCHESTRATOR_AUDIT_SALT`.
+- Hardened MCP audit and pipeline state files with private file permissions.
+- Pipeline run-state persistence now redacts sensitive context keys and truncates oversized context strings.
+
 ## [2.4.0] - 2026-06-20
 
 ### Added

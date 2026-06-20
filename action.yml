@@ -26,6 +26,10 @@ inputs:
     description: Skill file size threshold for SO005 oversized-skill diagnostics.
     default: "20000"
     required: false
+  policy-pack:
+    description: Optional built-in policy pack, for example builtin/team-standard.
+    default: ""
+    required: false
   upload-sarif:
     description: "Upload SARIF to GitHub Code Scanning. Requires security-events: write."
     default: "false"
@@ -54,6 +58,7 @@ runs:
         FORMAT: ${{ inputs.format }}
         FAIL_ON: ${{ inputs.fail-on }}
         MAX_SKILL_BYTES: ${{ inputs.max-skill-bytes }}
+        POLICY_PACK: ${{ inputs.policy-pack }}
         UPLOAD_SARIF: ${{ inputs.upload-sarif }}
         SARIF_FILE: ${{ inputs.sarif-file }}
       run: |
@@ -71,6 +76,10 @@ runs:
 
         if [ -n "$CHECK_LOCK" ]; then
           args+=(--check-lock "$CHECK_LOCK")
+        fi
+
+        if [ -n "$POLICY_PACK" ]; then
+          args+=(--policy-pack "$POLICY_PACK")
         fi
 
         if [ "$UPLOAD_SARIF" = "true" ]; then

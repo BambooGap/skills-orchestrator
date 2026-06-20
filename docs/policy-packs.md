@@ -1,32 +1,35 @@
 # Policy Packs
 
-Policy packs are the team-level contract that turns skill authoring rules into repeatable checks.
+Policy packs turn team skill-authoring rules into repeatable checks.
 
-The current release enforces built-in diagnostics through `skills-orchestrator check`. A future
-policy-pack runtime should make these rules configurable by organization, but teams can already use
-this document as the review contract.
-
-## Current Enforceable Surface
+`v2.5.0` ships the first built-in pack:
 
 ```bash
-skills-orchestrator check --config config/skills.yaml --fail-on warning
-skills-orchestrator check --config config/skills.yaml --check-lock skills.lock.json
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack builtin/team-standard
 ```
 
-Current diagnostics cover required metadata, duplicate IDs, conflict declarations, oversized skill
-files, config drift, and lock drift.
+Use `--fail-on warning` when the team is ready to make the contract blocking:
 
-## Recommended Team Pack
+```bash
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack builtin/team-standard \
+  --fail-on warning
+```
 
-A team-standard pack should require:
+## `builtin/team-standard`
 
-- `id`, `name`, `summary`, and explicit `load_policy` in every skill.
-- `owner` and `approved_by` frontmatter for required skills.
-- `version` or release note linkage for shared skills.
-- `source` for imported skills.
-- `conflict_with` review when skills target the same runtime behavior.
-- `skills.lock.json` regeneration when content hashes change.
-- Manifest and policy export evidence for protected branches or releases.
+This pack adds governance diagnostics:
+
+| Rule | Severity | Requirement |
+| --- | --- | --- |
+| `SO008` | warning | every skill should have `owner` |
+| `SO009` | warning | every skill should have `source` |
+| `SO010` | warning | every skill should have `version` |
+| `SO011` | error | `lifecycle` must be `active`, `beta`, `deprecated`, or `retired` |
+| `SO012` | warning | required skills should have `approvers` |
 
 ## Frontmatter Shape
 
@@ -38,26 +41,37 @@ summary: Shared review rules for production changes.
 tags: [review, team]
 load_policy: require
 owner: platform-team
-approved_by: security-review
+source: internal://agent-skills/team-review
 version: 1.4.0
-source: internal
+lifecycle: active
+approvers: [security-review, staff-engineering]
 ---
 ```
 
-Fields beyond the current core schema are safe to keep in source-controlled frontmatter, but they
-are not yet enforced unless your team adds a local checker around the JSON manifest.
+These fields are exported in:
 
-## Versioning Rules
+- native instruction manifests,
+- experimental CycloneDX properties,
+- OPA input policy export,
+- organization registry snapshots.
 
-- Treat required skills as versioned team assets.
-- Review required skill changes like code changes.
-- Regenerate `skills.lock.json` after content or metadata changes.
-- Keep generated artifacts either committed everywhere or generated in CI everywhere.
+## GitHub Action
+
+```yaml
+- uses: BambooGap/skills-orchestrator@v2.5.0
+  with:
+    config: config/skills.yaml
+    policy-pack: builtin/team-standard
+    fail-on: warning
+```
+
+For SARIF upload, also set `upload-sarif: true` and grant `security-events: write`.
 
 ## Migration Path
 
-1. Start with `check --fail-on warning`.
-2. Add `skills.lock.json` to PR review.
-3. Export the native manifest in CI.
-4. Add a local manifest checker for owner/version fields if your organization needs them now.
-5. Move to built-in `policy_packs` when the runtime is added.
+1. Run the pack without `--fail-on warning` and review findings.
+2. Add `owner`, `source`, `version`, and `lifecycle` to every shared skill.
+3. Add `approvers` to required skills.
+4. Regenerate `skills.lock.json`.
+5. Turn on `--fail-on warning` in protected branch CI.
+6. Add `doctor` and `evidence export` to release verification.

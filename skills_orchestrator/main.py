@@ -205,11 +205,25 @@ def build(config: str, output: str, zone: Optional[str], lock: bool):
     show_default=True,
     help="输出格式；text 保持原有行为",
 )
-def validate(config: str, zone: Optional[str], check_lock: Optional[str], output_format: str):
+@click.option(
+    "--policy-pack",
+    "policy_packs",
+    multiple=True,
+    help="启用内置治理规则包，例如 builtin/team-standard。可重复传入。",
+)
+def validate(
+    config: str,
+    zone: Optional[str],
+    check_lock: Optional[str],
+    output_format: str,
+    policy_packs: tuple[str, ...],
+):
     """验证配置合法性（不生成文件）"""
     try:
         if output_format != "text":
-            report = run_check(config, zone_id=zone, check_lock=check_lock)
+            report = run_check(
+                config, zone_id=zone, check_lock=check_lock, policy_packs=policy_packs
+            )
             if output_format == "json":
                 click.echo(console_safe_text(format_diagnostics_json(report)), nl=False)
             else:
@@ -233,6 +247,31 @@ def validate(config: str, zone: Optional[str], check_lock: Optional[str], output
         resolved = resolver.resolve(target_zone)
 
         click.echo(_ok("配置验证通过"))
+        if policy_packs:
+            report = run_check(
+                config,
+                zone_id=zone,
+                check_lock=check_lock,
+                policy_packs=policy_packs,
+            )
+            summary = report.summary()
+            if summary["total"]:
+                click.echo(
+                    _warn(
+                        "Policy findings: "
+                        f"{summary['errors']} errors, {summary['warnings']} warnings, "
+                        f"{summary['infos']} infos"
+                    )
+                )
+                for diagnostic in report.diagnostics:
+                    click.echo(
+                        f"  [{diagnostic.severity.value.upper()}] "
+                        f"{diagnostic.rule_id}: {diagnostic.message}"
+                    )
+                if any(d.severity == DiagnosticSeverity.ERROR for d in report.diagnostics):
+                    raise SystemExit(1)
+            else:
+                click.echo(_ok("Policy packs passed"))
         if target_zone:
             click.echo(f"  Zone:   {target_zone.name} ({target_zone.id})")
         click.echo(f"  Zones:  {len(cfg.zones)}")
@@ -542,7 +581,18 @@ def sync(
     default=None,
     help="可选。写入 MCP JSONL 审计事件的目录；也可用 SKILLS_ORCHESTRATOR_AUDIT_DIR。",
 )
-def serve(config: str, zone: str | None, audit_dir: str | None):
+@click.option(
+    "--max-content-bytes",
+    default=None,
+    type=int,
+    help="运行期注入单个 skill 内容的最大字节数；0 表示不限制。",
+)
+def serve(
+    config: str,
+    zone: str | None,
+    audit_dir: str | None,
+    max_content_bytes: int | None,
+):
     """启动 MCP Skills Server（stdio 模式，供 Claude Code 连接）
 
     \b
@@ -592,6 +642,7 @@ def serve(config: str, zone: str | None, audit_dir: str | None):
             zone_id=zone,
             pipelines_dir=str(pipelines_dir),
             audit_dir=audit_dir,
+            max_content_bytes=max_content_bytes,
         )
     )
 
@@ -606,12 +657,19 @@ def serve(config: str, zone: str | None, audit_dir: str | None):
     default=None,
     help="可选。写入 MCP JSONL 审计事件的目录；也可用 SKILLS_ORCHESTRATOR_AUDIT_DIR。",
 )
+@click.option(
+    "--max-content-bytes",
+    default=None,
+    type=int,
+    help="运行期注入单个 skill 内容的最大字节数；0 表示不限制。",
+)
 def mcp_test(
     tool_name: str,
     args_json: str,
     config: str,
     zone: Optional[str],
     audit_dir: str | None,
+    max_content_bytes: int | None,
 ):
     """在命令行测试 MCP 工具调用（不启动 server）
 
@@ -632,7 +690,12 @@ def mcp_test(
     try:
         registry = SkillRegistry(config_path, zone_id=zone)
         pipelines_dir = _resolve_pipelines_dir(config)
-        executor = ToolExecutor(registry, pipelines_dir=str(pipelines_dir), audit_dir=audit_dir)
+        executor = ToolExecutor(
+            registry,
+            pipelines_dir=str(pipelines_dir),
+            audit_dir=audit_dir,
+            max_content_bytes=max_content_bytes,
+        )
         arguments = json.loads(args_json)
         results = executor.execute(tool_name, arguments)
         for r in results:
@@ -642,6 +705,242 @@ def mcp_test(
         raise SystemExit(1)
     except Exception as e:
         click.echo(_err(str(e)), err=True)
+        raise SystemExit(1)
+
+
+# ──────────────────────── Integrations 子命令 ────────────────────────
+
+
+@cli.group()
+def integrations():
+    """外部 agent 生态集成目录"""
+    pass
+
+
+@integrations.command("list")
+@click.option("--layer", default=None, help="按生态层过滤，例如 execution-model")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+)
+def integrations_list(layer: str | None, output_format: str):
+    """列出建议集成的相邻 agent 工具和定位。"""
+    from skills_orchestrator.integrations import get_integrations
+
+    rows = get_integrations(layer)
+    if output_format == "json":
+        payload = {
+            "schema_version": "skills-orchestrator.integrations.v1",
+            "integrations": [row.to_dict() for row in rows],
+        }
+        click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+
+    if not rows:
+        click.echo(_warn(f"没有找到 layer={layer} 的集成项"))
+        return
+
+    click.echo("Skills Orchestrator integration catalog\n")
+    for row in rows:
+        click.echo(f"{click.style(row.name, bold=True)} ({row.id})")
+        click.echo(f"  layer: {row.layer}")
+        click.echo(f"  relationship: {row.relationship}")
+        click.echo(f"  strategy: {row.strategy}")
+        click.echo(f"  commercial_value: {row.commercial_value}")
+        click.echo(f"  url: {row.url}")
+        click.echo("")
+
+
+# ──────────────────────── Registry 子命令 ────────────────────────
+
+
+@cli.group()
+def registry():
+    """组织级 skill registry 导出"""
+    pass
+
+
+@registry.command("build")
+@click.option(
+    "--config-glob",
+    "config_globs",
+    multiple=True,
+    default=("config/skills.yaml",),
+    show_default=True,
+    help="skills.yaml 路径或 glob；可重复传入。",
+)
+@click.option("--zone", "-z", default=None, help="指定所有配置使用的 zone id")
+@click.option("--output", "-o", default=None, help="写入 registry JSON 文件；默认输出到 stdout")
+def registry_build(config_globs: tuple[str, ...], zone: str | None, output: str | None):
+    """构建组织级 skill registry JSON。"""
+    from skills_orchestrator.org_registry import build_registry, write_registry
+
+    try:
+        payload = build_registry(config_globs, zone_id=zone)
+        rendered = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+        if output:
+            write_registry(payload, output)
+            click.echo(_ok(f"Registry written: {output}"))
+            click.echo(
+                "  "
+                + f"configs={payload['summary']['configs']} "
+                + f"skills={payload['summary']['skill_refs']} "
+                + f"duplicates={payload['summary']['duplicate_skill_ids']}"
+            )
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
+@registry.command("diff")
+@click.argument("base")
+@click.argument("head")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+)
+def registry_diff(base: str, head: str, output_format: str):
+    """比较两个 registry JSON 文件。"""
+    from skills_orchestrator.org_registry import diff_registries
+
+    try:
+        base_payload = json.loads(Path(base).read_text(encoding="utf-8"))
+        head_payload = json.loads(Path(head).read_text(encoding="utf-8"))
+        diff = diff_registries(base_payload, head_payload)
+        if output_format == "json":
+            click.echo(json.dumps(diff, ensure_ascii=False, indent=2))
+            return
+        summary = diff["summary"]
+        click.echo(
+            "Registry diff: "
+            f"{summary['added']} added, {summary['removed']} removed, "
+            f"{summary['changed']} changed"
+        )
+        for item in diff["changed"]:
+            click.echo(f"  changed: {item['registry_key']} ({', '.join(item['changes'].keys())})")
+        for item in diff["added"]:
+            click.echo(f"  added: {item['registry_key']}")
+        for item in diff["removed"]:
+            click.echo(f"  removed: {item['registry_key']}")
+        for item in diff.get("duplicate_id_changes", []):
+            click.echo(f"  duplicate-id: {item['id']} {item['before']} -> {item['after']}")
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
+# ──────────────────────── Doctor 子命令 ────────────────────────
+
+
+@cli.command("doctor")
+@click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
+@click.option("--zone", "-z", default=None, help="指定 zone id")
+@click.option(
+    "--policy-pack",
+    "policy_packs",
+    multiple=True,
+    default=("builtin/team-standard",),
+    show_default=True,
+    help="启用内置治理规则包；可重复传入。",
+)
+@click.option("--check-lock", default=None, help="检查指定 skills.lock.json 是否过期")
+@click.option("--agents-md", default="AGENTS.md", help="生成的 AGENTS.md 路径")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+)
+@click.option("--fail-under", default=0, show_default=True, help="分数低于该值时返回非零退出码")
+def doctor(
+    config: str,
+    zone: str | None,
+    policy_packs: tuple[str, ...],
+    check_lock: str | None,
+    agents_md: str,
+    output_format: str,
+    fail_under: int,
+):
+    """生成团队商用 readiness 报告。"""
+    from skills_orchestrator.doctor import format_doctor_text, run_doctor
+
+    try:
+        payload = run_doctor(
+            config,
+            zone_id=zone,
+            policy_packs=policy_packs,
+            check_lock=check_lock,
+            agents_md=agents_md,
+        )
+        if output_format == "json":
+            click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            click.echo(console_safe_text(format_doctor_text(payload)), nl=False)
+        if fail_under and payload["score"] < fail_under:
+            raise SystemExit(1)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
+# ──────────────────────── Evidence 子命令 ────────────────────────
+
+
+@cli.group()
+def evidence():
+    """导出 CI/审计/商业交付证据包"""
+    pass
+
+
+@evidence.command("export")
+@click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
+@click.option("--zone", "-z", default=None, help="指定 zone id")
+@click.option("--out", "out_dir", default="evidence", show_default=True, help="证据包输出目录")
+@click.option(
+    "--policy-pack",
+    "policy_packs",
+    multiple=True,
+    default=("builtin/team-standard",),
+    show_default=True,
+    help="启用内置治理规则包；可重复传入。",
+)
+@click.option("--check-lock", default=None, help="检查指定 skills.lock.json 是否过期")
+@click.option("--agents-md", default="AGENTS.md", help="生成的 AGENTS.md 路径")
+def evidence_export(
+    config: str,
+    zone: str | None,
+    out_dir: str,
+    policy_packs: tuple[str, ...],
+    check_lock: str | None,
+    agents_md: str,
+):
+    """导出 check、manifest、policy、doctor、registry 证据文件。"""
+    from skills_orchestrator.evidence import export_evidence_bundle
+
+    try:
+        bundle = export_evidence_bundle(
+            config,
+            out_dir,
+            zone_id=zone,
+            policy_packs=policy_packs,
+            check_lock=check_lock,
+            agents_md=agents_md,
+        )
+        click.echo(_ok(f"Evidence bundle written: {out_dir}"))
+        for label, path in bundle["files"].items():
+            click.echo(f"  {label}: {path}")
+        click.echo(f"  evidence_manifest: {Path(out_dir) / 'evidence-manifest.json'}")
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
         raise SystemExit(1)
 
 

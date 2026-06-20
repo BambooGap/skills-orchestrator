@@ -1,7 +1,7 @@
 """SkillMeta 数据模型"""
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import Any, List
 
 
 @dataclass
@@ -18,6 +18,14 @@ class SkillMeta:
     zones: List[str] = field(default_factory=list)
     conflict_with: List[str] = field(default_factory=list)
     base: str = ""  # base skill ID for content inheritance
+    owner: str = ""
+    source: str = ""
+    version: str = ""
+    lifecycle: str = "active"
+    approvers: List[str] = field(default_factory=list)
+    reviewed_at: str = ""
+    expires_at: str = ""
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         valid_policies = ("require", "free")
@@ -25,3 +33,5 @@ class SkillMeta:
             raise ValueError(f"load_policy 必须是 {valid_policies} 之一")
         if not 0 <= self.priority <= 999:
             raise ValueError("priority 必须在 0-999 范围内")
+        if isinstance(self.approvers, str):
+            self.approvers = [self.approvers]

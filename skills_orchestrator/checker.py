@@ -11,6 +11,7 @@ import yaml
 from skills_orchestrator.compiler import Parser, Resolver, SkillsLock
 from skills_orchestrator.diagnostic import Diagnostic, DiagnosticReport
 from skills_orchestrator.models import Config, ResolvedConfig, SkillMeta, Zone
+from skills_orchestrator.policy.packs import policy_pack_diagnostics
 from skills_orchestrator.security import validate_skill_id
 
 
@@ -30,6 +31,7 @@ def run_check(
     zone_id: str | None = None,
     check_lock: str | None = None,
     max_skill_bytes: int = DEFAULT_MAX_SKILL_BYTES,
+    policy_packs: list[str] | tuple[str, ...] | None = None,
 ) -> DiagnosticReport:
     """Run non-mutating checks and return structured diagnostics."""
     parser = Parser(config_path)
@@ -39,6 +41,7 @@ def run_check(
     diagnostics.extend(_duplicate_id_diagnostics(config_path))
     diagnostics.extend(_metadata_diagnostics(cfg, max_skill_bytes=max_skill_bytes))
     diagnostics.extend(_asymmetric_conflict_diagnostics(cfg))
+    diagnostics.extend(policy_pack_diagnostics(cfg, policy_packs or []))
 
     target_zone = _select_zone(cfg, zone_id)
     resolved: ResolvedConfig | None = None

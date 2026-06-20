@@ -8,6 +8,9 @@ priority: 150
 zones: [default]
 source: https://github.com/forrestchang/andrej-karpathy-skills
 license: MIT
+owner: skills-orchestrator-core
+version: 1.0.0
+lifecycle: active
 ---
 
 # Karpathy Guidelines

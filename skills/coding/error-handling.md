@@ -7,6 +7,10 @@ load_policy: free
 priority: 85
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/coding/error-handling.md
+version: 1.0.0
+lifecycle: active
 ---
 # 错误处理规范 Skill
 

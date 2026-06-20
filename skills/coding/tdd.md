@@ -7,6 +7,10 @@ load_policy: free
 priority: 90
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/coding/tdd.md
+version: 1.0.0
+lifecycle: active
 ---
 # 测试驱动开发 Skill
 

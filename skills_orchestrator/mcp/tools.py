@@ -17,7 +17,7 @@ from skills_orchestrator.security import (
     validate_identifier,
 )
 
-from .audit import AuditLogger
+from .audit import AuditLogger, hash_task
 from .registry import SkillRegistry
 from .search import KeywordSearcher
 
@@ -27,6 +27,9 @@ if TYPE_CHECKING:
 
 
 # ── Tool Schema 定义 ──────────────────────────────────────────────
+
+MAX_CONTENT_BYTES_ENV = "SKILLS_ORCHESTRATOR_MAX_CONTENT_BYTES"
+DEFAULT_MAX_CONTENT_BYTES = 40_000
 
 TOOL_LIST_SKILLS = types.Tool(
     name="list_skills",
@@ -278,6 +281,7 @@ class ToolExecutor:
         registry: SkillRegistry,
         pipelines_dir: str | None = None,
         audit_dir: str | None = None,
+        max_content_bytes: int | None = None,
     ):
         self._registry = registry
         self._searcher = KeywordSearcher()
@@ -285,6 +289,7 @@ class ToolExecutor:
         self._pipelines: dict[str, Pipeline] = {}
         self._store: RunStateStore | None = None
         self._audit = AuditLogger(audit_dir)
+        self._max_content_bytes = self._resolve_max_content_bytes(max_content_bytes)
 
     def _get_store(self) -> RunStateStore:
         from skills_orchestrator.pipeline.store import RunStateStore
@@ -371,6 +376,35 @@ class ToolExecutor:
         if not isinstance(arguments, dict):
             raise ValueError("MCP 工具参数必须是 JSON object")
         return arguments
+
+    @staticmethod
+    def _resolve_max_content_bytes(max_content_bytes: int | None) -> int:
+        if max_content_bytes is not None:
+            return max(max_content_bytes, 0)
+        import os
+
+        configured = os.environ.get(MAX_CONTENT_BYTES_ENV)
+        if configured:
+            return parse_int_in_range(
+                configured,
+                MAX_CONTENT_BYTES_ENV,
+                default=DEFAULT_MAX_CONTENT_BYTES,
+                minimum=0,
+                maximum=2_000_000,
+            )
+        return DEFAULT_MAX_CONTENT_BYTES
+
+    def _limit_content(self, skill_id: str, content: str) -> tuple[str, bool, int]:
+        data = content.encode("utf-8")
+        if self._max_content_bytes <= 0 or len(data) <= self._max_content_bytes:
+            return content, False, len(data)
+        limited = data[: self._max_content_bytes].decode("utf-8", errors="ignore")
+        notice = (
+            "\n\n[TRUNCATED by skills-orchestrator: "
+            f"{skill_id} exceeded {self._max_content_bytes} bytes. "
+            "Use progressive disclosure or raise SKILLS_ORCHESTRATOR_MAX_CONTENT_BYTES.]"
+        )
+        return limited + notice, True, len(data)
 
     @staticmethod
     def _get_string(args: dict[str, Any], key: str, default: str = "") -> str:
@@ -474,14 +508,21 @@ class ToolExecutor:
                 f"找不到 skill: '{skill_id}'{hint}\n使用 list_skills 查看所有可用 skill。"
             )
 
+        limited_content, truncated, original_bytes = self._limit_content(skill_id, content)
+        limit_note = (
+            f" | truncated: true | original_bytes: {original_bytes}"
+            if truncated
+            else f" | bytes: {original_bytes}"
+        )
         header = (
             f"# Skill: {meta.name if meta else skill_id}\n"
             f"id: {skill_id} | "
             f"priority: {meta.priority if meta else '?'} | "
-            f"tags: [{', '.join(meta.tags) if meta else ''}]\n\n"
+            f"tags: [{', '.join(meta.tags) if meta else ''}]"
+            f"{limit_note}\n\n"
             f"---\n\n"
         )
-        return [types.TextContent(type="text", text=header + content)]
+        return [types.TextContent(type="text", text=header + limited_content)]
 
     # ── suggest_combo ─────────────────────────────────────────────
 
@@ -646,13 +687,19 @@ class ToolExecutor:
         active_ids = [s.id for s in active_skills]
         inactive_ids = [s.id for s in self._registry.all() if s.id not in set(active_ids)]
         now = datetime.now(timezone.utc)
-        task_hash = hashlib.sha256(task.encode("utf-8")).hexdigest()
+        task_hash_record = hash_task(task)
         routing_id = uuid.uuid4().hex[:12]
         content_hashes: dict[str, str] = {}
+        content_bytes: dict[str, int] = {}
+        truncated_skill_ids: list[str] = []
         for skill in active_skills:
             content = self._registry.get_content(skill.id)
             if content is not None:
                 content_hashes[skill.id] = hashlib.sha256(content.encode("utf-8")).hexdigest()
+                limited_content, truncated, original_bytes = self._limit_content(skill.id, content)
+                content_bytes[skill.id] = original_bytes
+                if truncated or limited_content != content:
+                    truncated_skill_ids.append(skill.id)
 
         decision_record = {
             "schema_version": "skills-orchestrator.prepare_context.v1",
@@ -661,14 +708,21 @@ class ToolExecutor:
             "expires_at": (now + timedelta(hours=24)).isoformat().replace("+00:00", "Z"),
             "zone": self._registry.zone_id or "default",
             "registry_generation": self._registry.generation_id,
-            "task_hash": task_hash,
+            "task_hash": task_hash_record["value"],
+            "task_hash_alg": task_hash_record["alg"],
             "max_skills": max_skills,
             "include_content": include_content,
+            "content_limits": {
+                "max_content_bytes": self._max_content_bytes,
+                "truncated_skill_ids": truncated_skill_ids,
+            },
             "active_skills": [
                 {
                     "id": skill.id,
                     "required": skill.id in {s.id for s in forced_skills},
                     "content_hash": content_hashes.get(skill.id),
+                    "content_bytes": content_bytes.get(skill.id),
+                    "truncated": skill.id in truncated_skill_ids,
                 }
                 for skill in active_skills
             ],
@@ -683,10 +737,12 @@ class ToolExecutor:
             extra={
                 "event": "prepare_context_decision",
                 "routing_id": routing_id,
-                "task_hash": task_hash,
+                "task_hash": task_hash_record["value"],
+                "task_hash_alg": task_hash_record["alg"],
                 "active_skill_ids": active_ids,
                 "inactive_skill_count": len(inactive_ids),
                 "include_content": include_content,
+                "truncated_skill_ids": truncated_skill_ids,
             },
         )
 
@@ -741,8 +797,10 @@ class ToolExecutor:
                 content = self._registry.get_content(skill.id)
                 if content is None:
                     continue
+                content, truncated, original_bytes = self._limit_content(skill.id, content)
                 lines.append("")
-                lines.append(f"═══ Active Skill: {skill.id} — {skill.name} ═══")
+                suffix = f" [TRUNCATED from {original_bytes} bytes]" if truncated else ""
+                lines.append(f"═══ Active Skill: {skill.id} — {skill.name}{suffix} ═══")
                 lines.append(content)
                 lines.append("═══════════════════════════════════")
         else:
@@ -830,8 +888,12 @@ class ToolExecutor:
         if step and self._registry is not None:
             skill_content = self._registry.get_content(step.skill)
             if skill_content:
+                skill_content, truncated, original_bytes = self._limit_content(
+                    step.skill, skill_content
+                )
                 lines.append("")
-                lines.append(f"═══ 当前步骤 Skill: {step.skill} ═══")
+                suffix = f" [TRUNCATED from {original_bytes} bytes]" if truncated else ""
+                lines.append(f"═══ 当前步骤 Skill: {step.skill}{suffix} ═══")
                 lines.append(skill_content)
                 lines.append("═══════════════════════════════════")
 
@@ -997,8 +1059,12 @@ class ToolExecutor:
         if next_step and self._registry is not None:
             skill_content = self._registry.get_content(next_step.skill)
             if skill_content:
+                skill_content, truncated, original_bytes = self._limit_content(
+                    next_step.skill, skill_content
+                )
                 lines.append("")
-                lines.append(f"═══ 当前步骤 Skill: {next_step.skill} ═══")
+                suffix = f" [TRUNCATED from {original_bytes} bytes]" if truncated else ""
+                lines.append(f"═══ 当前步骤 Skill: {next_step.skill}{suffix} ═══")
                 lines.append(skill_content)
                 lines.append("═══════════════════════════════════")
 
@@ -1066,8 +1132,12 @@ class ToolExecutor:
         if step and self._registry is not None:
             skill_content = self._registry.get_content(step.skill)
             if skill_content:
+                skill_content, truncated, original_bytes = self._limit_content(
+                    step.skill, skill_content
+                )
                 lines.append("")
-                lines.append(f"═══ 当前步骤 Skill: {step.skill} ═══")
+                suffix = f" [TRUNCATED from {original_bytes} bytes]" if truncated else ""
+                lines.append(f"═══ 当前步骤 Skill: {step.skill}{suffix} ═══")
                 lines.append(skill_content)
                 lines.append("═══════════════════════════════════")
 

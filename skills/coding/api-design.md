@@ -7,6 +7,10 @@ load_policy: free
 priority: 80
 zones: [default]
 conflict_with: []
+owner: skills-orchestrator-core
+source: repo://skills/coding/api-design.md
+version: 1.0.0
+lifecycle: active
 ---
 # API 设计规范 Skill
 

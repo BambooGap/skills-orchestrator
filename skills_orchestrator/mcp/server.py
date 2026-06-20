@@ -25,6 +25,7 @@ def create_server(
     zone_id: str | None = None,
     pipelines_dir: str | None = None,
     audit_dir: str | None = None,
+    max_content_bytes: int | None = None,
 ) -> tuple[Server, ToolExecutor]:
     """创建并配置 MCP Server，返回 (server, executor)
 
@@ -35,7 +36,12 @@ def create_server(
         audit_dir: MCP audit JSONL 输出目录（可选）
     """
     registry = SkillRegistry(config_path, zone_id=zone_id)
-    executor = ToolExecutor(registry, pipelines_dir=pipelines_dir, audit_dir=audit_dir)
+    executor = ToolExecutor(
+        registry,
+        pipelines_dir=pipelines_dir,
+        audit_dir=audit_dir,
+        max_content_bytes=max_content_bytes,
+    )
 
     server = Server("skills-orchestrator")
 
@@ -58,6 +64,7 @@ async def run_stdio(
     zone_id: str | None = None,
     pipelines_dir: str | None = None,
     audit_dir: str | None = None,
+    max_content_bytes: int | None = None,
 ) -> None:
     """以 stdio 模式运行 MCP Server（Claude Code 默认连接方式）
 
@@ -72,6 +79,7 @@ async def run_stdio(
         zone_id=zone_id,
         pipelines_dir=pipelines_dir,
         audit_dir=audit_dir,
+        max_content_bytes=max_content_bytes,
     )
 
     async with stdio_server() as (read_stream, write_stream):
