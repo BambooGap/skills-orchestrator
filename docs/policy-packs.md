@@ -2,7 +2,7 @@
 
 Policy packs turn team skill-authoring rules into repeatable checks.
 
-`v2.5.0` ships the first built-in pack:
+`v2.5.1` ships the first built-in pack:
 
 ```bash
 skills-orchestrator check \
@@ -58,7 +58,7 @@ These fields are exported in:
 ## GitHub Action
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v2.5.0
+- uses: BambooGap/skills-orchestrator@v2.5.1
   with:
     config: config/skills.yaml
     policy-pack: builtin/team-standard

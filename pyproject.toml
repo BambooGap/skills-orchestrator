@@ -1,11 +1,23 @@
 [project]
 name = "skills-orchestrator"
-version = "2.5.0"
-description = "Agent Skills 的 SkillOps 工具 — 检查冲突，生成 JSON/SARIF 报告，按需加载"
+version = "2.5.1"
+description = "SkillOps / instruction-supply-chain control plane for AI-agent teams: policy packs, registry, evidence bundles, SARIF/CI, and MCP runtime."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
-keywords = ["claude", "agents", "skills", "mcp", "ai", "llm", "coding-assistant"]
+keywords = [
+    "claude",
+    "agents",
+    "skills",
+    "mcp",
+    "ai",
+    "llm",
+    "coding-assistant",
+    "skillops",
+    "sarif",
+    "policy-as-code",
+    "instruction-supply-chain",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

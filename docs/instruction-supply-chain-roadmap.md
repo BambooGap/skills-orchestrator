@@ -1,6 +1,6 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v2.5.0 release slice: registry and evidence, built-in team policy pack, commercial
+> Status: v2.5.x release slice: registry and evidence, built-in team policy pack, commercial
 > readiness doctor, integration catalog, and hardened runtime audit boundaries.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
@@ -156,7 +156,7 @@ distribution and CI integration are.
 
 ## Phase 6: Team Standardization And Runtime Governance
 
-Status: implemented across v2.4.0 and v2.5.0.
+Status: implemented across v2.4.0 and v2.5.x.
 
 Goal: move from advisory docs to a team-standard product loop.
 

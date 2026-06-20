@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-06-21
+
+### Changed
+- Updated project-page positioning for GitHub, PyPI, and the GitHub Action marketplace around the current SkillOps / instruction-supply-chain control-plane scope.
+- Refreshed install and CI examples to point at `v2.5.1`.
+
 ## [2.5.0] - 2026-06-21
 
 ### Added

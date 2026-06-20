@@ -118,7 +118,7 @@ def _load_pipeline(pipeline_id: str, config_path: Optional[str] = None):
 @click.group()
 @click.version_option(version=__version__, prog_name="skills-orchestrator")
 def cli():
-    """Skills Orchestrator — 编译时 Skill 治理工具"""
+    """Skills Orchestrator — SkillOps / instruction-supply-chain control plane."""
     pass
 
 
@@ -142,7 +142,7 @@ cli.add_command(_policy_cmd)
 @click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则自动探测")
 @click.option("--lock", is_flag=True, help="同时生成 skills.lock.json 保证可复现性")
 def build(config: str, output: str, zone: Optional[str], lock: bool):
-    """编译配置，生成 AGENTS.md"""
+    """编译 skill 配置并生成 AGENTS.md。"""
     try:
         parser = Parser(config)
         cfg = parser.parse()

@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.5.0
+      - uses: BambooGap/skills-orchestrator@v2.5.1
         with:
           config: config/skills.yaml
           check-lock: skills.lock.json

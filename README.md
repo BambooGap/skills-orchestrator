@@ -1,8 +1,8 @@
 # Skills Orchestrator
 
-**Agent Skills 的 SkillOps 工具** — 检查冲突、生成机器可读报告、按任务路由 skills，并同步到 AI 编码助手。
+**AI Agent 团队的 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
 
-把分散在各处的 `.md` Skill 文件治理成可检查、可同步、可按需加载的 Skill 系统。先用 `check` 找出 metadata、冲突声明和 lock 漂移问题，再用 `manifest` / `policy export` 生成机器可读清单，最后通过 `AGENTS.md`、MCP Server 和 Pipeline 接入编码助手运行时。
+它不替代 Codex、Claude Code、Omnigent、CodeGraph、Superpowers 或业务记忆系统；它位于这些工具之间，负责回答团队最实际的问题：哪些 skills 可以用、谁负责、来源是否可信、CI 是否能阻断、审计证据在哪里，以及运行时应给 agent 注入哪些指令。
 
 ```bash
 pip install skills-orchestrator
@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.5.0
+      - uses: BambooGap/skills-orchestrator@v2.5.1
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

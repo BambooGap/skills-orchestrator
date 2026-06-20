@@ -1,6 +1,6 @@
 # Registry And Evidence
 
-`v2.5.0` adds the commercial evidence layer for SkillOps teams:
+`v2.5.x` adds the commercial evidence layer for SkillOps teams:
 
 - `doctor`: local readiness score and actionable findings.
 - `registry build`: organization-level skill inventory from one or more configs.
