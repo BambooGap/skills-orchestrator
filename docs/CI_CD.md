@@ -6,22 +6,26 @@
 permissions:
   contents: read
   security-events: write
+  pull-requests: write
 
 jobs:
   skills:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.6.0
+      - uses: BambooGap/skills-orchestrator@v3.0.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
           check-lock: skills.lock.json
           upload-sarif: true
+          comment-registry-diff: true
 ```
 
 `upload-sarif: true` requires `security-events: write`. Use `upload-sarif: false` or omit the
 option if Code Scanning is not enabled.
+`comment-registry-diff: true` requires `pull-requests: write` and updates one marker-based PR
+comment per pull request.
 
 ## Plain CLI
 

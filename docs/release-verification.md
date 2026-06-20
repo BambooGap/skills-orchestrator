@@ -9,6 +9,8 @@ python -m ruff format --check skills_orchestrator/ tests/ scripts/check_action_p
 python -m ruff check skills_orchestrator/ tests/ scripts/check_action_pins.py
 python -m pytest
 python scripts/check_action_pins.py
+skills-orchestrator supply-chain sbom --output package-sbom.cdx.json
+python -m json.tool package-sbom.cdx.json >/dev/null
 python -m build
 python -m twine check dist/*
 ```
@@ -26,6 +28,19 @@ skills-orchestrator policy export --config config/skills.yaml --format opa-input
   --output policy-input.json
 skills-orchestrator policy export --config config/skills.yaml --format rego-test \
   --output skills_orchestrator_policy_test.rego
+skills-orchestrator registry build --config-glob config/skills.yaml --output registry-before.json
+cp registry-before.json registry-after.json
+skills-orchestrator registry diff registry-before.json registry-after.json \
+  --format markdown \
+  --output registry-diff.md \
+  --force
+skills-orchestrator adapters inspect --format json > adapter-inspect.json
+skills-orchestrator registry comment-body registry-diff.md --output registry-diff-comment.md
+skills-orchestrator schema validate --kind adapter-inspect --input adapter-inspect.json
+skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbom.cdx.json
+skills-orchestrator schema validate \
+  --kind hosted-registry-ingest \
+  --input examples/commercial-handoff/registry-ingest.json
 ```
 
 ## Docker Smoke
@@ -49,8 +64,11 @@ Verify:
 - PyPI shows the intended version as latest.
 - Wheel and sdist are present.
 - PyPI provenance / attestations are visible for both artifacts.
+- CodeQL workflow completed or is intentionally skipped for the tag.
+- GHCR workflow published the release image when container publishing is enabled.
 
 ## Current Gaps
 
-The release workflow attests Python distribution artifacts. Docker image publishing, image SBOM,
-image signing, and SLSA image provenance are future hardening items.
+The release workflow attests Python distribution artifacts and the GHCR workflow publishes release
+images. Image SBOM, image signing, SLSA image provenance, and hash-locked Python installs remain
+future hardening items.

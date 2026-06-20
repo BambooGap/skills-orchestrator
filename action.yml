@@ -38,6 +38,34 @@ inputs:
     description: SARIF output path used when upload-sarif is true.
     default: skills-orchestrator.sarif
     required: false
+  registry-diff:
+    description: "Generate a base-vs-head registry diff Markdown artifact."
+    default: "false"
+    required: false
+  registry-config-glob:
+    description: Newline-separated skills.yaml paths or globs for registry diff.
+    default: config/skills.yaml
+    required: false
+  registry-base-ref:
+    description: Optional git ref for registry diff base. Defaults to the pull request base ref.
+    default: ""
+    required: false
+  registry-diff-file:
+    description: Relative output filename for the registry diff Markdown artifact.
+    default: registry-diff.md
+    required: false
+  comment-registry-diff:
+    description: "Update an idempotent pull request comment with the registry diff. Requires pull-requests: write."
+    default: "false"
+    required: false
+
+outputs:
+  registry-diff-file:
+    description: Absolute path to the generated registry diff Markdown file.
+    value: ${{ steps.registry_diff.outputs.markdown_file }}
+  registry-comment-body:
+    description: Absolute path to the generated PR comment body Markdown file.
+    value: ${{ steps.registry_diff.outputs.comment_body }}
 
 runs:
   using: composite
@@ -115,3 +143,85 @@ runs:
       if: ${{ inputs.upload-sarif == 'true' && steps.check.outputs.exit_code != '0' }}
       shell: bash
       run: exit "${{ steps.check.outputs.exit_code }}"
+
+    - name: Build registry diff
+      id: registry_diff
+      if: ${{ inputs.registry-diff == 'true' || inputs.comment-registry-diff == 'true' }}
+      shell: bash
+      env:
+        REGISTRY_CONFIG_GLOB: ${{ inputs.registry-config-glob }}
+        REGISTRY_BASE_REF: ${{ inputs.registry-base-ref }}
+        REGISTRY_DIFF_FILE: ${{ inputs.registry-diff-file }}
+      run: |
+        set -euo pipefail
+
+        case "$REGISTRY_DIFF_FILE" in
+          ""|/*|*..*|*$'\n'*|*$'\r'*)
+            echo "Invalid registry-diff-file input: must be a relative path without '..' or newlines" >&2
+            exit 2
+            ;;
+        esac
+
+        registry_root="${RUNNER_TEMP:-.}/skills-orchestrator/registry-diff"
+        base_tree="$registry_root/base-tree"
+        base_registry="$registry_root/base-registry.json"
+        head_registry="$registry_root/head-registry.json"
+        markdown_file="$registry_root/$REGISTRY_DIFF_FILE"
+        comment_body="$registry_root/registry-diff-comment.md"
+
+        rm -rf "$registry_root"
+        mkdir -p "$base_tree" "$(dirname "$markdown_file")"
+
+        build_args=()
+        while IFS= read -r pattern; do
+          if [ -n "$pattern" ]; then
+            build_args+=(--config-glob "$pattern")
+          fi
+        done <<< "$REGISTRY_CONFIG_GLOB"
+        if [ "${#build_args[@]}" -eq 0 ]; then
+          echo "registry-config-glob must contain at least one path or glob" >&2
+          exit 2
+        fi
+
+        if [ -n "$REGISTRY_BASE_REF" ]; then
+          if git fetch --no-tags --depth=1 origin "$REGISTRY_BASE_REF"; then
+            base_ref="FETCH_HEAD"
+          else
+            base_ref="$REGISTRY_BASE_REF"
+          fi
+        elif [ -n "${GITHUB_BASE_REF:-}" ]; then
+          git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
+          base_ref="FETCH_HEAD"
+        else
+          git fetch --no-tags --depth=2 origin "${GITHUB_REF_NAME:-main}" || true
+          base_ref="HEAD^"
+        fi
+
+        git archive "$base_ref" | tar -x -C "$base_tree"
+
+        (
+          cd "$base_tree"
+          skills-orchestrator registry build "${build_args[@]}" --output "$base_registry"
+        )
+        skills-orchestrator registry build "${build_args[@]}" --output "$head_registry"
+        skills-orchestrator registry diff "$base_registry" "$head_registry" \
+          --format markdown \
+          --output "$markdown_file" \
+          --force
+        skills-orchestrator registry comment-body "$markdown_file" \
+          --output "$comment_body" \
+          --force
+
+        echo "markdown_file=$markdown_file" >> "$GITHUB_OUTPUT"
+        echo "comment_body=$comment_body" >> "$GITHUB_OUTPUT"
+
+    - name: Comment registry diff
+      if: ${{ inputs.comment-registry-diff == 'true' && github.event_name == 'pull_request' }}
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        GITHUB_API_URL: ${{ github.api_url }}
+        COMMENT_BODY: ${{ steps.registry_diff.outputs.comment_body }}
+      run: |
+        set -euo pipefail
+        python -m skills_orchestrator.integrations.github_pr_comment --body-file "$COMMENT_BODY"

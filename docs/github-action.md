@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.6.0
+      - uses: BambooGap/skills-orchestrator@v3.0.0
         with:
           config: config/skills.yaml
 ```
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.6.0
+      - uses: BambooGap/skills-orchestrator@v3.0.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -57,6 +57,42 @@ uploads are accepted.
 
 The action installs the local action source with `constraints.txt`, so the CLI runtime dependency
 set is constrained for a given action revision. It is not a hash-locked install yet.
+
+## Registry Diff PR Comment
+
+For pull requests, the action can compare the base and head registry snapshots, generate a Markdown
+review artifact, and update one idempotent PR comment. The CLI still owns only file generation; the
+GitHub API call lives in the Action integration boundary.
+
+```yaml
+name: Skill registry review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: BambooGap/skills-orchestrator@v3.0.0
+        with:
+          config: config/skills.yaml
+          registry-diff: true
+          comment-registry-diff: true
+```
+
+`comment-registry-diff: true` also generates the registry diff artifact. The comment uses the hidden
+marker `<!-- skills-orchestrator:registry-diff-comment:v1 -->`, so repeat runs update the previous
+comment instead of posting duplicates. Do not use `pull_request_target` unless you have separately
+reviewed the security implications for untrusted fork code.
 
 ## Hardened Pinning
 
@@ -97,3 +133,15 @@ jobs:
 | `policy-pack` | empty | Optional built-in policy pack, for example `builtin/team-standard`. |
 | `upload-sarif` | `false` | Upload SARIF to GitHub Code Scanning. |
 | `sarif-file` | `skills-orchestrator.sarif` | SARIF file path used for uploads. |
+| `registry-diff` | `false` | Generate a base-vs-head registry diff Markdown artifact. |
+| `registry-config-glob` | `config/skills.yaml` | Newline-separated registry config globs. |
+| `registry-base-ref` | empty | Optional git ref for the base registry snapshot. |
+| `registry-diff-file` | `registry-diff.md` | Relative filename for the generated Markdown artifact. |
+| `comment-registry-diff` | `false` | Update the pull request registry diff comment. Requires `pull-requests: write`. |
+
+## Outputs
+
+| Output | Description |
+| --- | --- |
+| `registry-diff-file` | Absolute path to the generated registry diff Markdown file. |
+| `registry-comment-body` | Absolute path to the generated PR comment body Markdown file. |

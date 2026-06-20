@@ -39,5 +39,16 @@ The image installs the project with `constraints.txt`. This constrains the depen
 build, but it is not a hash-locked supply-chain install yet. The image does not run an unpinned pip
 upgrade step and runs the CLI as a non-root user.
 
-A future release should move Docker and CI to a hash-locked constraints workflow, publish to GHCR,
-generate an image SBOM, and sign images with provenance.
+## GHCR Publishing
+
+`.github/workflows/ghcr.yml` publishes release and manual images to:
+
+```text
+ghcr.io/BambooGap/skills-orchestrator
+```
+
+Release builds are tagged with the release ref and a short commit SHA tag. Pull request workflows do
+not push images.
+
+Future hardening should add image SBOM/provenance tied to the pushed digest and move Docker/CI to a
+hash-locked constraints workflow.

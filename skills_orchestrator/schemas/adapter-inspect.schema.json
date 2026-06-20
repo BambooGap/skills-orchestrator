@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/adapter-inspect.schema.json",
+  "title": "Skills Orchestrator Adapter Inspection",
+  "type": "object",
+  "required": ["schema_version", "root", "summary", "surfaces"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.adapters.v1" },
+    "root": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["surfaces", "detected"],
+      "properties": {
+        "surfaces": { "type": "integer", "minimum": 0 },
+        "detected": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "direction", "authority", "detected", "paths", "verification", "notes"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "direction": { "type": "string" },
+          "authority": { "type": "string" },
+          "detected": { "type": "boolean" },
+          "paths": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "verification": {
+            "type": "object",
+            "required": ["status", "checks"],
+            "properties": {
+              "status": { "type": "string" },
+              "checks": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": true
+          },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

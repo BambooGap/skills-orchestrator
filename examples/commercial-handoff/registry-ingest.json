@@ -1,0 +1,23 @@
+{
+  "schema_version": "skills-orchestrator.hosted-registry-ingest.v1",
+  "snapshot": {
+    "id": "example-org-example-repo-main-2026-06-21T00-00-00Z",
+    "created_at": "2026-06-21T00:00:00Z"
+  },
+  "source": {
+    "repository": "example-org/example-repo",
+    "ref": "refs/heads/main",
+    "commit": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "artifacts": {
+    "registry": "evidence/skill-registry.json",
+    "registry_diff": "evidence/registry-diff.json",
+    "evidence_manifest": "evidence/evidence-manifest.json",
+    "doctor": "evidence/doctor.json",
+    "adapter_inspect": "evidence/adapter-inspect.json"
+  },
+  "redaction": {
+    "absolute_paths": "redacted",
+    "raw_skill_content": "not_uploaded"
+  }
+}

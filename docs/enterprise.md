@@ -10,14 +10,14 @@ for reproducibility, exported as machine-readable inventory, and routed at runti
 | Persona | Concern | Product Surface |
 | --- | --- | --- |
 | Platform engineering | Many teams use inconsistent agent rules. | `check`, zones, GitHub Action, team docs. |
-| Security / compliance | Agent instructions are invisible to supply-chain review. | SARIF, manifest, CycloneDX, policy export. |
+| Security / compliance | Agent instructions are invisible to supply-chain review. | SARIF, manifest, CycloneDX, SBOM, policy export. |
 | Developer experience | Agents need the right skill without bloating context. | MCP `prepare_context`, `search_skills`, `get_skill`. |
 | Release engineering | Releases need repeatable evidence. | lock files, release verification, attestations. |
 
 ## Ecosystem Routing
 
 - AAIF / agent instruction formats: natural home for instruction packaging and runtime contracts.
-- OpenSSF: security story through SARIF, manifests, provenance, pinned Actions, and future SBOM work.
+- OpenSSF: security story through SARIF, manifests, SBOM, provenance, pinned Actions, and CodeQL.
 - CNCF: enterprise adoption path through CI/CD, containers, MCP runtime operations, and platform teams.
 - SPDX / CycloneDX / GUAC: downstream consumers for instruction inventory once schemas mature.
 - OPA: policy-as-code proof surface, not the default runtime decision engine.
@@ -30,6 +30,7 @@ for reproducibility, exported as machine-readable inventory, and routed at runti
 - `manifest` and `policy export` are proof surfaces.
 - MCP is the runtime loading lane.
 - Docker and GitHub Action reduce integration friction.
+- Hosted products consume OSS artifacts instead of replacing CLI semantics.
 
 ## Non-Goals
 
@@ -50,3 +51,6 @@ team-owned agent instruction assets:
 4. schema-stable manifests,
 5. signed release and container evidence,
 6. org-level registries for many repositories.
+
+See [Open-core Boundary](open-core-boundary.md) for what belongs in OSS core versus future hosted
+registry, GitHub App, and enterprise dashboard products.

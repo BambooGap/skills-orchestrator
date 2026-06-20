@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/hosted-registry-ingest.schema.json",
+  "title": "Skills Orchestrator Hosted Registry Ingest Contract",
+  "type": "object",
+  "required": ["schema_version", "snapshot", "source", "artifacts"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.hosted-registry-ingest.v1" },
+    "snapshot": {
+      "type": "object",
+      "required": ["id", "created_at"],
+      "properties": {
+        "id": { "type": "string" },
+        "created_at": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": { "type": "string" },
+        "commit": { "type": "string" },
+        "ref": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["registry", "evidence_manifest"],
+      "properties": {
+        "registry": { "$ref": "#/$defs/bundleRelativePath" },
+        "registry_diff": { "$ref": "#/$defs/bundleRelativePath" },
+        "evidence_manifest": { "$ref": "#/$defs/bundleRelativePath" },
+        "doctor": { "$ref": "#/$defs/bundleRelativePath" },
+        "adapter_inspect": { "$ref": "#/$defs/bundleRelativePath" }
+      },
+      "additionalProperties": { "$ref": "#/$defs/bundleRelativePath" }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "bundleRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z][A-Za-z0-9+.-]*:)(?!.*(^|/)\\.\\.($|/))(?!.*\\\\)[A-Za-z0-9._/-]+$"
+    }
+  }
+}

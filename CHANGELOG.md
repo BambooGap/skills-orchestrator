@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-06-21
+
+### Added
+- Added registry diff PR comment automation for the composite GitHub Action, including registry diff artifacts, idempotent PR comment bodies, and optional PR comment upsert.
+- Added `registry comment-body` to generate stable PR comment Markdown without coupling the core CLI to GitHub APIs.
+- Added `supply-chain sbom` to generate a Python package CycloneDX SBOM distinct from the instruction manifest CycloneDX export.
+- Added CodeQL and GHCR publishing workflows for the open-source distribution path.
+- Added `adapters inspect` plus `adapters export mcp-client-config` and `adapters export openai-agents-sdk` for AGENTS.md, Claude Skills, MCP, and OpenAI Agents SDK integration surfaces.
+- Added adapter, supply-chain SBOM, GitHub App installation, hosted registry ingest, and enterprise dashboard snapshot JSON Schema contracts.
+- Added commercial handoff examples for future GitHub App, hosted registry, and enterprise dashboard consumers.
+
+### Changed
+- Reframed the roadmap around open-source SkillOps contracts first, with hosted services as downstream consumers of CLI-generated artifacts.
+- Expanded CI supply-chain checks with package SBOM generation and pinned `pip-audit`.
+
+### Security
+- GitHub PR comment automation uses a hidden marker for idempotent updates and keeps token/API access in an integration boundary, not the registry diff core.
+- GHCR publishing uses release/workflow-dispatch events and does not push containers from pull requests.
+
 ## [2.6.0] - 2026-06-21
 
 ### Added

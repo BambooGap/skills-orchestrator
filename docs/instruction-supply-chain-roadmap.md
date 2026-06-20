@@ -1,7 +1,7 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v2.5.x release slice: registry and evidence, built-in team policy pack, commercial
-> readiness doctor, integration catalog, and hardened runtime audit boundaries.
+> Status: v3.0.0 open-core slice: PR registry diff automation, package SBOM, CodeQL/GHCR
+> workflows, adapter inspection/scaffolds, and commercial handoff contracts.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
 > by existing CI and supply-chain tooling.
@@ -48,9 +48,9 @@ The durable market path is to connect Skills Orchestrator to established ecosyst
 | Surface | Role | Practical connection |
 | --- | --- | --- |
 | GitHub Code Scanning | Developer-facing trust channel | SARIF output from `skills-orchestrator check` |
-| GitHub Actions | Low-friction adoption | One-step CI action with optional SARIF upload |
+| GitHub Actions | Low-friction adoption | One-step CI action with SARIF and PR registry diff comment |
 | PyPI | Python CLI distribution | Trusted Publishing from GitHub Release |
-| CycloneDX / SPDX | Supply-chain vocabulary | Experimental instruction manifest export |
+| CycloneDX / SPDX | Supply-chain vocabulary | Instruction manifest CycloneDX and package SBOM |
 | OPA / Rego | Policy-as-code vocabulary | Export inputs/tests, not a second runtime backend |
 | OpenSSF / LF AI & Data / CNCF | Community and enterprise narrative | Evidence-backed article and integration examples |
 
@@ -135,8 +135,9 @@ system; OPA should be a proof and integration surface, not a second source of tr
 
 ## Phase 4: Distribution Hardening
 
-Status: partially implemented after v2.3.0; Dockerfile and CI Docker smoke exist, signed image
-SBOM/provenance remains future work.
+Status: implemented across v2.4.0-v3.0.0 for Docker smoke, package SBOM, CodeQL, GHCR release
+push, pinned third-party Actions, and PyPI artifact attestation. Container provenance remains a
+future hardening item after GHCR release flow is exercised.
 
 Goal: remove adoption friction for enterprise and CI users.
 
@@ -147,6 +148,9 @@ Deliver:
 - Third-party workflow actions pinned to commit SHAs.
 - `constraints.txt` for the action/CI/publish runtime dependency set.
 - GitHub artifact attestation for wheel and sdist during publishing.
+- Python package SBOM through `supply-chain sbom`.
+- CodeQL workflow.
+- GHCR release publishing workflow.
 - Release checklist that verifies GitHub Release, PyPI, wheel, sdist, CLI version, and package
   metadata.
 - Optional signed provenance only after the release flow is stable.
@@ -176,8 +180,57 @@ Delivered:
 
 Next:
 
-- Manifest JSON Schema and compatibility policy.
-- Docker image publishing, SBOM, signing, and provenance.
+- Container image provenance tied to pushed GHCR digest.
+- Hash-locked dependency install after the constraints workflow is stable.
+- SPDX mapping only after a real downstream consumer is tested.
+
+## Phase 7: PR Review Automation
+
+Status: implemented in v3.0.0.
+
+Goal: make registry changes visible inside pull requests without requiring a hosted service.
+
+Delivered:
+
+- Action inputs for `registry-diff`, `registry-config-glob`, `registry-base-ref`,
+  `registry-diff-file`, and `comment-registry-diff`.
+- `registry comment-body` for stable comment Markdown with a hidden idempotency marker.
+- GitHub PR comment upsert in an integration module, not the registry core.
+- Documentation for `pull-requests: write` and avoiding `pull_request_target` by default.
+
+## Phase 8: Ecosystem Adapters
+
+Status: implemented in v3.0.0 as inspection and scaffold generation.
+
+Goal: connect to AGENTS.md, Claude Skills, MCP clients, and OpenAI Agents SDK without claiming to
+own their standards.
+
+Delivered:
+
+- `adapters inspect` for AGENTS.md, Claude Skills, MCP client configs, and OpenAI Agents SDK
+  dependency detection.
+- `adapters export mcp-client-config`.
+- `adapters export openai-agents-sdk`.
+- Adapter inspection JSON Schema.
+
+Next:
+
+- Claude Skills import/export round-trip fixtures.
+- Optional construction test when OpenAI Agents SDK is installed.
+
+## Phase 9: Open-core Commercial Contracts
+
+Status: implemented in v3.0.0 as docs, schemas, and examples.
+
+Goal: make future GitHub App, hosted registry, and dashboard products consume OSS artifacts instead
+of forking semantics.
+
+Delivered:
+
+- Open-core boundary documentation.
+- GitHub App, hosted registry, and enterprise dashboard blueprints.
+- JSON Schema contracts for installation, ingest, and dashboard snapshots.
+- `examples/commercial-handoff/` sample payloads.
 
 ## Phase 5: Community Narrative
 

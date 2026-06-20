@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/supply-chain-sbom.schema.json",
+  "title": "Skills Orchestrator Supply-chain SBOM",
+  "type": "object",
+  "required": ["bomFormat", "specVersion", "metadata", "components"],
+  "properties": {
+    "bomFormat": { "const": "CycloneDX" },
+    "specVersion": { "type": "string" },
+    "serialNumber": { "type": "string", "pattern": "^urn:uuid:" },
+    "version": { "type": "integer", "minimum": 1 },
+    "metadata": {
+      "type": "object",
+      "required": ["component"],
+      "properties": {
+        "component": {
+          "type": "object",
+          "required": ["type", "name", "version"],
+          "properties": {
+            "type": { "type": "string" },
+            "name": { "type": "string" },
+            "version": { "type": "string" },
+            "purl": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "name", "version"],
+        "properties": {
+          "type": { "type": "string" },
+          "bom-ref": { "type": "string" },
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "purl": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

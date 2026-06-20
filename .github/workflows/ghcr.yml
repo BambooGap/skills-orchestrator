@@ -1,0 +1,59 @@
+name: Publish Container to GHCR
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-ghcr:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/skills-orchestrator
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Resolve image tags
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            version="manual-${GITHUB_SHA::12}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            -t "$IMAGE_NAME:${{ steps.meta.outputs.version }}" \
+            -t "$IMAGE_NAME:${{ steps.meta.outputs.sha_tag }}" \
+            .
+
+      - name: Log in to GHCR
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker push "$IMAGE_NAME:${{ steps.meta.outputs.version }}"
+          docker push "$IMAGE_NAME:${{ steps.meta.outputs.sha_tag }}"
+
+      - name: Smoke published image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull "$IMAGE_NAME:${{ steps.meta.outputs.version }}"
+          docker run --rm "$IMAGE_NAME:${{ steps.meta.outputs.version }}" --version
