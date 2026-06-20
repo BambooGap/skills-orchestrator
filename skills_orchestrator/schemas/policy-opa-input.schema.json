@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/policy-opa-input.schema.json",
+  "title": "Skills Orchestrator OPA Input",
+  "type": "object",
+  "required": ["schema_version", "tool", "zone", "skills", "resolution"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "generated_at": { "type": "string" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "zone": {
+      "type": "object",
+      "required": ["id", "name", "load_policy"],
+      "additionalProperties": true
+    },
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skill" }
+    },
+    "resolution": {
+      "type": "object",
+      "required": ["forced", "passive", "blocked", "block_reasons"],
+      "properties": {
+        "forced": { "$ref": "#/$defs/stringList" },
+        "passive": { "$ref": "#/$defs/stringList" },
+        "blocked": { "$ref": "#/$defs/stringList" },
+        "block_reasons": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "combos": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "stringList": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "skill": {
+      "type": "object",
+      "required": ["id", "name", "path", "status", "effective_load_policy", "governance"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "status": { "enum": ["forced", "passive", "blocked"] },
+        "effective_load_policy": { "enum": ["require", "free"] },
+        "governance": { "type": "object" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/registry-diff.schema.json",
+  "title": "Skills Orchestrator Registry Diff",
+  "type": "object",
+  "required": ["schema_version", "summary", "added", "removed", "changed", "duplicate_id_changes"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.registry-diff.v1" },
+    "summary": {
+      "type": "object",
+      "required": ["added", "removed", "changed", "duplicate_id_changes"],
+      "additionalProperties": { "type": "integer" }
+    },
+    "added": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skill" }
+    },
+    "removed": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skill" }
+    },
+    "changed": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/changedSkill" }
+    },
+    "duplicate_id_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "before", "after"],
+        "properties": {
+          "id": { "type": "string" },
+          "before": { "type": "integer" },
+          "after": { "type": "integer" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "skill": {
+      "type": "object",
+      "required": ["registry_key", "id", "name", "status", "path", "governance", "content_hash", "missing_file"],
+      "additionalProperties": true
+    },
+    "changedSkill": {
+      "type": "object",
+      "required": ["registry_key", "id", "changes"],
+      "properties": {
+        "registry_key": { "type": "string" },
+        "id": { "type": "string" },
+        "changes": { "type": "object" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

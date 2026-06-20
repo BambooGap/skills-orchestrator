@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/evidence-bundle.schema.json",
+  "title": "Skills Orchestrator Evidence Bundle",
+  "type": "object",
+  "required": ["schema_version", "config", "zone", "policy_packs", "files"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.evidence-bundle.v1" },
+    "config": { "type": "string" },
+    "zone": { "type": "string" },
+    "policy_packs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

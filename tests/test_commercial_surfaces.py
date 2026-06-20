@@ -5,7 +5,11 @@ from click.testing import CliRunner
 from skills_orchestrator.doctor import run_doctor
 from skills_orchestrator.evidence import export_evidence_bundle
 from skills_orchestrator.main import cli
-from skills_orchestrator.org_registry import build_registry, diff_registries
+from skills_orchestrator.org_registry import (
+    build_registry,
+    diff_registries,
+    format_registry_diff_markdown,
+)
 
 
 def _workspace(tmp_path, *, owner: str = "platform-team", body: str = "# Skill\n"):
@@ -85,6 +89,29 @@ def test_registry_diff_reports_governance_and_hash_changes(tmp_path):
     assert {"content_hash", "governance"}.issubset(diff["changed"][0]["changes"])
 
 
+def test_registry_diff_markdown_renders_pr_review_sections(tmp_path):
+    base_config = _workspace(tmp_path / "repo", owner="platform-team", body="# Skill\n")
+    base = build_registry([str(base_config)])
+    skill_file = tmp_path / "repo" / "skills" / "skill.md"
+    skill_file.write_text(
+        skill_file.read_text(encoding="utf-8").replace(
+            "owner: platform-team\n", "owner: agent-platform\n"
+        )
+        + "\nChanged\n",
+        encoding="utf-8",
+    )
+    head = build_registry([str(base_config)])
+
+    markdown = format_registry_diff_markdown(diff_registries(base, head))
+
+    assert markdown.startswith("# Registry Diff\n")
+    assert "## Summary" in markdown
+    assert "| Changed | 1 |" in markdown
+    assert "## Changed Skills" in markdown
+    assert "content_hash" in markdown
+    assert "owner platform-team -&gt; agent-platform" in markdown
+
+
 def test_registry_diff_reports_duplicate_skill_entities(tmp_path):
     config_a = _workspace(tmp_path / "org" / "repo-a", body="# Skill\n")
     base = build_registry([str(config_a)])
@@ -127,6 +154,105 @@ def test_registry_cli_build_and_diff(tmp_path):
     assert head_result.exit_code == 0
     assert diff_result.exit_code == 0
     assert json.loads(diff_result.output)["summary"]["changed"] == 1
+
+
+def test_registry_cli_diff_markdown_output_file(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    base_file = tmp_path / "base.json"
+    head_file = tmp_path / "head.json"
+    markdown_file = tmp_path / "diff.md"
+    runner = CliRunner()
+
+    base_result = runner.invoke(
+        cli,
+        ["registry", "build", "--config-glob", str(config), "--output", str(base_file)],
+    )
+    skill_file = tmp_path / "repo" / "skills" / "skill.md"
+    skill_file.write_text(skill_file.read_text(encoding="utf-8") + "\nChanged\n", encoding="utf-8")
+    head_result = runner.invoke(
+        cli,
+        ["registry", "build", "--config-glob", str(config), "--output", str(head_file)],
+    )
+    diff_result = runner.invoke(
+        cli,
+        [
+            "registry",
+            "diff",
+            str(base_file),
+            str(head_file),
+            "--format",
+            "markdown",
+            "--output",
+            str(markdown_file),
+        ],
+    )
+
+    assert base_result.exit_code == 0
+    assert head_result.exit_code == 0
+    assert diff_result.exit_code == 0
+    assert markdown_file.read_text(encoding="utf-8").startswith("# Registry Diff\n")
+
+
+def test_registry_cli_diff_output_requires_force_for_existing_file(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    base_file = tmp_path / "base.json"
+    head_file = tmp_path / "head.json"
+    markdown_file = tmp_path / "diff.md"
+    markdown_file.write_text("old\n", encoding="utf-8")
+    runner = CliRunner()
+
+    runner.invoke(
+        cli, ["registry", "build", "--config-glob", str(config), "--output", str(base_file)]
+    )
+    skill_file = tmp_path / "repo" / "skills" / "skill.md"
+    skill_file.write_text(skill_file.read_text(encoding="utf-8") + "\nChanged\n", encoding="utf-8")
+    runner.invoke(
+        cli, ["registry", "build", "--config-glob", str(config), "--output", str(head_file)]
+    )
+
+    result = runner.invoke(
+        cli,
+        [
+            "registry",
+            "diff",
+            str(base_file),
+            str(head_file),
+            "--format",
+            "markdown",
+            "--output",
+            str(markdown_file),
+        ],
+    )
+    assert result.exit_code == 1
+    assert markdown_file.read_text(encoding="utf-8") == "old\n"
+
+    force_result = runner.invoke(
+        cli,
+        [
+            "registry",
+            "diff",
+            str(base_file),
+            str(head_file),
+            "--format",
+            "markdown",
+            "--output",
+            str(markdown_file),
+            "--force",
+        ],
+    )
+
+    assert force_result.exit_code == 0
+    assert markdown_file.read_text(encoding="utf-8").startswith("# Registry Diff\n")
+
+
+def test_registry_diff_markdown_noop_has_empty_sections(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    registry = build_registry([str(config)])
+
+    markdown = format_registry_diff_markdown(diff_registries(registry, registry))
+
+    assert "| Added | 0 |" in markdown
+    assert markdown.count("No entries.") == 4
 
 
 def test_doctor_reports_readiness_payload(tmp_path, monkeypatch):

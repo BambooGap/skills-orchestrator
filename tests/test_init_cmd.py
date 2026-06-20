@@ -1,6 +1,7 @@
 import yaml
 from click.testing import CliRunner
 
+from skills_orchestrator.checker import run_check
 from skills_orchestrator.cli.init_cmd import init
 
 
@@ -173,3 +174,75 @@ def test_init_missing_frontmatter_non_interactive(tmp_path):
     assert skill["name"] == "My New Skill"
     assert skill["load_policy"] == "free"
     assert skill["priority"] == 50
+
+
+def test_init_team_standard_template_generates_portable_scaffold(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+
+    result = runner.invoke(init, ["--template", "team-standard"])
+
+    assert result.exit_code == 0
+    config_path = tmp_path / "config" / "skills.yaml"
+    assert config_path.exists()
+    assert (tmp_path / "skills" / "team" / "engineering-standards.md").exists()
+    assert (tmp_path / "skills" / "team" / "code-review.md").exists()
+    assert (tmp_path / "skills" / "team" / "release-checklist.md").exists()
+    assert (tmp_path / "config" / "pipelines" / "team-review.yaml").exists()
+    assert (tmp_path / ".github" / "workflows" / "skills-orchestrator.yml").exists()
+    assert (tmp_path / "evidence" / ".gitkeep").exists()
+    assert not (tmp_path / "AGENTS.md").exists()
+
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    assert config["skill_dirs"] == ["../skills"]
+    assert "SKILLS_ROOT" not in config_path.read_text(encoding="utf-8")
+    workflow = (tmp_path / ".github" / "workflows" / "skills-orchestrator.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "security-events: write" not in workflow
+    assert "upload-sarif: true" not in workflow
+
+    report = run_check(str(config_path), policy_packs=["builtin/team-standard"])
+    assert report.diagnostics == []
+
+
+def test_init_team_standard_custom_output_writes_relative_skill_dirs(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+
+    result = runner.invoke(init, ["--template", "team-standard", "--output", "skills.yaml"])
+
+    assert result.exit_code == 0
+    config = yaml.safe_load((tmp_path / "skills.yaml").read_text(encoding="utf-8"))
+    assert config["skill_dirs"] == ["skills"]
+
+
+def test_init_team_standard_existing_file_requires_force(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    existing = config_dir / "skills.yaml"
+    existing.write_text("existing: true\n", encoding="utf-8")
+    runner = CliRunner()
+
+    result = runner.invoke(init, ["--template", "team-standard"])
+
+    assert result.exit_code == 1
+    assert "目标文件已存在" in result.output
+    assert not (tmp_path / "skills").exists()
+
+    force_result = runner.invoke(init, ["--template", "team-standard", "--force"])
+
+    assert force_result.exit_code == 0
+    assert "skill_dirs" in existing.read_text(encoding="utf-8")
+
+
+def test_init_team_standard_rejects_output_path_escape(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+
+    result = runner.invoke(init, ["--template", "team-standard", "--output", "../outside.yaml"])
+
+    assert result.exit_code == 1
+    assert "--output 不允许包含 '..'" in result.output
+    assert not (tmp_path / "skills").exists()

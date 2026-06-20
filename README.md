@@ -6,6 +6,7 @@
 
 ```bash
 pip install skills-orchestrator
+skills-orchestrator init --template team-standard
 skills-orchestrator check --config config/skills.yaml
 ```
 
@@ -38,15 +39,17 @@ skills-orchestrator check --config config/skills.yaml
 pip install skills-orchestrator
 ```
 
-> **注意**：`pip` 包仅提供 CLI / MCP / Pipeline 能力，不内置 skills 模板。
-> 需要 clone 本仓库获取示例 `config/` 和 `skills/` 目录，或自行创建。
+> `pip` 包内置 `team-standard` starter kit；需要更多 examples 时再 clone 本仓库。
 
 ### 初始化项目
 
 ```bash
 cd my-project
 
-# 非交互式：直接从 frontmatter 生成配置（推荐）
+# 生产 bootstrap：生成 config、示例 skills、CI workflow 和 evidence 目录
+skills-orchestrator init --template team-standard
+
+# 兼容旧流程：从已有 skills/*.md frontmatter 生成配置
 skills-orchestrator init --non-interactive
 
 # 交互式：逐个确认每个 Skill 的配置
@@ -75,6 +78,7 @@ CI 或 GitHub Code Scanning 可以使用机器可读输出：
 ```bash
 skills-orchestrator check --config config/skills.yaml --format json
 skills-orchestrator check --config config/skills.yaml --format sarif
+skills-orchestrator schema validate --kind check --input check.json
 ```
 
 也可以直接在 GitHub Actions 中运行：
@@ -89,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.5.1
+      - uses: BambooGap/skills-orchestrator@v2.6.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -114,12 +118,22 @@ skills-orchestrator registry build \
   --config-glob "config/skills.yaml" \
   --output skill-registry.json
 
+skills-orchestrator registry diff registry-before.json registry-after.json \
+  --format markdown \
+  --output registry-diff.md
+
+skills-orchestrator schema validate \
+  --kind registry \
+  --input skill-registry.json
+
 skills-orchestrator integrations list
 ```
 
 `doctor` 给出本地商用 readiness 分数和缺口；`evidence export` 写出 `check.json`、
 `check.sarif`、`instruction-manifest.json`、`policy-opa-input.json`、`policy-proof.rego`、
 `doctor.json` 和 `skill-registry.json`，适合 CI artifact、审计归档或客户交付。
+`schema validate` 可单独验证 config、check、manifest、policy OPA input、doctor、
+registry、registry diff 和 evidence manifest 的文件合同。
 
 ### 导出 Instruction Manifest
 
@@ -549,11 +563,10 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - v2.3.x：发布 GitHub Action、CycloneDX / native manifest、OPA/Rego proof export、Action SHA pinning、artifact attestation 和 PyPI 发布防护。
 - v2.4.x：补齐 Docker 交付、团队标准化文档、MCP runtime decision record、usage audit、pipeline recovery 和本地运行证据。
 - v2.5.x：补齐 `builtin/team-standard` policy pack、治理元数据、`doctor` 商业 readiness、组织级 `registry`、`evidence export`、integration catalog、MCP 内容上限、audit HMAC 和 pipeline 状态脱敏。
+- v2.6.x：补齐稳定 JSON Schema、`schema validate`、`init --template team-standard` 和 `registry diff --format markdown`，降低团队 bootstrap 与 PR review 摩擦。
 
 ### 下一阶段
 
-- v2.6.x：发布稳定 JSON Schema、manifest 兼容策略、golden fixtures 和 schema validation 命令。
-- v2.6.x：补齐 `init --template team-standard`，让新团队 30 秒内生成 config、示例 skills、CI workflow 和 evidence 目录。
 - v2.7.x：增加依赖/CVE 扫描、SBOM、GHCR 镜像、cosign/SLSA provenance 和 release verification 自动化。
 - v2.7.x：提供 Superpowers、CodeGraph、supermemory-service、Understand-Anything、Omnigent 的 adapter examples，但保持 Skills Orchestrator 只做 SkillOps 控制层。
 - v2.8.x：做组织级 registry 的多仓输入、路径脱敏、diff review comment 和 dashboard handoff，而不是内置长期记忆或多 Agent 调度。

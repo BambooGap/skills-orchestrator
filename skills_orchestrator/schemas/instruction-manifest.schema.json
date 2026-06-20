@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/instruction-manifest.schema.json",
+  "title": "Skills Orchestrator Instruction Manifest",
+  "type": "object",
+  "required": ["schema_version", "tool", "config", "zone", "summary", "skills"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "generated_at": { "type": "string" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "config": {
+      "type": "object",
+      "required": ["path", "base_dir"],
+      "additionalProperties": true
+    },
+    "zone": {
+      "type": "object",
+      "required": ["id", "name", "load_policy"],
+      "additionalProperties": true
+    },
+    "summary": { "type": "object" },
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skill" }
+    },
+    "combos": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "skill": {
+      "type": "object",
+      "required": ["id", "name", "path", "status", "governance", "content_hash", "missing_file"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "status": { "enum": ["forced", "passive", "blocked"] },
+        "governance": { "type": "object" },
+        "content_hash": { "type": "object" },
+        "missing_file": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

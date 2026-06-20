@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/check-report.schema.json",
+  "title": "Skills Orchestrator Check Report",
+  "type": "object",
+  "required": ["schema_version", "tool", "summary", "diagnostics"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "generated_at": { "type": "string" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total", "errors", "warnings", "infos", "skills", "zones", "combos"],
+      "additionalProperties": { "type": "integer" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "diagnostic": {
+      "type": "object",
+      "required": ["rule_id", "severity", "message"],
+      "properties": {
+        "rule_id": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["error", "warning", "info"] },
+        "message": { "type": "string" },
+        "file": { "type": ["string", "null"] },
+        "line": { "type": ["integer", "null"], "minimum": 1 },
+        "skill_id": { "type": ["string", "null"] },
+        "category": { "type": ["string", "null"] },
+        "suggested_fix": { "type": ["string", "null"] },
+        "metadata": { "type": "object" }
+      },
+      "additionalProperties": true
+    }
+  }
+}
