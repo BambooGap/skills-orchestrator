@@ -1,7 +1,7 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v2.3.0 in progress: GitHub Action, SARIF, instruction manifest, policy export, and
-> release hardening are implemented in `main`.
+> Status: v2.4.0 release slice: team standardization, Docker hardening, structured MCP decision
+> records, and opt-in runtime audit.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
 > by existing CI and supply-chain tooling.
@@ -135,7 +135,8 @@ system; OPA should be a proof and integration surface, not a second source of tr
 
 ## Phase 4: Distribution Hardening
 
-Status: partially implemented for v2.3.0; Docker image and signed SBOM remain future work.
+Status: partially implemented after v2.3.0; Dockerfile and CI Docker smoke exist, signed image
+SBOM/provenance remains future work.
 
 Goal: remove adoption friction for enterprise and CI users.
 
@@ -152,6 +153,28 @@ Deliver:
 
 Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the next bottleneck;
 distribution and CI integration are.
+
+## Phase 6: Team Standardization And Runtime Governance
+
+Status: in progress on `main`.
+
+Goal: move from advisory docs to a team-standard product loop.
+
+Delivered in the current unreleased slice:
+
+- Team standardization guide and role-based documentation index.
+- Structured `prepare_context` decision records with routing ID, task hash, registry generation,
+  active/inactive skills, and content hashes.
+- Opt-in MCP audit JSONL and `usage report`.
+- MCP `pipeline_list_runs`.
+- Pipeline gates that support multiple required artifacts.
+
+Next:
+
+- Built-in policy packs for owner, approver, status, source, and version fields.
+- Manifest JSON Schema and compatibility policy.
+- Org-level registry build/diff/export commands.
+- Docker image publishing, SBOM, signing, and provenance.
 
 ## Phase 5: Community Narrative
 

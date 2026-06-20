@@ -22,6 +22,7 @@ class SkillRegistry:
     def __init__(self, config_path: str, zone_id: str | None = None):
         self._config_path = config_path
         self._zone_id = zone_id
+        self._generation = 0
         self._skills: dict[str, SkillMeta] = {}
         self._all_skills: dict[str, SkillMeta] = {}  # 全量索引（用于 base 继承）
         self._combos: list[Combo] = []
@@ -59,6 +60,16 @@ class SkillRegistry:
         # required_on_start: 预热缓存（reduce first-call latency）
         for skill in resolved.forced_skills:
             self._warm(skill)
+
+        self._generation += 1
+
+    @property
+    def zone_id(self) -> str | None:
+        return self._zone_id
+
+    @property
+    def generation_id(self) -> str:
+        return f"g{self._generation}"
 
     def reload(self) -> None:
         """热重载：重新扫描 skill 文件，不重启 server"""

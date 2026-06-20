@@ -30,6 +30,19 @@ class TestGate:
         passed, reason = gate.check({"plan": "some content"})
         assert passed
 
+    def test_must_produce_list_requires_all_artifacts(self):
+        gate = Gate(must_produce=["root_cause", "test_code"], min_length=5)
+
+        passed, reason = gate.check({"root_cause": "enough"})
+        assert not passed
+        assert "test_code" in reason
+
+        passed, reason = gate.check({"root_cause": "enough", "test_code": "also enough"})
+        assert passed
+        assert reason == ""
+        assert gate.required_artifacts() == ["root_cause", "test_code"]
+        assert gate.artifact_label() == "root_cause, test_code"
+
     def test_min_length_pass(self):
         gate = Gate(must_produce="plan", min_length=10)
         passed, reason = gate.check({"plan": "A" * 100})
@@ -488,6 +501,30 @@ class TestPipelineEngine:
         state.complete_current(artifacts=["plan"])
         passed, reason = engine.check_gate(state, pipeline.get_step("a"))
         assert not passed
+
+    def test_complete_and_advance_records_multiple_gate_artifacts(self):
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+
+        pipeline = Pipeline(
+            id="gate-list",
+            name="多产物门禁测试",
+            steps=[
+                Step(
+                    id="a",
+                    skill="s1",
+                    next=[],
+                    gate=Gate(must_produce=["root_cause", "test_code"]),
+                ),
+            ],
+        )
+        engine = PipelineEngine(pipeline)
+        state = engine.start()
+        state.context.update({"root_cause": "cause", "test_code": "test"})
+
+        state = engine.complete_and_advance(state)
+
+        assert state.status == "completed"
+        assert state.step_history[-1]["artifacts"] == ["root_cause", "test_code"]
 
     def test_resume_from_saved_state(self):
         """中断恢复：从保存的 RunState 恢复"""

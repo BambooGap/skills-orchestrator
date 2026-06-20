@@ -213,8 +213,9 @@ skills-orchestrator sync agents-md
 ### 3. 团队统一版本
 
 ```bash
-# 提交 skills.lock
-git add skills.lock
+# 提交 skills.lock.json
+skills-orchestrator build --lock
+git add skills.lock.json
 git commit -m "chore: 更新 skills 版本"
 git push
 

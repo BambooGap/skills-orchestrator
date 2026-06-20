@@ -61,6 +61,9 @@ jobs:
           skills-orchestrator manifest --config config/skills.yaml --format cyclonedx | python -m json.tool >/dev/null
           skills-orchestrator policy export --config config/skills.yaml --format opa-input | python -m json.tool >/dev/null
           skills-orchestrator policy export --config config/skills.yaml --format rego-test >/dev/null
+          mkdir -p .skills-audit
+          skills-orchestrator mcp-test prepare_context '{"task":"release evidence","include_content":false}' --audit-dir .skills-audit >/dev/null
+          skills-orchestrator usage report --audit-dir .skills-audit --json | python -m json.tool >/dev/null
           skills-orchestrator --version
 
       - name: Build package
@@ -98,3 +101,21 @@ jobs:
 
       - name: Check third-party action pinning
         run: python scripts/check_action_pins.py
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Build Docker image
+        run: docker build -t skills-orchestrator:ci .
+
+      - name: Smoke test Docker image
+        run: |
+          docker run --rm skills-orchestrator:ci --version
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            -w /workspace \
+            skills-orchestrator:ci \
+            manifest --config config/skills.yaml --format json \
+            | python -m json.tool >/dev/null

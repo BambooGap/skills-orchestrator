@@ -27,3 +27,6 @@ opa test skills_orchestrator_policy_test.rego
 
 The generated tests verify that exported skill statuses match the resolver output and that
 `effective_load_policy` maps to forced skills for the selected zone.
+
+For the complete artifact authority model, see
+[Manifest And Policy Exports](../../docs/manifest-policy-exports.md).

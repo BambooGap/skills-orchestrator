@@ -15,3 +15,5 @@
 | v2.0.8 | [reports/TEST_REPORT_v2.0.8.md](reports/TEST_REPORT_v2.0.8.md) | 2026-05-07 |
 | v2.0.9 | [reports/TEST_REPORT_v2.0.9.md](reports/TEST_REPORT_v2.0.9.md) | 2026-05-07 |
 | v2.1.0 | [reports/TEST_REPORT_v2.1.0.md](reports/TEST_REPORT_v2.1.0.md) | 2026-05-07 |
+| v2.3.0 | [reports/TEST_REPORT_v2.3.0.md](reports/TEST_REPORT_v2.3.0.md) | 2026-06-20 |
+| v2.4.0 | [reports/TEST_REPORT_v2.4.0.md](reports/TEST_REPORT_v2.4.0.md) | 2026-06-20 |

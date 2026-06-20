@@ -20,7 +20,7 @@ team-project/
 ├── .cursor/
 │   └── rules/          # 自动生成
 ├── AGENTS.md           # 自动生成
-└── skills.lock         # 自动生成
+└── skills.lock.json    # 自动生成
 ```
 
 ## 团队工作流
@@ -40,8 +40,11 @@ skills-orchestrator sync agents-md
 skills-orchestrator sync cursor
 skills-orchestrator sync openclaw
 
+# 生成可复现 lock
+skills-orchestrator build --lock
+
 # 提交生成的文件
-git add AGENTS.md skills.lock .cursor/
+git add AGENTS.md skills.lock.json .cursor/
 git commit -m "chore: 更新 skills 配置"
 git push
 ```
@@ -67,22 +70,24 @@ skills-orchestrator sync openclaw
 ```yaml
 zones:
   - id: frontend
-    description: 前端强制规范
-    path: src/frontend/
+    name: 前端强制规范
+    load_policy: require
     priority: 100
-    mode: forced
+    rules:
+      - pattern: "src/frontend/**"
 
   - id: backend
-    description: 后端强制规范
-    path: src/backend/
+    name: 后端强制规范
+    load_policy: require
     priority: 100
-    mode: forced
+    rules:
+      - pattern: "src/backend/**"
 
   - id: default
-    description: 默认区（个人自由区）
-    path: .
+    name: 默认区（个人自由区）
+    load_policy: free
     priority: 50
-    mode: passive
+    rules: []
 ```
 
 ### skills/zones/frontend.md
@@ -148,17 +153,22 @@ conflict_with: [frontend]
 id: code-review
 name: 代码审查流程
 steps:
-  - skill: team-debugging
+  - id: diagnose
+    skill: team-debugging
+    next: [test]
     gate:
       must_produce: [root_cause]
       min_length: 50
 
-  - skill: team-tdd
+  - id: test
+    skill: team-tdd
+    next: [review]
     gate:
       must_produce: [test_code]
       min_length: 100
 
-  - skill: team-review
+  - id: review
+    skill: team-review
     gate:
       must_produce: [review_comments]
 ```
@@ -188,21 +198,22 @@ skills-orchestrator serve --config config/skills.yaml
 
 ## 版本管理
 
-`skills.lock` 文件记录所有 Skill 的版本：
+`skills.lock.json` 文件记录所有 Skill 的版本：
 
-```yaml
-version: 1
-generated_at: "2026-05-02T21:00:00Z"
-skills:
-  - id: frontend
-    hash: abc123...
-    load_policy: require
-  - id: backend
-    hash: def456...
-    load_policy: require
-  - id: team-debugging
-    hash: ghi789...
-    load_policy: free
+```json
+{
+  "version": "1.1",
+  "generated_at": "2026-06-20T00:00:00",
+  "zone": "default",
+  "skills": [
+    {
+      "id": "frontend",
+      "content_hash": "abc123...",
+      "source_load_policy": "require",
+      "effective_load_policy": "require"
+    }
+  ]
+}
 ```
 
 ## 冲突检测
@@ -210,17 +221,15 @@ skills:
 如果两个团队成员同时修改同一个 Skill：
 
 ```bash
-skills-orchestrator build --config config/skills.yaml
+skills-orchestrator check --config config/skills.yaml --fail-on warning
 
-# ✗ 检测到冲突: frontend 和 backend 不能同时激活
-# frontend 要求: TypeScript strict mode
-# backend 要求: Python type hints
+# [WARNING] SO004: asymmetric-conflict-declaration
 ```
 
 ## 最佳实践
 
 1. **统一 Skills 版本**
-   - 使用 `skills.lock` 锁定版本
+   - 使用 `skills.lock.json` 锁定版本
    - 定期更新，团队同步
 
 2. **强制规范隔离**

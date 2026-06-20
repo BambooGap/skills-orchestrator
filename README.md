@@ -77,13 +77,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.3.0
+      - uses: BambooGap/skills-orchestrator@v2.4.0
         with:
           config: config/skills.yaml
           upload-sarif: true
 ```
 
-更多输入参数见 [GitHub Action 文档](docs/github-action.md)。
+更多输入参数见 [GitHub Action 文档](docs/github-action.md)。团队文档入口见
+[Documentation Index](docs/INDEX.md)。
+
+Docker 运行方式见 [Docker Usage](docs/docker.md)。
 
 ### 导出 Instruction Manifest
 
@@ -130,6 +133,8 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 | Policy Export | Policy proof。导出 OPA input 和 Rego test fixture，证明 resolver 事实可被 policy-as-code 审计。 | `policy export` |
 | MCP Server | Runtime skill loading。对话过程中通过 `prepare_context` / `search_skills` / `get_skill` 动态选择并获取本轮 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
 | Pipeline | Runtime workflow orchestration。把多个 Skill 串成有状态流程，并在每一步自动注入当前步骤 Skill。 | `pipeline start`, MCP pipeline tools |
+
+团队落地建议见 [Team Standardization Guide](docs/team-standardization.md)。
 
 ### 同一会话内如何动态切换 Skills
 
@@ -185,6 +190,7 @@ skills-orchestrator mcp-test prepare_context \
 |------|------|
 | `active_skills` | 本轮任务应该遵循的 Skill ID 列表 |
 | `inactive_skills` | 当前 Registry 中未被本轮选中的 Skill，本轮任务不应受其约束 |
+| `Decision Record (JSON)` | 结构化路由记录，包含 `routing_id`、`task_hash`、registry generation、active/inactive skills 和内容哈希 |
 | `Execution Rule` | 明确告诉 Agent：旧 Skill 与本轮 active skills 冲突时，以本轮为准 |
 | `Active Skill Content` | 当 `include_content=true` 时，直接注入本轮所需 Skill 全文 |
 
@@ -200,7 +206,7 @@ skills-orchestrator mcp-test prepare_context \
 - **冲突检测**：编译时 `conflict_with` 强制报错，不会运行时才发现
 - **Auto-Discovery**：从 frontmatter 自动发现 Skill，无需手动注册
 
-### 2. MCP Server（9 个工具）
+### 2. MCP Server（10 个工具）
 
 让 Claude 在对话中按需动态加载 Skill，上下文零浪费。
 
@@ -213,6 +219,7 @@ skills-orchestrator mcp-test prepare_context \
 | `prepare_context` | 每个新任务动态选择本轮 active skills，并可直接注入完整内容 |
 | `pipeline_start` | 启动一个工作流，注入当前步骤指导 |
 | `pipeline_status` | 查看工作流进度和当前步骤 |
+| `pipeline_list_runs` | 列出已保存的 Pipeline 运行记录 |
 | `pipeline_advance` | 完成当前步骤，推进到下一步 |
 | `pipeline_resume` | 恢复中断的工作流 |
 
@@ -222,6 +229,14 @@ skills-orchestrator mcp-test prepare_context \
 
 ```bash
 skills-orchestrator serve --config config/skills.yaml
+```
+
+需要运行期审计时，指定 audit 目录。审计事件是 JSONL，只记录 tool、参数 key、routing
+hash、active skill id 等治理字段，不记录任务原文或 Skill 正文。
+
+```bash
+skills-orchestrator serve --config config/skills.yaml --audit-dir .skills-audit
+skills-orchestrator usage report --audit-dir .skills-audit
 ```
 
 在 `.claude/settings.json` 中配置：
@@ -266,7 +281,7 @@ skills-orchestrator pipeline start quick-fix
 skills-orchestrator pipeline status
 
 # 推进到下一步
-skills-orchestrator pipeline advance
+skills-orchestrator pipeline advance quick-fix
 
 # 恢复中断的工作流
 skills-orchestrator pipeline resume
@@ -448,7 +463,7 @@ skills-orchestrator mcp-test prepare_context '{"task": "做安全审查", "max_s
 # Pipeline 编排
 skills-orchestrator pipeline start    <pipeline-id>      # 启动工作流
 skills-orchestrator pipeline status                       # 查看进度
-skills-orchestrator pipeline advance                     # 推进到下一步
+skills-orchestrator pipeline advance <pipeline-id>       # 推进到下一步
 skills-orchestrator pipeline resume                      # 恢复中断的工作流
 
 # Sync 同步
@@ -460,7 +475,7 @@ skills-orchestrator sync copilot [-o FILE]               # 同步到 Copilot
 
 # Lock 可复现性
 skills-orchestrator build --lock                         # 编译时同时生成 skills.lock.json
-skills-orchestrator validate --check-lock skills.lock.json  # 检查 lock 是否过期
+skills-orchestrator check --check-lock skills.lock.json      # 检查 lock 是否过期
 ```
 
 ---

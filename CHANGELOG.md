@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-06-20
+
+### Added
+- Added Dockerfile and Docker usage documentation for portable CLI execution.
+- Added a team standardization guide and missing Zone, Pipeline, and CI/CD docs.
+- Added a CI Docker build and smoke-test job.
+- Added structured `prepare_context` decision records with routing IDs, task hashes, registry generation, active/inactive skills, and content hashes.
+- Added opt-in MCP audit JSONL events plus `skills-orchestrator usage report`.
+- Added MCP `pipeline_list_runs` for runtime workflow recovery and audit.
+- Added documentation for install paths, policy packs, manifest/policy exports, release verification, and enterprise positioning.
+
+### Changed
+- Updated the team collaboration example to use the current v2 configuration schema.
+- Pipeline gates now support `must_produce` as either a single artifact key or a list of required artifact keys.
+- Hardened the Dockerfile by removing the unpinned pip upgrade and running as a non-root user.
+
 ## [2.3.0] - 2026-06-20
 
 ### Added

@@ -1,5 +1,6 @@
 """MCP 模块测试 — Registry、Search、Tools"""
 
+import json
 from pathlib import Path
 import pytest
 
@@ -113,6 +114,9 @@ class TestKeywordSearcher:
 class MockRegistry:
     """不依赖文件系统的 Registry mock"""
 
+    zone_id = None
+    generation_id = "test-generation"
+
     def all(self):
         return SAMPLE_SKILLS
 
@@ -150,6 +154,12 @@ class TestToolExecutor:
 
     def _text(self, results) -> str:
         return "\n".join(r.text for r in results)
+
+    def _decision_record(self, text: str) -> dict:
+        marker = "## Decision Record (JSON)"
+        assert marker in text
+        block = text.split("```json\n", 1)[1].split("\n```", 1)[0]
+        return json.loads(block)
 
     def test_argument_keys_excludes_values_for_safe_logging(self):
         keys = _argument_keys({"token": "secret", "task": "write docs"})
@@ -260,6 +270,12 @@ class TestToolExecutor:
         assert "本任务只遵循 active_skills" in text
         assert "Active Skill Content" in text
         assert "# Git Worktrees 工作流" in text
+        decision = self._decision_record(text)
+        assert decision["schema_version"] == "skills-orchestrator.prepare_context.v1"
+        assert decision["task_hash"]
+        assert decision["registry_generation"] == "test-generation"
+        assert {skill["id"] for skill in decision["active_skills"]} >= {"git-worktrees"}
+        assert decision["content_hashes"]["git-worktrees"]
 
     def test_prepare_context_can_return_summary_only(self):
         results = self.executor.execute(
@@ -270,6 +286,41 @@ class TestToolExecutor:
         assert "active_skills:" in text
         assert "Active Skill Content" not in text
         assert "使用 `get_skill(id)`" in text
+        decision = self._decision_record(text)
+        assert decision["include_content"] is False
+
+    def test_prepare_context_writes_optional_audit_events(self, tmp_path):
+        executor = ToolExecutor(MockRegistry(), audit_dir=str(tmp_path / "audit"))
+        results = executor.execute(
+            "prepare_context",
+            {"task": "git workflow", "max_skills": 1, "include_content": False},
+        )
+        assert "Decision Record" in self._text(results)
+
+        events_path = tmp_path / "audit" / "events.jsonl"
+        events = [
+            json.loads(line)
+            for line in events_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        assert any(event["event"] == "prepare_context_decision" for event in events)
+        assert any(event["event"] == "mcp_tool_call" for event in events)
+        assert all("git workflow" not in json.dumps(event, ensure_ascii=False) for event in events)
+
+    def test_search_skills_audit_records_result_count(self, tmp_path):
+        executor = ToolExecutor(MockRegistry(), audit_dir=str(tmp_path / "audit"))
+        executor.execute("search_skills", {"query": "no-such-skill-query"})
+
+        events_path = tmp_path / "audit" / "events.jsonl"
+        events = [
+            json.loads(line)
+            for line in events_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        assert any(
+            event["event"] == "search_skills_result" and event["result_count"] == 0
+            for event in events
+        )
 
     def test_prepare_context_empty_task(self):
         results = self.executor.execute("prepare_context", {"task": ""})
@@ -346,6 +397,24 @@ class TestToolExecutor:
                 "pipeline_advance",
                 {"pipeline_id": "full-dev", "run_id": "run-1", "context_updates": []},
             )
+
+    def test_pipeline_list_runs_exposed(self):
+        assert "pipeline_list_runs" in {tool.name for tool in ALL_TOOLS}
+
+    def test_pipeline_list_runs_returns_json(self, tmp_path):
+        from skills_orchestrator.pipeline.models import RunState
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        executor = ToolExecutor(MockRegistry())
+        executor._store = RunStateStore(base_dir=str(tmp_path))
+        state = RunState(pipeline_id="review", run_id="run1")
+        state.advance_to("inspect")
+        executor._store.save(state)
+
+        results = executor.execute("pipeline_list_runs", {"pipeline_id": "review", "limit": 5})
+        payload = json.loads(self._text(results))
+        assert payload["count"] == 1
+        assert payload["runs"][0]["run_id"] == "run1"
 
     # 未知工具
     def test_unknown_tool(self):

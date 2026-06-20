@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.3.0
+      - uses: BambooGap/skills-orchestrator@v2.4.0
         with:
           config: config/skills.yaml
 ```
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.3.0
+      - uses: BambooGap/skills-orchestrator@v2.4.0
         with:
           config: config/skills.yaml
           upload-sarif: true
@@ -56,6 +56,30 @@ uploads are accepted.
 
 The action installs the local action source with `constraints.txt`, so the CLI runtime dependency
 set is constrained for a given action revision. It is not a hash-locked install yet.
+
+## Hardened Pinning
+
+For high-trust repositories, pin both checkout and this action to full commit SHAs. Keep the simple
+tag example for onboarding, but use SHA pins in protected production repos:
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: BambooGap/skills-orchestrator@<full-release-commit-sha>
+        with:
+          config: config/skills.yaml
+          check-lock: skills.lock.json
+          upload-sarif: true
+```
+
+`upload-sarif: true` requires `security-events: write`.
 
 ## Inputs
 

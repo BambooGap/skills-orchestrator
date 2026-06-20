@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
@@ -13,6 +17,7 @@ from skills_orchestrator.security import (
     validate_identifier,
 )
 
+from .audit import AuditLogger
 from .registry import SkillRegistry
 from .search import KeywordSearcher
 
@@ -179,6 +184,25 @@ TOOL_PIPELINE_STATUS = types.Tool(
     },
 )
 
+TOOL_PIPELINE_LIST_RUNS = types.Tool(
+    name="pipeline_list_runs",
+    description="列出 Pipeline 运行记录，便于 Agent 恢复、审计或汇总最近运行。",
+    inputSchema={
+        "type": "object",
+        "properties": {
+            "pipeline_id": {
+                "type": "string",
+                "description": "可选。只列出指定 Pipeline 的运行记录。",
+            },
+            "limit": {
+                "type": "integer",
+                "description": "最多返回多少条，默认 20，范围 1-200。",
+                "default": 20,
+            },
+        },
+    },
+)
+
 TOOL_PIPELINE_ADVANCE = types.Tool(
     name="pipeline_advance",
     description=(
@@ -239,6 +263,7 @@ ALL_TOOLS = [
     TOOL_PREPARE_CONTEXT,
     TOOL_PIPELINE_START,
     TOOL_PIPELINE_STATUS,
+    TOOL_PIPELINE_LIST_RUNS,
     TOOL_PIPELINE_ADVANCE,
     TOOL_PIPELINE_RESUME,
 ]
@@ -248,12 +273,18 @@ ALL_TOOLS = [
 
 
 class ToolExecutor:
-    def __init__(self, registry: SkillRegistry, pipelines_dir: str | None = None):
+    def __init__(
+        self,
+        registry: SkillRegistry,
+        pipelines_dir: str | None = None,
+        audit_dir: str | None = None,
+    ):
         self._registry = registry
         self._searcher = KeywordSearcher()
         self._pipelines_dir = pipelines_dir
         self._pipelines: dict[str, Pipeline] = {}
         self._store: RunStateStore | None = None
+        self._audit = AuditLogger(audit_dir)
 
     def _get_store(self) -> RunStateStore:
         from skills_orchestrator.pipeline.store import RunStateStore
@@ -296,13 +327,44 @@ class ToolExecutor:
             "prepare_context": self._prepare_context,
             "pipeline_start": self._pipeline_start,
             "pipeline_status": self._pipeline_status,
+            "pipeline_list_runs": self._pipeline_list_runs,
             "pipeline_advance": self._pipeline_advance,
             "pipeline_resume": self._pipeline_resume,
         }
         handler = handlers.get(name)
         if handler is None:
+            self._audit_call(name, arguments, outcome="unknown_tool")
             return [types.TextContent(type="text", text=f"未知工具: {name}")]
-        return handler(arguments)
+        try:
+            result = handler(arguments)
+        except Exception as err:
+            self._audit_call(name, arguments, outcome="error", error_type=type(err).__name__)
+            raise
+        self._audit_call(name, arguments, outcome="ok")
+        return result
+
+    def _audit_call(
+        self,
+        tool: str,
+        arguments: dict[str, Any],
+        *,
+        outcome: str,
+        error_type: str | None = None,
+        extra: dict[str, Any] | None = None,
+    ) -> None:
+        event: dict[str, Any] = {
+            "event": "mcp_tool_call",
+            "tool": tool,
+            "argument_keys": sorted(str(key) for key in arguments.keys()),
+            "outcome": outcome,
+            "zone": self._registry.zone_id or "default",
+            "registry_generation": self._registry.generation_id,
+        }
+        if error_type:
+            event["error_type"] = error_type
+        if extra:
+            event.update(extra)
+        self._audit.append(event)
 
     @staticmethod
     def _validate_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
@@ -367,6 +429,15 @@ class ToolExecutor:
             return [types.TextContent(type="text", text="请提供搜索关键词。")]
 
         results = self._searcher.search(query, self._registry.all(), top_k=top_k)
+        self._audit_call(
+            "search_skills",
+            args,
+            outcome="result",
+            extra={
+                "event": "search_skills_result",
+                "result_count": len(results),
+            },
+        )
 
         if not results:
             return [types.TextContent(type="text", text=f"未找到与 '{query}' 相关的 skill。")]
@@ -574,6 +645,50 @@ class ToolExecutor:
         active_skills = forced_skills + passive_active
         active_ids = [s.id for s in active_skills]
         inactive_ids = [s.id for s in self._registry.all() if s.id not in set(active_ids)]
+        now = datetime.now(timezone.utc)
+        task_hash = hashlib.sha256(task.encode("utf-8")).hexdigest()
+        routing_id = uuid.uuid4().hex[:12]
+        content_hashes: dict[str, str] = {}
+        for skill in active_skills:
+            content = self._registry.get_content(skill.id)
+            if content is not None:
+                content_hashes[skill.id] = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+        decision_record = {
+            "schema_version": "skills-orchestrator.prepare_context.v1",
+            "routing_id": routing_id,
+            "created_at": now.isoformat().replace("+00:00", "Z"),
+            "expires_at": (now + timedelta(hours=24)).isoformat().replace("+00:00", "Z"),
+            "zone": self._registry.zone_id or "default",
+            "registry_generation": self._registry.generation_id,
+            "task_hash": task_hash,
+            "max_skills": max_skills,
+            "include_content": include_content,
+            "active_skills": [
+                {
+                    "id": skill.id,
+                    "required": skill.id in {s.id for s in forced_skills},
+                    "content_hash": content_hashes.get(skill.id),
+                }
+                for skill in active_skills
+            ],
+            "inactive_skills": inactive_ids,
+            "content_hashes": content_hashes,
+        }
+
+        self._audit_call(
+            "prepare_context",
+            args,
+            outcome="decision",
+            extra={
+                "event": "prepare_context_decision",
+                "routing_id": routing_id,
+                "task_hash": task_hash,
+                "active_skill_ids": active_ids,
+                "inactive_skill_count": len(inactive_ids),
+                "include_content": include_content,
+            },
+        )
 
         lines = [
             f"# Prepared Context for Task: {task}",
@@ -582,6 +697,12 @@ class ToolExecutor:
             "",
             f"active_skills: {', '.join(active_ids)}",
             f"inactive_skills: {', '.join(inactive_ids) if inactive_ids else '(none)'}",
+            "",
+            "## Decision Record (JSON)",
+            "",
+            "```json",
+            json.dumps(decision_record, ensure_ascii=False, indent=2, sort_keys=True),
+            "```",
             "",
             "## Execution Rule",
             "",
@@ -702,7 +823,7 @@ class ToolExecutor:
         for s in pipeline.steps:
             marker = " > " if s.id == state.current_step else "   "
             skip_note = f" [可跳过: {s.skip_if}]" if s.skip_if else ""
-            gate_note = f" [门禁: {s.gate.must_produce}]" if s.gate else ""
+            gate_note = f" [门禁: {s.gate.artifact_label()}]" if s.gate else ""
             lines.append(f"{marker}{s.id} → {s.skill}{skip_note}{gate_note}")
 
         # 注入当前步骤的 skill 完整内容到上下文
@@ -717,7 +838,7 @@ class ToolExecutor:
         # 注入门禁要求提示
         if step and step.gate:
             lines.append("")
-            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.must_produce}'")
+            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.artifact_label()}'")
             if step.gate.min_length:
                 lines.append(f"  最小长度: {step.gate.min_length} 字符")
 
@@ -764,7 +885,7 @@ class ToolExecutor:
             step = pipeline.get_step(state.current_step)
             if step and step.gate:
                 lines.append("")
-                lines.append(f"门禁要求: 产出 '{step.gate.must_produce}'")
+                lines.append(f"门禁要求: 产出 '{step.gate.artifact_label()}'")
                 if step.gate.min_length:
                     lines.append(f"  最小长度: {step.gate.min_length} 字符")
 
@@ -773,6 +894,30 @@ class ToolExecutor:
             lines.append(f"上下文键: {', '.join(state.context.keys())}")
 
         return [types.TextContent(type="text", text="\n".join(lines))]
+
+    # ── pipeline_list_runs ───────────────────────────────────────
+
+    def _pipeline_list_runs(self, args: dict) -> list[types.TextContent]:
+        pipeline_id = self._get_string(args, "pipeline_id").strip()
+        limit = parse_int_in_range(args.get("limit"), "limit", default=20, minimum=1, maximum=200)
+        if pipeline_id:
+            validate_identifier(pipeline_id, "pipeline_id")
+
+        rows = self._get_store().list_runs(pipeline_id or None)
+        rows.sort(key=lambda row: row.get("updated_at") or "", reverse=True)
+        rows = rows[:limit]
+
+        payload = {
+            "pipeline_id": pipeline_id or None,
+            "count": len(rows),
+            "runs": rows,
+        }
+        return [
+            types.TextContent(
+                type="text",
+                text=json.dumps(payload, ensure_ascii=False, indent=2),
+            )
+        ]
 
     # ── pipeline_advance ─────────────────────────────────────────
 
@@ -840,7 +985,7 @@ class ToolExecutor:
             f"状态: {state.status}",
         ]
         if next_step and next_step.gate:
-            lines.append(f"门禁要求: 产出 '{next_step.gate.must_produce}'")
+            lines.append(f"门禁要求: 产出 '{next_step.gate.artifact_label()}'")
             if next_step.gate.on_failure:
                 lines.append(f"  失败分支: {next_step.gate.on_failure}")
         if next_step and next_step.skip_if:
@@ -860,7 +1005,7 @@ class ToolExecutor:
         # 注入门禁要求提示
         if next_step and next_step.gate:
             lines.append("")
-            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{next_step.gate.must_produce}'")
+            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{next_step.gate.artifact_label()}'")
             if next_step.gate.min_length:
                 lines.append(f"  最小长度: {next_step.gate.min_length} 字符")
             if next_step.gate.on_failure:
@@ -928,7 +1073,7 @@ class ToolExecutor:
 
         if step and step.gate:
             lines.append("")
-            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.must_produce}'")
+            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.artifact_label()}'")
             if step.gate.min_length:
                 lines.append(f"  最小长度: {step.gate.min_length} 字符")
 

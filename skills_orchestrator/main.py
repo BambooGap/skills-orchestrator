@@ -537,7 +537,12 @@ def sync(
 @cli.command()
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 MCP 使用的 zone id")
-def serve(config: str, zone: str | None):
+@click.option(
+    "--audit-dir",
+    default=None,
+    help="可选。写入 MCP JSONL 审计事件的目录；也可用 SKILLS_ORCHESTRATOR_AUDIT_DIR。",
+)
+def serve(config: str, zone: str | None, audit_dir: str | None):
     """启动 MCP Skills Server（stdio 模式，供 Claude Code 连接）
 
     \b
@@ -568,6 +573,8 @@ def serve(config: str, zone: str | None):
     click.echo(f"  配置: {config_path}", err=True)
     if zone:
         click.echo(f"  Zone: {zone}", err=True)
+    if audit_dir:
+        click.echo(f"  Audit dir: {audit_dir}", err=True)
 
     try:
         from .mcp.registry import SkillRegistry
@@ -579,7 +586,14 @@ def serve(config: str, zone: str | None):
         raise SystemExit(1)
 
     pipelines_dir = _resolve_pipelines_dir(config)
-    asyncio.run(run_stdio(config_path, zone_id=zone, pipelines_dir=str(pipelines_dir)))
+    asyncio.run(
+        run_stdio(
+            config_path,
+            zone_id=zone,
+            pipelines_dir=str(pipelines_dir),
+            audit_dir=audit_dir,
+        )
+    )
 
 
 @cli.command("mcp-test")
@@ -587,7 +601,18 @@ def serve(config: str, zone: str | None):
 @click.argument("args_json", default="{}")
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 zone id")
-def mcp_test(tool_name: str, args_json: str, config: str, zone: Optional[str]):
+@click.option(
+    "--audit-dir",
+    default=None,
+    help="可选。写入 MCP JSONL 审计事件的目录；也可用 SKILLS_ORCHESTRATOR_AUDIT_DIR。",
+)
+def mcp_test(
+    tool_name: str,
+    args_json: str,
+    config: str,
+    zone: Optional[str],
+    audit_dir: str | None,
+):
     """在命令行测试 MCP 工具调用（不启动 server）
 
     \b
@@ -607,7 +632,7 @@ def mcp_test(tool_name: str, args_json: str, config: str, zone: Optional[str]):
     try:
         registry = SkillRegistry(config_path, zone_id=zone)
         pipelines_dir = _resolve_pipelines_dir(config)
-        executor = ToolExecutor(registry, pipelines_dir=str(pipelines_dir))
+        executor = ToolExecutor(registry, pipelines_dir=str(pipelines_dir), audit_dir=audit_dir)
         arguments = json.loads(args_json)
         results = executor.execute(tool_name, arguments)
         for r in results:
@@ -618,6 +643,64 @@ def mcp_test(tool_name: str, args_json: str, config: str, zone: Optional[str]):
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)
+
+
+# ──────────────────────── Usage 子命令 ────────────────────────
+
+
+@cli.group()
+def usage():
+    """MCP 运行期使用审计和团队汇总"""
+    pass
+
+
+@usage.command("report")
+@click.option(
+    "--audit-dir",
+    default=None,
+    help="MCP JSONL 审计事件目录；默认读取 SKILLS_ORCHESTRATOR_AUDIT_DIR。",
+)
+@click.option("--json", "as_json", is_flag=True, help="输出 JSON，便于 CI 或报表系统读取")
+def usage_report(audit_dir: str | None, as_json: bool):
+    """根据 MCP audit events 生成使用汇总。"""
+    from skills_orchestrator.mcp.audit import AUDIT_DIR_ENV, load_events, summarize_events
+
+    events = load_events(audit_dir)
+    summary = summarize_events(events)
+
+    if as_json:
+        click.echo(json.dumps(summary, ensure_ascii=False, indent=2))
+        return
+
+    if not events:
+        configured = audit_dir or os.environ.get(AUDIT_DIR_ENV) or "(未设置)"
+        click.echo(_warn(f"没有找到 MCP audit events。audit_dir={configured}"))
+        click.echo("启用方式: skills-orchestrator serve --audit-dir .skills-audit")
+        return
+
+    lines = [
+        "Skills Orchestrator usage report",
+        f"Events: {summary['events']}",
+        "",
+        "Tools:",
+    ]
+    for tool, count in summary["tools"].items():
+        lines.append(f"  - {tool}: {count}")
+
+    lines.append("")
+    lines.append("Outcomes:")
+    for outcome, count in summary["outcomes"].items():
+        lines.append(f"  - {outcome}: {count}")
+
+    if summary["top_active_skills"]:
+        lines.append("")
+        lines.append("Top active skills:")
+        for skill_id, count in summary["top_active_skills"].items():
+            lines.append(f"  - {skill_id}: {count}")
+
+    lines.append("")
+    lines.append(f"Searches with no result: {summary['searches_with_no_result']}")
+    click.echo(console_safe_text("\n".join(lines)))
 
 
 # ──────────────────────── Pipeline 子命令 ────────────────────────
@@ -888,7 +971,7 @@ def pipeline_status(
             step = pipeline.get_step(state.current_step)
             if step and step.gate:
                 lines.append("")
-                lines.append(f"门禁要求: 产出 '{step.gate.must_produce}'")
+                lines.append(f"门禁要求: 产出 '{step.gate.artifact_label()}'")
                 if step.gate.min_length:
                     lines.append(f"  最小长度: {step.gate.min_length} 字符")
 
@@ -1089,7 +1172,7 @@ def pipeline_resume(
         ]
         if step and step.gate:
             lines.append("")
-            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.must_produce}'")
+            lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.artifact_label()}'")
             if step.gate.min_length:
                 lines.append(f"  最小长度: {step.gate.min_length} 字符")
 

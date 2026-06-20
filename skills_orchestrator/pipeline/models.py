@@ -12,26 +12,47 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 class Gate:
     """质量门禁：Step 完成前必须满足的条件"""
 
-    must_produce: str = ""  # 必须产出的 artifact key
+    must_produce: str | list[str] = ""  # 必须产出的 artifact key(s)
     min_length: int = 0  # artifact 最小字符数
     check_command: str = ""  # 可选：运行命令验证
     max_iterations: int = 0  # 可选：最大重试轮数（0=不限）
     on_failure: Optional[str] = None  # 失败时跳转的步骤 ID
 
+    def required_artifacts(self) -> list[str]:
+        """Return normalized artifact keys required by this gate."""
+        if not self.must_produce:
+            return []
+        if isinstance(self.must_produce, str):
+            return [self.must_produce]
+        if isinstance(self.must_produce, list) and all(
+            isinstance(item, str) for item in self.must_produce
+        ):
+            return [item for item in self.must_produce if item]
+        raise TypeError("must_produce 必须是字符串或字符串列表")
+
+    def artifact_label(self) -> str:
+        """Human-readable artifact requirement for CLI/MCP output."""
+        artifacts = self.required_artifacts()
+        if not artifacts:
+            return ""
+        return ", ".join(artifacts)
+
     def check(self, context: Dict[str, Any]) -> Tuple[bool, str]:
         """检查门禁是否通过，返回 (passed, reason)"""
-        if not self.must_produce:
+        required = self.required_artifacts()
+        if not required:
             return True, ""
 
-        artifact = context.get(self.must_produce)
-        if artifact is None:
-            return False, f"缺少产出: {self.must_produce}"
+        for artifact_key in required:
+            artifact = context.get(artifact_key)
+            if artifact is None:
+                return False, f"缺少产出: {artifact_key}"
 
-        if isinstance(artifact, str) and self.min_length > 0:
-            if len(artifact) < self.min_length:
-                return False, (
-                    f"产出 '{self.must_produce}' 长度 {len(artifact)} < {self.min_length}"
-                )
+            if isinstance(artifact, str) and self.min_length > 0:
+                if len(artifact) < self.min_length:
+                    return False, (
+                        f"产出 '{artifact_key}' 长度 {len(artifact)} < {self.min_length}"
+                    )
 
         return True, ""
 

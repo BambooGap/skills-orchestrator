@@ -119,7 +119,7 @@ class PipelineEngine:
         # Gate 通过，标记完成
         artifacts = []
         if current.gate and current.gate.must_produce:
-            artifacts = [current.gate.must_produce]
+            artifacts = current.gate.required_artifacts()
         state.complete_current(artifacts=artifacts)
 
         # 找到下一步

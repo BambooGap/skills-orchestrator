@@ -290,6 +290,41 @@ def test_pipeline_list_runs_text_and_json(workspace, monkeypatch):
     assert payload["runs"][0]["run_id"] == "run1"
 
 
+def test_usage_report_json_reads_audit_events(tmp_path):
+    audit_dir = tmp_path / "audit"
+    audit_dir.mkdir()
+    (audit_dir / "events.jsonl").write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "event": "prepare_context_decision",
+                        "tool": "prepare_context",
+                        "outcome": "decision",
+                        "active_skill_ids": ["team-review"],
+                    }
+                ),
+                json.dumps(
+                    {
+                        "event": "mcp_tool_call",
+                        "tool": "prepare_context",
+                        "outcome": "ok",
+                    }
+                ),
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["usage", "report", "--audit-dir", str(audit_dir), "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["events"] == 2
+    assert payload["tools"]["prepare_context"] == 1
+    assert payload["top_active_skills"]["team-review"] == 1
+
+
 def test_status_happy_path(workspace):
     runner = CliRunner()
     result = runner.invoke(cli, ["status", "--config", workspace["config"]])
