@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import re
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
 from skills_orchestrator import __version__
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.diagnostic import DiagnosticSeverity
+from skills_orchestrator.schema_validation import validate_document
 
 
 def run_doctor(
@@ -19,10 +21,11 @@ def run_doctor(
     check_lock: str | None = None,
     agents_md: str = "AGENTS.md",
     profile: str = "adopter",
+    evidence_dir: str = "evidence",
 ) -> dict[str, Any]:
     """Run local SkillOps readiness checks for a skills-orchestrator workspace."""
-    if profile not in {"adopter", "maintainer"}:
-        raise ValueError("doctor profile must be 'adopter' or 'maintainer'")
+    if profile not in {"adopter", "maintainer", "enterprise"}:
+        raise ValueError("doctor profile must be 'adopter', 'maintainer', or 'enterprise'")
     report = run_check(
         config_path,
         zone_id=zone_id,
@@ -31,7 +34,13 @@ def run_doctor(
     )
     root = _workspace_root(config_path)
     issues = [_diagnostic_issue(diagnostic) for diagnostic in report.diagnostics]
-    evidence = _evidence(root, check_lock=check_lock, agents_md=agents_md, profile=profile)
+    evidence = _evidence(
+        root,
+        check_lock=check_lock,
+        agents_md=agents_md,
+        profile=profile,
+        evidence_dir=evidence_dir,
+    )
     issues.extend(evidence["issues"])
     score = _score(issues)
     return {
@@ -58,7 +67,12 @@ def run_doctor(
 def format_doctor_text(payload: dict[str, Any]) -> str:
     """Render a doctor payload for terminal use."""
     profile = payload.get("profile", "adopter")
-    label = "Maintainer readiness" if profile == "maintainer" else "Adopter readiness"
+    labels = {
+        "adopter": "Adopter readiness",
+        "maintainer": "Maintainer readiness",
+        "enterprise": "Enterprise readiness",
+    }
+    label = labels.get(profile, f"{profile.title()} readiness")
     lines = [
         f"{label}: {payload['score']}/100 ({payload['status']})",
         (
@@ -115,7 +129,12 @@ def _diagnostic_issue(diagnostic) -> dict[str, Any]:
 
 
 def _evidence(
-    root: Path, *, check_lock: str | None, agents_md: str, profile: str
+    root: Path,
+    *,
+    check_lock: str | None,
+    agents_md: str,
+    profile: str,
+    evidence_dir: str,
 ) -> dict[str, Any]:
     artifacts: dict[str, dict[str, Any]] = {}
     issues: list[dict[str, Any]] = []
@@ -174,6 +193,9 @@ def _evidence(
                 str(agents_path),
             )
         )
+
+    if profile == "enterprise":
+        _enterprise_evidence(root, evidence_dir, artifacts, issues)
 
     return {"artifacts": artifacts, "issues": issues}
 
@@ -238,6 +260,155 @@ def _maintainer_release_evidence(
                     str(path),
                 )
             )
+
+
+def _enterprise_evidence(
+    root: Path,
+    evidence_dir: str,
+    artifacts: dict[str, dict[str, Any]],
+    issues: list[dict[str, Any]],
+) -> None:
+    evidence_root = Path(evidence_dir)
+    if not evidence_root.is_absolute():
+        evidence_root = root / evidence_root
+
+    manifest_path = evidence_root / "evidence-manifest.json"
+    detail = _schema_detail("evidence", manifest_path)
+    _record_artifact(artifacts, "evidence_manifest", manifest_path, detail=detail)
+    if not manifest_path.exists():
+        issues.append(
+            _artifact_issue(
+                "DOCTOR_EVIDENCE_MANIFEST",
+                "warning",
+                f"Missing evidence manifest artifact: {manifest_path}",
+                "Run skills-orchestrator evidence export before enterprise readiness checks.",
+                str(manifest_path),
+            )
+        )
+        return
+    if not detail.startswith("schema valid"):
+        issues.append(
+            _artifact_issue(
+                "DOCTOR_EVIDENCE_SCHEMA",
+                "error",
+                f"Evidence manifest failed schema validation: {detail}",
+                "Regenerate the evidence bundle with the current skills-orchestrator version.",
+                str(manifest_path),
+            )
+        )
+        return
+
+    try:
+        import json
+
+        bundle = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, JSONDecodeError) as exc:
+        issues.append(
+            _artifact_issue(
+                "DOCTOR_EVIDENCE_READ",
+                "error",
+                f"Evidence manifest could not be read: {exc}",
+                "Regenerate the evidence bundle.",
+                str(manifest_path),
+            )
+        )
+        return
+
+    expected_schema = {
+        "check_json": "check",
+        "instruction_manifest": "manifest",
+        "opa_input": "policy-opa-input",
+        "doctor": "doctor",
+        "registry": "registry",
+    }
+    files = bundle.get("files") or {}
+    for label, schema_kind in expected_schema.items():
+        path_text = files.get(label)
+        path = (
+            _resolve_evidence_artifact_path(path_text, root=root, manifest_path=manifest_path)
+            if path_text
+            else evidence_root / f"{label}.missing"
+        )
+        detail = _schema_detail(schema_kind, path)
+        _record_artifact(artifacts, f"evidence_{label}", path, detail=detail)
+        if not path_text or not path.exists():
+            issues.append(
+                _artifact_issue(
+                    f"DOCTOR_EVIDENCE_{label.upper()}",
+                    "warning",
+                    f"Missing evidence artifact: {label}",
+                    "Regenerate the evidence bundle and keep all referenced files.",
+                    str(path),
+                )
+            )
+        elif not detail.startswith("schema valid"):
+            issues.append(
+                _artifact_issue(
+                    f"DOCTOR_EVIDENCE_{label.upper()}_SCHEMA",
+                    "error",
+                    f"Evidence artifact failed schema validation: {label} - {detail}",
+                    "Regenerate the evidence bundle with the current skills-orchestrator version.",
+                    str(path),
+                )
+            )
+
+    optional_artifacts = (
+        ("adapter_inspect", evidence_root / "adapter-inspect.json", "adapter-inspect"),
+        ("package_sbom", evidence_root / "package-sbom.cdx.json", "supply-chain-sbom"),
+    )
+    for label, path, schema_kind in optional_artifacts:
+        detail = _schema_detail(schema_kind, path) if path.exists() else "recommended"
+        _record_artifact(artifacts, label, path, detail=detail)
+        if not path.exists():
+            issues.append(
+                _artifact_issue(
+                    f"DOCTOR_{label.upper()}",
+                    "info",
+                    f"Recommended enterprise artifact is missing: {path}",
+                    "Generate this artifact when piloting organization-wide SkillOps evidence.",
+                    str(path),
+                )
+            )
+        elif not detail.startswith("schema valid"):
+            issues.append(
+                _artifact_issue(
+                    f"DOCTOR_{label.upper()}_SCHEMA",
+                    "warning",
+                    f"Recommended enterprise artifact failed schema validation: {detail}",
+                    "Regenerate the artifact with the current skills-orchestrator version.",
+                    str(path),
+                )
+            )
+
+
+def _schema_detail(kind: str, path: Path) -> str:
+    if not path.exists():
+        return "missing"
+    try:
+        result = validate_document(kind, str(path))
+    except Exception as exc:
+        return f"schema error: {exc}"
+    if result.valid:
+        return "schema valid"
+    return "schema invalid: " + "; ".join(
+        f"{issue.path}: {issue.message}" for issue in result.errors[:3]
+            )
+
+
+def _resolve_evidence_artifact_path(path_text: str, *, root: Path, manifest_path: Path) -> Path:
+    path = Path(path_text)
+    if path.is_absolute():
+        return path
+    candidates = [
+        (Path.cwd() / path).resolve(),
+        (root / path).resolve(),
+        (manifest_path.parent / path).resolve(),
+        (manifest_path.parent / path.name).resolve(),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 
 def _record_artifact(

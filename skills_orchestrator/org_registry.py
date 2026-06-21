@@ -285,7 +285,15 @@ def _change_details(changes: dict[str, Any]) -> str:
     if governance:
         before_governance = governance.get("before") or {}
         after_governance = governance.get("after") or {}
-        for field in ("owner", "source", "version", "lifecycle", "approvers"):
+        for field in (
+            "owner",
+            "source",
+            "version",
+            "lifecycle",
+            "approvers",
+            "reviewed_at",
+            "expires_at",
+        ):
             before_value = _governance_value(before_governance.get(field))
             after_value = _governance_value(after_governance.get(field))
             if before_value != after_value:

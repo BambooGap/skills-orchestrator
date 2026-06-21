@@ -122,6 +122,34 @@ RULES: dict[str, DiagnosticRule] = {
         category=DiagnosticCategory.METADATA,
         description="Skill load_policy must be one of the supported values.",
     ),
+    "SO014": DiagnosticRule(
+        rule_id="SO014",
+        name="missing-review-window",
+        severity=DiagnosticSeverity.WARNING,
+        category=DiagnosticCategory.METADATA,
+        description="Engineering-grade policy requires reviewed_at and expires_at metadata.",
+    ),
+    "SO015": DiagnosticRule(
+        rule_id="SO015",
+        name="invalid-review-date",
+        severity=DiagnosticSeverity.ERROR,
+        category=DiagnosticCategory.METADATA,
+        description="Review window metadata must use YYYY-MM-DD dates.",
+    ),
+    "SO016": DiagnosticRule(
+        rule_id="SO016",
+        name="expired-review-window",
+        severity=DiagnosticSeverity.ERROR,
+        category=DiagnosticCategory.METADATA,
+        description="Skill review window has expired and needs re-approval.",
+    ),
+    "SO017": DiagnosticRule(
+        rule_id="SO017",
+        name="declarative-policy-violation",
+        severity=DiagnosticSeverity.WARNING,
+        category=DiagnosticCategory.METADATA,
+        description="A local declarative policy pack rule was not satisfied.",
+    ),
 }
 
 

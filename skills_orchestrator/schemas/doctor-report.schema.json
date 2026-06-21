@@ -9,7 +9,7 @@
     "generated_at": { "type": "string" },
     "tool": { "type": "object" },
     "config": { "type": "string" },
-    "profile": { "enum": ["adopter", "maintainer"] },
+    "profile": { "enum": ["adopter", "maintainer", "enterprise"] },
     "zone": { "type": "string" },
     "summary": { "type": "object" },
     "score": { "type": "integer", "minimum": 0, "maximum": 100 },

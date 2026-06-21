@@ -78,6 +78,12 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         title="Skills Config",
         description="skills.yaml configuration consumed by build, check, and registry.",
     ),
+    "conformance": SchemaDescriptor(
+        kind="conformance",
+        filename="conformance-report.schema.json",
+        title="SkillOps Conformance Report",
+        description="Report emitted by conformance run for SkillOps Contract checks.",
+    ),
     "check": SchemaDescriptor(
         kind="check",
         filename="check-report.schema.json",
@@ -125,6 +131,12 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         filename="policy-opa-input.schema.json",
         title="Policy OPA Input",
         description="OPA input document exported for policy-as-code proofs.",
+    ),
+    "policy-pack": SchemaDescriptor(
+        kind="policy-pack",
+        filename="policy-pack.schema.json",
+        title="Declarative Policy Pack",
+        description="Safe YAML/JSON policy pack for local SkillOps governance rules.",
     ),
     "registry": SchemaDescriptor(
         kind="registry",

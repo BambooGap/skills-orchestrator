@@ -4,7 +4,7 @@
 [![CI](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v3.0.6-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v3.1.0-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -13,9 +13,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v3.0.6` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v3.0.6` release tag | `BambooGap/skills-orchestrator@v3.0.6` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.0.6` |
+| OSS CLI | `v3.1.0` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v3.1.0` release tag | `BambooGap/skills-orchestrator@v3.1.0` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.1.0` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
 
@@ -63,7 +63,7 @@ Use `python3.12`, `pipx --python python3.12`, `uvx --python 3.12`, or the Docker
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.0.6 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.1.0 --version
 ```
 
 ### 初始化项目
@@ -98,6 +98,15 @@ skills-orchestrator check \
   --fail-on warning
 ```
 
+启用工程级治理规则：
+
+```bash
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack builtin/engineering-grade \
+  --fail-on warning
+```
+
 CI 或 GitHub Code Scanning 可以使用机器可读输出：
 
 ```bash
@@ -119,7 +128,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.6
+      - uses: BambooGap/skills-orchestrator@v3.1.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -135,7 +144,7 @@ Docker 运行方式见 [Docker Usage](docs/docker.md)。
 ### 规范、一致性与可运行 Demo
 
 - [SkillOps Contract v1](SPEC.md): skill metadata、registry、diff、evidence、adapter 的机器可测试规范。
-- [Conformance](CONFORMANCE.md): 如何用 `schema validate`、`check`、`registry`、`evidence` 验证兼容性。
+- [Conformance](CONFORMANCE.md): 如何用 `conformance run`、`schema validate`、`check`、`registry`、`evidence` 验证兼容性。
 - [Security Policy](SECURITY.md): MCP trust model、HMAC audit、import provenance 和漏洞报告流程。
 - [Demo Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
 
@@ -145,6 +154,10 @@ Docker 运行方式见 [Docker Usage](docs/docker.md)。
 skills-orchestrator doctor --profile adopter --config config/skills.yaml
 
 skills-orchestrator doctor --profile maintainer --config config/skills.yaml
+
+skills-orchestrator conformance run \
+  --config config/skills.yaml \
+  --policy-pack builtin/engineering-grade
 
 skills-orchestrator evidence export \
   --config config/skills.yaml \
@@ -172,7 +185,8 @@ skills-orchestrator supply-chain sbom --output package-sbom.cdx.json
 
 `doctor` 默认使用 `adopter` profile，检查接入仓库真正需要的 config、policy、
 SkillOps CI workflow、lock 和 `AGENTS.md` 证据；`maintainer` profile 才额外检查
-本项目发版用的 `action.yml`、`Dockerfile` 和版本化测试报告。`evidence export` 写出
+本项目发版用的 `action.yml`、`Dockerfile` 和版本化测试报告；`enterprise` profile
+读取 evidence bundle 并验证核心 artifact schema，适合平台团队试点。`evidence export` 写出
 `check.json`、`check.sarif`、`instruction-manifest.json`、`policy-opa-input.json`、
 `policy-proof.rego`、`doctor.json` 和 `skill-registry.json`，适合 CI artifact、审计归档或客户交付。
 `schema validate` 可单独验证 config、check、manifest、policy OPA input、doctor、

@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/policy-pack.schema.json",
+  "title": "Skills Orchestrator Declarative Policy Pack",
+  "type": "object",
+  "required": ["schema_version", "id", "rules"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.policy-pack.v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$"
+    },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "severity": { "enum": ["error", "warning", "info"] },
+    "field": {
+      "enum": [
+        "id",
+        "name",
+        "summary",
+        "tags",
+        "load_policy",
+        "priority",
+        "zones",
+        "conflict_with",
+        "base",
+        "owner",
+        "source",
+        "version",
+        "lifecycle",
+        "approvers",
+        "reviewed_at",
+        "expires_at"
+      ]
+    },
+    "scalarField": {
+      "enum": [
+        "id",
+        "name",
+        "summary",
+        "load_policy",
+        "base",
+        "owner",
+        "source",
+        "version",
+        "lifecycle",
+        "reviewed_at",
+        "expires_at"
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "required": ["id"],
+      "anyOf": [
+        { "required": ["required_fields"] },
+        { "required": ["allowed_values"] }
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "description": { "type": "string" },
+        "severity": { "$ref": "#/$defs/severity", "default": "warning" },
+        "required_fields": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/field" },
+          "uniqueItems": true
+        },
+        "allowed_values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["field", "values"],
+            "properties": {
+              "field": { "$ref": "#/$defs/scalarField" },
+              "values": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string" },
+                "uniqueItems": true
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

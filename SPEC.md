@@ -73,6 +73,34 @@ skills-orchestrator check \
   --fail-on warning
 ```
 
+When the `builtin/engineering-grade` policy pack is enabled, it includes `builtin/team-standard`
+and shared skills SHOULD also include:
+
+| Field | Type | Constraint |
+| --- | --- | --- |
+| `reviewed_at` | string | ISO date in `YYYY-MM-DD` form. |
+| `expires_at` | string | ISO date in `YYYY-MM-DD` form; MUST be on or after `reviewed_at` and SHOULD be in the future. |
+
+Engineering-grade policy check:
+
+```bash
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack builtin/engineering-grade \
+  --fail-on warning
+```
+
+Local declarative policy packs MUST use `skills-orchestrator.policy-pack.v1` and MUST be data-only
+YAML/JSON. Implementations MUST NOT execute repository code while loading a policy pack.
+
+Validation command:
+
+```bash
+skills-orchestrator schema validate \
+  --kind policy-pack \
+  --input policy-pack.yaml
+```
+
 ### Routing Fields
 
 | Field | Type | Constraint |

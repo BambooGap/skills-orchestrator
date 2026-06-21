@@ -31,7 +31,7 @@ inputs:
     default: "20000"
     required: false
   policy-pack:
-    description: Optional built-in policy pack, for example builtin/team-standard.
+    description: Optional built-in or local declarative policy pack, for example builtin/team-standard or builtin/engineering-grade.
     default: ""
     required: false
   upload-sarif:
