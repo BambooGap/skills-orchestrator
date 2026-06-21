@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.1
+      - uses: BambooGap/skills-orchestrator@v3.0.2
         with:
           config: config/skills.yaml
 ```
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.1
+      - uses: BambooGap/skills-orchestrator@v3.0.2
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -82,7 +82,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v3.0.1
+      - uses: BambooGap/skills-orchestrator@v3.0.2
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -119,6 +119,20 @@ jobs:
 ```
 
 `upload-sarif: true` requires `security-events: write`.
+
+## Marketplace Readiness
+
+`action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
+repository can be used directly with a release tag, for example
+`BambooGap/skills-orchestrator@v3.0.2`, even before the Marketplace listing is public.
+
+GitHub Marketplace listing is a separate release UI step, not something `gh release create`
+publishes automatically. GitHub's documented flow is to open the repository `action.yml`, draft a
+release from the Marketplace banner, select **Publish this Action to the GitHub Marketplace**, pick
+Marketplace categories, and publish the release. The owner account may also need to accept the
+GitHub Marketplace Developer Agreement before the checkbox is enabled.
+
+Reference: [Publishing actions in GitHub Marketplace](https://docs.github.com/actions/creating-actions/publishing-actions-in-github-marketplace).
 
 ## Inputs
 

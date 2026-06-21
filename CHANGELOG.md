@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-06-21
+
+### Changed
+- Replaced the README Marketplace badge link with the repository GitHub Action documentation until the action is explicitly published through GitHub's Marketplace release UI.
+- Documented the Marketplace publishing handoff and Developer Agreement prerequisite in the GitHub Action guide.
+- Updated README, docs, examples, package metadata, and reports to point at `v3.0.2` release entry points.
+
 ## [3.0.1] - 2026-06-21
 
 ### Added
