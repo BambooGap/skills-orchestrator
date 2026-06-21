@@ -1,6 +1,8 @@
 """Sync 模块测试 — SyncTarget 实现和 SyncEngine"""
 
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -21,6 +23,10 @@ from skills_orchestrator.sync.targets import (
 
 
 # ── helpers ──────────────────────────────────────────────────────
+
+
+def _cli_cmd(*args: str) -> list[str]:
+    return [sys.executable, "-m", "skills_orchestrator.main", *args]
 
 
 def _make_skill(id, name, summary, tags, path=None, load_policy="free", priority=50):
@@ -579,10 +585,8 @@ class TestSyncEngine:
 class TestSyncCLI:
     def test_sync_dry_run_hermes(self):
         """dry-run 不应创建任何文件"""
-        import subprocess
-
         result = subprocess.run(
-            ["skills-orchestrator", "sync", "hermes", "--dry-run"],
+            _cli_cmd("sync", "hermes", "--dry-run"),
             capture_output=True,
             text=True,
             timeout=10,
@@ -591,10 +595,8 @@ class TestSyncCLI:
         assert "[dry-run]" in result.stdout
 
     def test_sync_dry_run_openclaw(self):
-        import subprocess
-
         result = subprocess.run(
-            ["skills-orchestrator", "sync", "openclaw", "--dry-run"],
+            _cli_cmd("sync", "openclaw", "--dry-run"),
             capture_output=True,
             text=True,
             timeout=10,
@@ -603,10 +605,8 @@ class TestSyncCLI:
         assert "[dry-run]" in result.stdout
 
     def test_sync_dry_run_copilot(self):
-        import subprocess
-
         result = subprocess.run(
-            ["skills-orchestrator", "sync", "copilot", "--dry-run"],
+            _cli_cmd("sync", "copilot", "--dry-run"),
             capture_output=True,
             text=True,
             timeout=10,
@@ -615,10 +615,8 @@ class TestSyncCLI:
         assert "[dry-run]" in result.stdout
 
     def test_sync_unknown_target_fails(self):
-        import subprocess
-
         result = subprocess.run(
-            ["skills-orchestrator", "sync", "nonexistent"],
+            _cli_cmd("sync", "nonexistent"),
             capture_output=True,
             text=True,
             timeout=10,

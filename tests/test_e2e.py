@@ -2,6 +2,8 @@
 
 import os
 import re
+import subprocess
+import sys
 
 
 from skills_orchestrator.mcp.registry import SkillRegistry
@@ -29,6 +31,10 @@ def _executor(store_dir=None):
     if store_dir:
         ex._store = RunStateStore(base_dir=store_dir)
     return ex
+
+
+def _cli_cmd(*args: str) -> list[str]:
+    return [sys.executable, "-m", "skills_orchestrator.main", *args]
 
 
 # ═══════════════════════════════════════════════════════════
@@ -304,10 +310,8 @@ class TestE2ECLIIntegration:
     """CLI 命令端到端 — 通过 subprocess 调用"""
 
     def test_pipeline_list(self):
-        import subprocess
-
         result = subprocess.run(
-            ["python", "-m", "skills_orchestrator.main", "pipeline", "list"],
+            _cli_cmd("pipeline", "list"),
             capture_output=True,
             text=True,
             timeout=10,
@@ -319,20 +323,9 @@ class TestE2ECLIIntegration:
         assert "review-only" in result.stdout
 
     def test_pipeline_start_and_status(self):
-        import subprocess
-
         cwd = os.path.join(os.path.dirname(__file__), "..")
         result = subprocess.run(
-            [
-                "python",
-                "-m",
-                "skills_orchestrator.main",
-                "pipeline",
-                "start",
-                "quick-fix",
-                "--config",
-                "config/skills.yaml",
-            ],
+            _cli_cmd("pipeline", "start", "quick-fix", "--config", "config/skills.yaml"),
             capture_output=True,
             text=True,
             timeout=10,
@@ -346,16 +339,7 @@ class TestE2ECLIIntegration:
 
         # 检查 status
         result2 = subprocess.run(
-            [
-                "python",
-                "-m",
-                "skills_orchestrator.main",
-                "pipeline",
-                "status",
-                "quick-fix",
-                "--run-id",
-                run_id,
-            ],
+            _cli_cmd("pipeline", "status", "quick-fix", "--run-id", run_id),
             capture_output=True,
             text=True,
             timeout=10,

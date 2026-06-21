@@ -57,6 +57,45 @@ skills-orchestrator registry comment-body \
   evidence/registry-diff.md \
   --output evidence/registry-diff-comment.md
 
+```
+
+To demonstrate a non-empty local diff, save a baseline registry, change one skill, then build the
+head registry:
+
+```bash
+cp skills/release-checklist.md /tmp/release-checklist.md
+
+skills-orchestrator registry build \
+  --config-glob config/skills.yaml \
+  --output evidence/registry-before.json
+
+python3.12 - <<'PY'
+from pathlib import Path
+path = Path("skills/release-checklist.md")
+text = path.read_text(encoding="utf-8")
+path.write_text(text.replace("version: 1.0.0", "version: 1.0.1"), encoding="utf-8")
+PY
+
+skills-orchestrator registry build \
+  --config-glob config/skills.yaml \
+  --output evidence/registry-after.json
+
+skills-orchestrator registry diff \
+  evidence/registry-before.json \
+  evidence/registry-after.json \
+  --format markdown \
+  --output evidence/registry-diff.md
+
+skills-orchestrator registry comment-body \
+  evidence/registry-diff.md \
+  --output evidence/registry-diff-comment.md
+
+cp /tmp/release-checklist.md skills/release-checklist.md
+```
+
+Continue the evidence flow:
+
+```bash
 skills-orchestrator evidence export --config config/skills.yaml --out evidence
 
 skills-orchestrator adapters inspect --path . --format json \

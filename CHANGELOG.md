@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.6] - 2026-06-21
+
 ### Changed
 - Upgraded pinned `github/codeql-action` references from v3 to the v4 commit SHA for CodeQL
   analysis and SARIF upload.
+- Expanded the demo repository README with a local changed-registry-diff walkthrough.
+- Updated current install, GitHub Action, and container examples to `v3.0.6`.
+
+### Fixed
+- Made subprocess-based CLI tests hermetic by invoking `skills_orchestrator.main` with the active
+  Python interpreter instead of relying on `python` or `skills-orchestrator` being on `PATH`.
 
 ## [3.0.5] - 2026-06-21
 
