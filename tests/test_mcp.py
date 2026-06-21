@@ -183,9 +183,30 @@ class TestToolExecutor:
         assert "git-worktrees" in text
         assert "brainstorming" not in text
 
+    def test_list_skills_tags_filter(self):
+        results = self.executor.execute("list_skills", {"tags": ["git"]})
+        text = self._text(results)
+        assert "git-worktrees" in text
+        assert "finish-branch" in text
+        assert "brainstorming" not in text
+
+    def test_list_skills_tags_filter_requires_all_tags(self):
+        results = self.executor.execute("list_skills", {"tags": ["git", "checklist"]})
+        text = self._text(results)
+        assert "finish-branch" in text
+        assert "git-worktrees" not in text
+
     def test_list_skills_rejects_non_string_tag(self):
         with pytest.raises(ValueError, match="tag"):
             self.executor.execute("list_skills", {"tag": 123})
+
+    def test_list_skills_rejects_non_array_tags(self):
+        with pytest.raises(ValueError, match="tags"):
+            self.executor.execute("list_skills", {"tags": "git"})
+
+    def test_list_skills_rejects_non_string_tags_item(self):
+        with pytest.raises(ValueError, match="tags"):
+            self.executor.execute("list_skills", {"tags": ["git", 123]})
 
     def test_list_skills_unknown_tag(self):
         results = self.executor.execute("list_skills", {"tag": "nonexistent"})

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-06-22
+
+### Fixed
+- Fixed MCP `list_skills` filtering for clients that pass `tags: ["..."]` instead of the
+  legacy single-string `tag` argument.
+- Documented `list_skills` support for both `tag` and `tags`, with `tags` requiring all specified
+  tags to be present.
+
 ## [3.2.0] - 2026-06-21
 
 ### Added

@@ -41,8 +41,13 @@ TOOL_LIST_SKILLS = types.Tool(
         "properties": {
             "tag": {
                 "type": "string",
-                "description": "按标签过滤，如 'git'、'review'、'planning'。不传则返回全部。",
-            }
+                "description": "按单个标签过滤，如 'git'、'review'、'planning'。不传则返回全部。",
+            },
+            "tags": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "按多个标签过滤；返回同时包含所有指定标签的 skill。",
+            },
         },
     },
 )
@@ -416,6 +421,18 @@ class ToolExecutor:
         return value
 
     @staticmethod
+    def _get_string_list(args: dict[str, Any], key: str) -> list[str]:
+        value = args.get(key, [])
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise ValueError(f"{key} 必须是字符串数组")
+        for item in value:
+            if not isinstance(item, str):
+                raise ValueError(f"{key} 必须是字符串数组")
+        return value
+
+    @staticmethod
     def _get_dict(args: dict[str, Any], key: str, default: dict | None = None) -> dict:
         value = args.get(key, default if default is not None else {})
         if value is None:
@@ -434,11 +451,19 @@ class ToolExecutor:
     # ── list_skills ───────────────────────────────────────────────
 
     def _list_skills(self, args: dict) -> list[types.TextContent]:
-        tag_filter = self._get_string(args, "tag").strip().lower()
+        tag_filters = [
+            tag.strip().lower()
+            for tag in [
+                self._get_string(args, "tag"),
+                *self._get_string_list(args, "tags"),
+            ]
+            if tag.strip()
+        ]
         skills = self._registry.all()
 
-        if tag_filter:
-            skills = [s for s in skills if tag_filter in [t.lower() for t in s.tags]]
+        if tag_filters:
+            required_tags = set(tag_filters)
+            skills = [s for s in skills if required_tags.issubset({tag.lower() for tag in s.tags})]
 
         if not skills:
             return [types.TextContent(type="text", text="没有找到匹配的 skill。")]
