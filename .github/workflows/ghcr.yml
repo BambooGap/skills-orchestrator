@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional image tag to publish, for example v3.0.0"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -12,8 +17,6 @@ permissions:
 jobs:
   publish-ghcr:
     runs-on: ubuntu-latest
-    env:
-      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/skills-orchestrator
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -22,10 +25,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          repo="${repo,,}"
           version="${GITHUB_REF_NAME}"
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            version="manual-${GITHUB_SHA::12}"
+            version="${{ inputs.version }}"
+            if [ -z "$version" ]; then
+              version="manual-${GITHUB_SHA::12}"
+            fi
           fi
+          echo "image=ghcr.io/${owner}/${repo}" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "sha_tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
@@ -33,9 +43,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          image="${{ steps.meta.outputs.image }}"
           docker build \
-            -t "$IMAGE_NAME:${{ steps.meta.outputs.version }}" \
-            -t "$IMAGE_NAME:${{ steps.meta.outputs.sha_tag }}" \
+            -t "$image:${{ steps.meta.outputs.version }}" \
+            -t "$image:${{ steps.meta.outputs.sha_tag }}" \
             .
 
       - name: Log in to GHCR
@@ -48,12 +59,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker push "$IMAGE_NAME:${{ steps.meta.outputs.version }}"
-          docker push "$IMAGE_NAME:${{ steps.meta.outputs.sha_tag }}"
+          image="${{ steps.meta.outputs.image }}"
+          docker push "$image:${{ steps.meta.outputs.version }}"
+          docker push "$image:${{ steps.meta.outputs.sha_tag }}"
 
       - name: Smoke published image
         shell: bash
         run: |
           set -euo pipefail
-          docker pull "$IMAGE_NAME:${{ steps.meta.outputs.version }}"
-          docker run --rm "$IMAGE_NAME:${{ steps.meta.outputs.version }}" --version
+          image="${{ steps.meta.outputs.image }}"
+          docker pull "$image:${{ steps.meta.outputs.version }}"
+          docker run --rm "$image:${{ steps.meta.outputs.version }}" --version

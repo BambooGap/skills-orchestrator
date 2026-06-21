@@ -44,7 +44,7 @@ upgrade step and runs the CLI as a non-root user.
 `.github/workflows/ghcr.yml` publishes release and manual images to:
 
 ```text
-ghcr.io/BambooGap/skills-orchestrator
+ghcr.io/bamboogap/skills-orchestrator
 ```
 
 Release builds are tagged with the release ref and a short commit SHA tag. Pull request workflows do
