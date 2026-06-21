@@ -260,10 +260,13 @@ def _change_details(changes: dict[str, Any]) -> str:
     detail_parts = []
     governance = changes.get("governance")
     if governance:
-        before_owner = (governance.get("before") or {}).get("owner", "")
-        after_owner = (governance.get("after") or {}).get("owner", "")
-        if before_owner != after_owner:
-            detail_parts.append(f"owner {before_owner} -> {after_owner}")
+        before_governance = governance.get("before") or {}
+        after_governance = governance.get("after") or {}
+        for field in ("owner", "source", "version", "lifecycle", "approvers"):
+            before_value = _governance_value(before_governance.get(field))
+            after_value = _governance_value(after_governance.get(field))
+            if before_value != after_value:
+                detail_parts.append(f"{field} {before_value} -> {after_value}")
     status = changes.get("status")
     if status:
         detail_parts.append(f"status {status.get('before', '')} -> {status.get('after', '')}")
@@ -273,6 +276,14 @@ def _change_details(changes: dict[str, Any]) -> str:
         after_hash = _hash_short(content_hash.get("after"))
         detail_parts.append(f"hash {before_hash} -> {after_hash}")
     return "; ".join(detail_parts)
+
+
+def _governance_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value)
+    return str(value)
 
 
 def _duplicate_changes_table(changes: list[dict[str, Any]]) -> list[str]:

@@ -910,6 +910,13 @@ def registry_comment_body(
 @click.option("--check-lock", default=None, help="检查指定 skills.lock.json 是否过期")
 @click.option("--agents-md", default="AGENTS.md", help="生成的 AGENTS.md 路径")
 @click.option(
+    "--profile",
+    type=click.Choice(["adopter", "maintainer"]),
+    default="adopter",
+    show_default=True,
+    help="readiness 评分口径：adopter 面向接入仓库，maintainer 面向本项目发版。",
+)
+@click.option(
     "--format",
     "output_format",
     type=click.Choice(["text", "json"]),
@@ -923,10 +930,11 @@ def doctor(
     policy_packs: tuple[str, ...],
     check_lock: str | None,
     agents_md: str,
+    profile: str,
     output_format: str,
     fail_under: int,
 ):
-    """生成团队商用 readiness 报告。"""
+    """生成团队 SkillOps readiness 报告。"""
     from skills_orchestrator.doctor import format_doctor_text, run_doctor
 
     try:
@@ -936,6 +944,7 @@ def doctor(
             policy_packs=policy_packs,
             check_lock=check_lock,
             agents_md=agents_md,
+            profile=profile,
         )
         if output_format == "json":
             click.echo(json.dumps(payload, ensure_ascii=False, indent=2))

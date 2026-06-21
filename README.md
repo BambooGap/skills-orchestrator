@@ -4,7 +4,7 @@
 [![CI](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v3.0.2-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v3.0.3-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -13,14 +13,14 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v3.0.2` on PyPI | `pip install skills-orchestrator` |
-| GitHub Action | `v3.0.2` release tag | `BambooGap/skills-orchestrator@v3.0.2` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.0.2` |
+| OSS CLI | `v3.0.3` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v3.0.3` release tag | `BambooGap/skills-orchestrator@v3.0.3` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.0.3` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
 
 ```bash
-pip install skills-orchestrator
+python3.12 -m pip install skills-orchestrator
 skills-orchestrator init --template team-standard
 skills-orchestrator check --config config/skills.yaml
 ```
@@ -51,15 +51,19 @@ skills-orchestrator check --config config/skills.yaml
 ### 安装
 
 ```bash
-pip install skills-orchestrator
+python3.12 -m pip install skills-orchestrator
 ```
+
+Skills Orchestrator requires Python 3.12 or newer. On macOS, `/usr/bin/python3` is often
+Python 3.9, which can make `pip install skills-orchestrator` look like the package is missing.
+Use `python3.12`, `pipx --python python3.12`, `uvx --python 3.12`, or the Docker image.
 
 > `pip` 包内置 `team-standard` starter kit；需要更多 examples 时再 clone 本仓库。
 
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.0.2 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.0.3 --version
 ```
 
 ### 初始化项目
@@ -115,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.2
+      - uses: BambooGap/skills-orchestrator@v3.0.3
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -135,10 +139,12 @@ Docker 运行方式见 [Docker Usage](docs/docker.md)。
 - [Security Policy](SECURITY.md): MCP trust model、HMAC audit、import provenance 和漏洞报告流程。
 - [Demo Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
 
-### 商用 Readiness 与证据包
+### SkillOps Readiness 与证据包
 
 ```bash
-skills-orchestrator doctor --config config/skills.yaml
+skills-orchestrator doctor --profile adopter --config config/skills.yaml
+
+skills-orchestrator doctor --profile maintainer --config config/skills.yaml
 
 skills-orchestrator evidence export \
   --config config/skills.yaml \
@@ -164,9 +170,11 @@ skills-orchestrator adapters inspect --format json
 skills-orchestrator supply-chain sbom --output package-sbom.cdx.json
 ```
 
-`doctor` 给出本地商用 readiness 分数和缺口；`evidence export` 写出 `check.json`、
-`check.sarif`、`instruction-manifest.json`、`policy-opa-input.json`、`policy-proof.rego`、
-`doctor.json` 和 `skill-registry.json`，适合 CI artifact、审计归档或客户交付。
+`doctor` 默认使用 `adopter` profile，检查接入仓库真正需要的 config、policy、
+SkillOps CI workflow、lock 和 `AGENTS.md` 证据；`maintainer` profile 才额外检查
+本项目发版用的 `action.yml`、`Dockerfile` 和版本化测试报告。`evidence export` 写出
+`check.json`、`check.sarif`、`instruction-manifest.json`、`policy-opa-input.json`、
+`policy-proof.rego`、`doctor.json` 和 `skill-registry.json`，适合 CI artifact、审计归档或客户交付。
 `schema validate` 可单独验证 config、check、manifest、policy OPA input、doctor、
 registry、registry diff、adapter inspection、SBOM 和 commercial handoff 文件合同。
 
@@ -237,7 +245,7 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 | Policy Packs | Team governance。把 owner/source/version/lifecycle/approver 等团队规则变成可执行检查。 | `check --policy-pack builtin/team-standard` |
 | Instruction Manifest | Inventory export。导出 native JSON 和实验性 CycloneDX BOM，便于把 agent instructions 纳入供应链资产清单。 | `manifest` |
 | Policy Export | Policy proof。导出 OPA input 和 Rego test fixture，证明 resolver 事实可被 policy-as-code 审计。 | `policy export` |
-| Registry & Evidence | Commercial evidence。生成组织级 registry、doctor readiness 报告和发布审计证据包。 | `registry`, `doctor`, `evidence export` |
+| Registry & Evidence | SkillOps evidence。生成组织级 registry、doctor readiness 报告和发布审计证据包。 | `registry`, `doctor`, `evidence export` |
 | MCP Server | Runtime skill loading。对话过程中通过 `prepare_context` / `search_skills` / `get_skill` 动态选择并获取本轮 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
 | Pipeline | Runtime workflow orchestration。把多个 Skill 串成有状态流程，并在每一步自动注入当前步骤 Skill。 | `pipeline start`, MCP pipeline tools |
 
@@ -603,7 +611,7 @@ skills-orchestrator import https://github.com/forrestchang/andrej-karpathy-skill
 ```bash
 git clone https://github.com/BambooGap/skills-orchestrator
 cd skills-orchestrator
-pip install -e ".[dev]"
+python3.12 -m pip install -e ".[dev]"
 pytest tests/ -v
 ruff check skills_orchestrator/ tests/
 ```
@@ -620,7 +628,7 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - 检查诊断与机器报告阶段：补齐 `check` 诊断面，输出 JSON / SARIF，并把项目定位收敛到 SkillOps 和 instruction supply chain。
 - v2.3.x：发布 GitHub Action、CycloneDX / native manifest、OPA/Rego proof export、Action SHA pinning、artifact attestation 和 PyPI 发布防护。
 - v2.4.x：补齐 Docker 交付、团队标准化文档、MCP runtime decision record、usage audit、pipeline recovery 和本地运行证据。
-- v2.5.x：补齐 `builtin/team-standard` policy pack、治理元数据、`doctor` 商业 readiness、组织级 `registry`、`evidence export`、integration catalog、MCP 内容上限、audit HMAC 和 pipeline 状态脱敏。
+- v2.5.x：补齐 `builtin/team-standard` policy pack、治理元数据、`doctor` readiness、组织级 `registry`、`evidence export`、integration catalog、MCP 内容上限、audit HMAC 和 pipeline 状态脱敏。
 - v2.6.x：补齐稳定 JSON Schema、`schema validate`、`init --template team-standard` 和 `registry diff --format markdown`，降低团队 bootstrap 与 PR review 摩擦。
 - v3.0.x：补齐 PR registry diff comment automation、package SBOM、CodeQL/GHCR workflows、生态 adapter inspect/scaffold、open-core commercial handoff schemas 和 GitHub App / hosted registry / dashboard 蓝图。
 

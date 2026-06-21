@@ -1,4 +1,4 @@
-"""Commercial-readiness doctor for team SkillOps projects."""
+"""Readiness doctor for team SkillOps projects."""
 
 from __future__ import annotations
 
@@ -18,8 +18,11 @@ def run_doctor(
     policy_packs: tuple[str, ...] | list[str] = (),
     check_lock: str | None = None,
     agents_md: str = "AGENTS.md",
+    profile: str = "adopter",
 ) -> dict[str, Any]:
-    """Run local commercial-readiness checks for a skills-orchestrator workspace."""
+    """Run local SkillOps readiness checks for a skills-orchestrator workspace."""
+    if profile not in {"adopter", "maintainer"}:
+        raise ValueError("doctor profile must be 'adopter' or 'maintainer'")
     report = run_check(
         config_path,
         zone_id=zone_id,
@@ -28,15 +31,16 @@ def run_doctor(
     )
     root = _workspace_root(config_path)
     issues = [_diagnostic_issue(diagnostic) for diagnostic in report.diagnostics]
-    evidence = _evidence(root, check_lock=check_lock, agents_md=agents_md)
+    evidence = _evidence(root, check_lock=check_lock, agents_md=agents_md, profile=profile)
     issues.extend(evidence["issues"])
     score = _score(issues)
     return {
         "schema_version": "skills-orchestrator.doctor.v1",
         "tool": {"name": "skills-orchestrator", "version": __version__},
+        "profile": profile,
         "zone": zone_id or "default",
         "score": score,
-        "status": _status(score, issues),
+        "status": _status(score, issues, profile=profile),
         "summary": {
             "skills": report.total_skills,
             "zones": report.zones,
@@ -53,8 +57,10 @@ def run_doctor(
 
 def format_doctor_text(payload: dict[str, Any]) -> str:
     """Render a doctor payload for terminal use."""
+    profile = payload.get("profile", "adopter")
+    label = "Maintainer readiness" if profile == "maintainer" else "Adopter readiness"
     lines = [
-        f"Commercial readiness: {payload['score']}/100 ({payload['status']})",
+        f"{label}: {payload['score']}/100 ({payload['status']})",
         (
             "Summary: "
             f"{payload['summary']['skills']} skills, "
@@ -108,43 +114,27 @@ def _diagnostic_issue(diagnostic) -> dict[str, Any]:
     }
 
 
-def _evidence(root: Path, *, check_lock: str | None, agents_md: str) -> dict[str, Any]:
+def _evidence(
+    root: Path, *, check_lock: str | None, agents_md: str, profile: str
+) -> dict[str, Any]:
     artifacts: dict[str, dict[str, Any]] = {}
     issues: list[dict[str, Any]] = []
 
-    for name, path, fix in (
-        (
-            "ci_workflow",
-            root / ".github" / "workflows" / "ci.yml",
-            "Add a CI workflow that runs check, tests, and supply-chain smoke checks.",
-        ),
-        (
-            "github_action",
-            root / "action.yml",
-            "Add or document the GitHub Action adoption path for team CI.",
-        ),
-        (
-            "dockerfile",
-            root / "Dockerfile",
-            "Add a Dockerfile for CI and containerized CLI adoption.",
-        ),
-        (
-            "test_report",
-            root / "reports" / f"TEST_REPORT_v{__version__}.md",
-            "Write a versioned test report for this release.",
-        ),
-    ):
-        _record_artifact(artifacts, name, path)
-        if not path.exists():
-            issues.append(
-                _artifact_issue(
-                    f"DOCTOR_{name.upper()}",
-                    "warning",
-                    f"Missing commercial evidence artifact: {path}",
-                    fix,
-                    str(path),
-                )
+    workflow_path, workflow_detail = _skillops_workflow(root)
+    _record_artifact(artifacts, "ci_workflow", workflow_path, detail=workflow_detail)
+    if not workflow_path.exists():
+        issues.append(
+            _artifact_issue(
+                "DOCTOR_CI_WORKFLOW",
+                "warning",
+                f"Missing SkillOps CI workflow artifact: {workflow_path}",
+                "Add a workflow that runs skills-orchestrator check in CI.",
+                str(workflow_path),
             )
+        )
+
+    if profile == "maintainer":
+        _maintainer_release_evidence(root, artifacts, issues)
 
     lock_path = Path(check_lock) if check_lock else root / "skills.lock.json"
     _record_artifact(artifacts, "skills_lock", lock_path)
@@ -186,6 +176,68 @@ def _evidence(root: Path, *, check_lock: str | None, agents_md: str) -> dict[str
         )
 
     return {"artifacts": artifacts, "issues": issues}
+
+
+def _skillops_workflow(root: Path) -> tuple[Path, str]:
+    workflows_dir = root / ".github" / "workflows"
+    named_candidates = [
+        workflows_dir / "skills-orchestrator.yml",
+        workflows_dir / "skillops.yml",
+    ]
+    for path in named_candidates:
+        if path.exists():
+            return path, "detected SkillOps workflow"
+
+    generic_ci_candidates = [workflows_dir / "ci.yml", workflows_dir / "ci.yaml"]
+    for path in generic_ci_candidates:
+        if path.exists() and _workflow_references_skillops(path):
+            return path, "detected Skills Orchestrator workflow by content"
+
+    if workflows_dir.is_dir():
+        for path in sorted([*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")]):
+            if _workflow_references_skillops(path):
+                return path, "detected Skills Orchestrator workflow by content"
+
+    expected = workflows_dir / "skills-orchestrator.yml"
+    return expected, "expected skills-orchestrator.yml, skillops.yml, ci.yml, or ci.yaml"
+
+
+def _workflow_references_skillops(path: Path) -> bool:
+    content = path.read_text(encoding="utf-8", errors="replace")[:20000]
+    return "skills-orchestrator" in content or "BambooGap/skills-orchestrator" in content
+
+
+def _maintainer_release_evidence(
+    root: Path, artifacts: dict[str, dict[str, Any]], issues: list[dict[str, Any]]
+) -> None:
+    for name, path, fix in (
+        (
+            "github_action",
+            root / "action.yml",
+            "Add or document the GitHub Action release surface.",
+        ),
+        (
+            "dockerfile",
+            root / "Dockerfile",
+            "Add a Dockerfile for containerized CLI release and smoke tests.",
+        ),
+        (
+            "test_report",
+            root / "reports" / f"TEST_REPORT_v{__version__}.md",
+            "Write a versioned test report for this release.",
+        ),
+    ):
+        _record_artifact(artifacts, name, path)
+        if not path.exists():
+            issues.append(
+                _artifact_issue(
+                    f"DOCTOR_{name.upper()}",
+                    "warning",
+                    f"Missing maintainer release artifact: {path}",
+                    fix,
+                    str(path),
+                )
+            )
 
 
 def _record_artifact(
@@ -239,11 +291,11 @@ def _score(issues: list[dict[str, Any]]) -> int:
     return max(score, 0)
 
 
-def _status(score: int, issues: list[dict[str, Any]]) -> str:
+def _status(score: int, issues: list[dict[str, Any]], *, profile: str) -> str:
     if any(issue["severity"] == "error" for issue in issues):
         return "blocked"
     if score < 70:
         return "risky"
     if score < 85:
-        return "commercial-ready-with-caveats"
+        return f"{profile}-ready-with-caveats"
     return "strong"

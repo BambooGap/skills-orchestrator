@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.3] - 2026-06-21
+
+### Added
+- Added `doctor --profile adopter|maintainer` so consuming repositories and this package's release
+  workflow can use separate readiness scoring profiles.
+- Added implementer-facing SkillOps Contract notes with registry diff examples, diagnostic code
+  conventions, and boundary cases for third-party compatible tools.
+
+### Changed
+- Changed the default `doctor` profile to adopter readiness, focused on SkillOps CI, lock, and
+  `AGENTS.md` evidence instead of package release artifacts.
+- Improved `doctor` CI workflow detection so the generated `skills-orchestrator.yml` starter
+  workflow passes the readiness threshold immediately after `init --template team-standard`.
+- Expanded registry diff Markdown details to show reviewer-facing governance field changes such as
+  owner, source, version, lifecycle, approvers, status, and content hash.
+- Clarified Python 3.12 installation requirements in README and installation docs, including the
+  common macOS Python 3.9 failure mode.
+
 ## [3.0.2] - 2026-06-21
 
 ### Changed

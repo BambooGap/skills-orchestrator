@@ -58,7 +58,7 @@ These fields are exported in:
 ## GitHub Action
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v3.0.2
+- uses: BambooGap/skills-orchestrator@v3.0.3
   with:
     config: config/skills.yaml
     policy-pack: builtin/team-standard
@@ -74,4 +74,4 @@ For SARIF upload, also set `upload-sarif: true` and grant `security-events: writ
 3. Add `approvers` to required skills.
 4. Regenerate `skills.lock.json`.
 5. Turn on `--fail-on warning` in protected branch CI.
-6. Add `doctor` and `evidence export` to release verification.
+6. Add `doctor --profile adopter` and `evidence export` to release verification.

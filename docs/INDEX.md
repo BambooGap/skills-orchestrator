@@ -20,7 +20,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Pipelines](PIPELINES.md): turn multiple skills into gated runtime workflows.
 - [Instruction Supply Chain Roadmap](instruction-supply-chain-roadmap.md): long-term ecosystem direction.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
-- [Registry And Evidence](registry-evidence.md): doctor, registry, evidence bundle, and integration catalog for commercial rollout.
+- [Registry And Evidence](registry-evidence.md): doctor, registry, evidence bundle, and integration catalog for SkillOps rollout.
 - [Adapters](adapters.md): AGENTS.md, Claude Skills, MCP client, and OpenAI Agents SDK bridge surfaces.
 - [SkillOps Contract](../SPEC.md): executable v1 artifact contract for metadata, registry, diff, evidence, and adapters.
 - [Conformance](../CONFORMANCE.md): reproducible checks for local, CI, registry, and adapter conformance.
@@ -36,6 +36,6 @@ Use this page as the team entry point for Skills Orchestrator.
 3. Generate and commit or review `skills.lock.json`.
 4. Add the GitHub Action.
 5. Enable `builtin/team-standard` policy pack.
-6. Run `skills-orchestrator doctor`.
+6. Run `skills-orchestrator doctor --profile adopter`.
 7. Export manifest, registry, and evidence bundle for releases.
 8. Enable MCP runtime routing when static checks are stable.

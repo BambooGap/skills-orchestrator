@@ -56,7 +56,10 @@ zones:
         encoding="utf-8",
     )
     (tmp_path / ".github" / "workflows").mkdir(parents=True)
-    (tmp_path / ".github" / "workflows" / "ci.yml").write_text("name: ci\n", encoding="utf-8")
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+        "name: ci\njobs:\n  skillops:\n    steps:\n      - uses: BambooGap/skills-orchestrator@v3\n",
+        encoding="utf-8",
+    )
     (tmp_path / "action.yml").write_text("name: action\n", encoding="utf-8")
     (tmp_path / "Dockerfile").write_text("FROM python:3.12-slim\n", encoding="utf-8")
     return config
@@ -100,8 +103,15 @@ def test_registry_diff_markdown_renders_pr_review_sections(tmp_path):
     base = build_registry([str(base_config)])
     skill_file = tmp_path / "repo" / "skills" / "skill.md"
     skill_file.write_text(
-        skill_file.read_text(encoding="utf-8").replace(
-            "owner: platform-team\n", "owner: agent-platform\n"
+        skill_file.read_text(encoding="utf-8")
+        .replace("owner: platform-team\n", "owner: agent-platform\n")
+        .replace(
+            "source: internal://skills/team-skill\n",
+            "source: internal://skills/team-skill-v2\n",
+        )
+        .replace(
+            "version: 1.0.0\n",
+            "version: 1.0.1\n",
         )
         + "\nChanged\n",
         encoding="utf-8",
@@ -116,6 +126,8 @@ def test_registry_diff_markdown_renders_pr_review_sections(tmp_path):
     assert "## Changed Skills" in markdown
     assert "content_hash" in markdown
     assert "owner platform-team -&gt; agent-platform" in markdown
+    assert "source internal://skills/team-skill -&gt; internal://skills/team-skill-v2" in markdown
+    assert "version 1.0.0 -&gt; 1.0.1" in markdown
 
 
 def test_registry_diff_reports_duplicate_skill_entities(tmp_path):
@@ -305,10 +317,41 @@ def test_doctor_reports_readiness_payload(tmp_path, monkeypatch):
     payload = run_doctor(str(config), policy_packs=["builtin/team-standard"])
 
     assert payload["schema_version"] == "skills-orchestrator.doctor.v1"
+    assert payload["profile"] == "adopter"
     assert payload["zone"] == "default"
     assert payload["summary"]["skills"] == 1
     assert payload["score"] > 0
     assert "ci_workflow" in payload["evidence"]
+    assert "github_action" not in payload["evidence"]
+
+
+def test_doctor_maintainer_profile_includes_release_artifacts(tmp_path, monkeypatch):
+    config = _workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    payload = run_doctor(str(config), policy_packs=["builtin/team-standard"], profile="maintainer")
+
+    assert payload["profile"] == "maintainer"
+    assert "github_action" in payload["evidence"]
+    assert "dockerfile" in payload["evidence"]
+    assert "test_report" in payload["evidence"]
+
+
+def test_init_team_standard_template_passes_adopter_doctor_threshold(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+
+    init_result = runner.invoke(cli, ["init", "--template", "team-standard"])
+    doctor_result = runner.invoke(cli, ["doctor", "--fail-under", "80", "--format", "json"])
+
+    assert init_result.exit_code == 0
+    assert doctor_result.exit_code == 0
+    payload = json.loads(doctor_result.output)
+    assert payload["profile"] == "adopter"
+    assert payload["score"] >= 80
+    assert payload["evidence"]["ci_workflow"]["present"] is True
+    assert payload["evidence"]["ci_workflow"]["path"].endswith("skills-orchestrator.yml")
+    assert not any(issue["id"] == "DOCTOR_CI_WORKFLOW" for issue in payload["issues"])
 
 
 def test_doctor_resolves_relative_config_from_current_working_directory(tmp_path, monkeypatch):
@@ -330,6 +373,19 @@ def test_doctor_cli_json(tmp_path, monkeypatch):
 
     assert result.exit_code == 0
     assert json.loads(result.output)["schema_version"] == "skills-orchestrator.doctor.v1"
+
+
+def test_doctor_cli_maintainer_profile_json(tmp_path, monkeypatch):
+    config = _workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli, ["doctor", "--config", str(config), "--profile", "maintainer", "--format", "json"]
+    )
+
+    assert result.exit_code == 0
+    assert json.loads(result.output)["profile"] == "maintainer"
 
 
 def test_evidence_export_writes_bundle(tmp_path, monkeypatch):

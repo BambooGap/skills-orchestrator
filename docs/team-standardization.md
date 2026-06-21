@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.2
+      - uses: BambooGap/skills-orchestrator@v3.0.3
         with:
           config: config/skills.yaml
           check-lock: skills.lock.json
@@ -146,8 +146,8 @@ The audit log stores routing hashes and skill IDs, not raw task text or skill co
 4. Generate and review `skills.lock.json`.
 5. Enable `builtin/team-standard` without `--fail-on warning`; fix governance metadata.
 6. Turn on SARIF upload when repository permissions allow `security-events: write`.
-7. Add `doctor`, `registry build`, `registry diff --format markdown`, `schema validate`, and
-   `evidence export` to release evidence.
+7. Add `doctor --profile adopter`, `registry build`, `registry diff --format markdown`,
+   `schema validate`, and `evidence export` to release evidence.
 8. Enable MCP for runtime routing after CI is stable.
 
 ## Acceptance Criteria
@@ -158,6 +158,6 @@ A repository is team-standardized when:
 - lock drift is reviewed or blocked,
 - SARIF is uploaded where Code Scanning is enabled,
 - release evidence includes an `evidence export` bundle and registry snapshot,
-- `doctor` meets the team's score threshold,
+- `doctor --profile adopter` meets the team's score threshold,
 - runtime MCP usage has a documented audit policy,
 - rollback is clear: revert the skill/config change and regenerate affected artifacts.

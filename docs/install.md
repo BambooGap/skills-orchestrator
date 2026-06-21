@@ -2,6 +2,10 @@
 
 Skills Orchestrator requires Python 3.12 or newer.
 
+On macOS, `/usr/bin/python3` is commonly Python 3.9. If `pip install skills-orchestrator`
+reports that no matching distribution exists, first check `python3 --version` and install with an
+explicit Python 3.12 interpreter, `pipx --python python3.12`, `uvx --python 3.12`, or Docker.
+
 ## PyPI
 
 ```bash
@@ -36,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.2
+      - uses: BambooGap/skills-orchestrator@v3.0.3
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -51,7 +55,7 @@ See [GitHub Action](github-action.md) for inputs and SARIF permissions.
 Use Docker when CI hosts should not install Python packages directly:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.0.2 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.0.3 --version
 
 docker build -t skills-orchestrator:local .
 docker run --rm -v "$PWD:/workspace" -w /workspace \

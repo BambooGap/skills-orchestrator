@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.2
+      - uses: BambooGap/skills-orchestrator@v3.0.3
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -30,7 +30,7 @@ comment per pull request.
 ## Plain CLI
 
 ```bash
-python -m pip install skills-orchestrator
+python3.12 -m pip install skills-orchestrator
 skills-orchestrator check --config config/skills.yaml --format json
 skills-orchestrator check --config config/skills.yaml --check-lock skills.lock.json
 ```

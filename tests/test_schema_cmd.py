@@ -61,7 +61,10 @@ combos: []
         encoding="utf-8",
     )
     (tmp_path / ".github" / "workflows").mkdir(parents=True)
-    (tmp_path / ".github" / "workflows" / "ci.yml").write_text("name: ci\n", encoding="utf-8")
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+        "name: ci\njobs:\n  skillops:\n    steps:\n      - uses: BambooGap/skills-orchestrator@v3\n",
+        encoding="utf-8",
+    )
     (tmp_path / "action.yml").write_text("name: action\n", encoding="utf-8")
     (tmp_path / "Dockerfile").write_text("FROM python:3.12-slim\n", encoding="utf-8")
     return config

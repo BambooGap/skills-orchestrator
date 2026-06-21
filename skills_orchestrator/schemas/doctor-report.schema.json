@@ -9,9 +9,11 @@
     "generated_at": { "type": "string" },
     "tool": { "type": "object" },
     "config": { "type": "string" },
+    "profile": { "enum": ["adopter", "maintainer"] },
     "zone": { "type": "string" },
     "summary": { "type": "object" },
     "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "status": { "type": "string" },
     "rating": { "type": "string" },
     "evidence": { "type": "object" },
     "issues": {

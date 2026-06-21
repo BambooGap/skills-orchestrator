@@ -238,6 +238,83 @@ skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbo
 CycloneDX is the authoritative external vocabulary for this artifact. Skills Orchestrator only
 validates the minimum shape it emits.
 
+## Implementer Notes And Examples
+
+Third-party implementations SHOULD treat the JSON Schema files as executable tests and this section
+as the semantic guide for edge cases that schemas cannot fully express.
+
+### Minimal Registry Diff Example
+
+A changed skill with content and governance drift SHOULD expose both the machine-readable change
+keys and reviewer-facing field values:
+
+```json
+{
+  "schema_version": "skills-orchestrator.registry-diff.v1",
+  "summary": {
+    "added": 0,
+    "removed": 0,
+    "changed": 1,
+    "duplicate_id_changes": 0
+  },
+  "added": [],
+  "removed": [],
+  "changed": [
+    {
+      "registry_key": "config/skills.yaml::skills/review.md::team-review",
+      "id": "team-review",
+      "changes": {
+        "content_hash": {
+          "before": {"algorithm": "sha256", "value": "111111111111"},
+          "after": {"algorithm": "sha256", "value": "222222222222"}
+        },
+        "governance": {
+          "before": {
+            "owner": "platform-team",
+            "source": "internal://skills/team-review",
+            "version": "1.0.0",
+            "lifecycle": "active",
+            "approvers": ["security"]
+          },
+          "after": {
+            "owner": "agent-platform",
+            "source": "internal://skills/team-review-v2",
+            "version": "1.0.1",
+            "lifecycle": "active",
+            "approvers": ["security", "staff-engineering"]
+          }
+        }
+      }
+    }
+  ],
+  "duplicate_id_changes": []
+}
+```
+
+Markdown registry diffs SHOULD render owner, source, version, lifecycle, approver, status, and hash
+changes directly for human review. Markdown remains a presentation format; consumers MUST NOT parse
+it as the stable contract.
+
+### Diagnostic And Error Code Conventions
+
+- `SO###` codes are `check` diagnostics and MAY be emitted as SARIF rules.
+- `DOCTOR_*` codes are advisory readiness findings. They are not skill metadata errors.
+- JSON Schema validation errors are reported by schema path and instance path; v1 does not assign
+  stable numeric codes to every schema violation.
+- Implementations MAY add warning or info codes, but MUST NOT reuse an existing code with different
+  semantics.
+
+### Boundary Cases
+
+- `conflict_with` MAY be one-way. A resolver MAY enforce the one-way conflict, while conformance
+  tooling SHOULD warn that asymmetric conflicts are weaker audit evidence than symmetric conflicts.
+- Missing skill files MUST keep their registry entries when the config references them and MUST set
+  `missing_file` to `true`.
+- Unknown additive fields in v1 artifacts MUST be ignored by default by non-strict consumers.
+- Absolute local paths SHOULD be redacted in Markdown or comments intended for pull requests.
+- Hosted registries, dashboards, and GitHub Apps SHOULD consume generated artifacts. They SHOULD
+  NOT reimplement resolver semantics unless they also run the same conformance checks.
+
 ## Non-goals
 
 SkillOps Contract v1 does not define:

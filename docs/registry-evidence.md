@@ -13,8 +13,11 @@
 
 ## Team Doctor
 
+The default `adopter` profile is for repositories that consume Skills Orchestrator:
+
 ```bash
 skills-orchestrator doctor \
+  --profile adopter \
   --config config/skills.yaml \
   --policy-pack builtin/team-standard
 ```
@@ -23,13 +26,27 @@ JSON mode is intended for CI:
 
 ```bash
 skills-orchestrator doctor \
+  --profile adopter \
   --config config/skills.yaml \
   --format json \
-  --fail-under 85
+  --fail-under 80
 ```
 
-The doctor checks the normal diagnostics plus commercial artifacts such as CI workflow, GitHub
-Action, Dockerfile, `skills.lock.json`, generated `AGENTS.md`, and the versioned test report.
+The adopter profile checks normal diagnostics plus the integration artifacts a platform team cares
+about: a SkillOps CI workflow, `skills.lock.json`, and generated `AGENTS.md`.
+
+Use the `maintainer` profile only for this package or a downstream distribution that owns release
+surfaces:
+
+```bash
+skills-orchestrator doctor \
+  --profile maintainer \
+  --config config/skills.yaml \
+  --policy-pack builtin/team-standard
+```
+
+The maintainer profile additionally checks `action.yml`, `Dockerfile`, and the versioned test
+report. Those artifacts do not penalize ordinary adopting repositories.
 
 ## Organization Registry
 
