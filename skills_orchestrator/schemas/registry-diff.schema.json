@@ -50,6 +50,7 @@
       "properties": {
         "registry_key": { "type": "string" },
         "id": { "type": "string" },
+        "skill": { "$ref": "#/$defs/skill" },
         "changes": { "type": "object" }
       },
       "additionalProperties": true

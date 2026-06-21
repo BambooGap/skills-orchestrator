@@ -84,6 +84,7 @@ def diff_registries(base: dict, head: dict) -> dict[str, Any]:
                 {
                     "registry_key": registry_key,
                     "id": after["id"],
+                    "skill": _changed_skill_snapshot(after),
                     "changes": changes,
                 }
             )
@@ -243,17 +244,39 @@ def _changed_rows(changed: list[dict[str, Any]]) -> list[list[str]]:
     for item in changed:
         change_fields = ", ".join(sorted(item.get("changes", {})))
         details = _change_details(item.get("changes", {}))
+        skill = item.get("skill") or {}
+        governance = skill.get("governance") or {}
         rows.append(
             [
                 item.get("id", ""),
-                "changed",
-                "",
-                "",
+                skill.get("status") or "changed",
+                governance.get("owner") or _changed_owner_fallback(item.get("changes", {})),
+                _redact_path_like(skill.get("path") or _path_from_registry_key(item)),
                 _redact_registry_key(item.get("registry_key", "")),
                 f"{change_fields}: {details}" if details else change_fields,
             ]
         )
     return rows
+
+
+def _changed_skill_snapshot(skill: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": skill.get("name", ""),
+        "status": skill.get("status", ""),
+        "path": skill.get("path", ""),
+        "governance": skill.get("governance") or {},
+    }
+
+
+def _changed_owner_fallback(changes: dict[str, Any]) -> str:
+    governance = changes.get("governance") or {}
+    after_governance = governance.get("after") or {}
+    return after_governance.get("owner", "")
+
+
+def _path_from_registry_key(item: dict[str, Any]) -> str:
+    parts = str(item.get("registry_key", "")).split("::")
+    return parts[1] if len(parts) >= 3 else ""
 
 
 def _change_details(changes: dict[str, Any]) -> str:

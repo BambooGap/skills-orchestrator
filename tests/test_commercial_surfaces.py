@@ -125,6 +125,10 @@ def test_registry_diff_markdown_renders_pr_review_sections(tmp_path):
     assert "| Changed | 1 |" in markdown
     assert "## Changed Skills" in markdown
     assert "content_hash" in markdown
+    assert (
+        "| <code>team-skill</code> | <code>passive</code> | "
+        "<code>agent-platform</code> | <code>skills/skill.md</code> |"
+    ) in markdown
     assert "owner platform-team -&gt; agent-platform" in markdown
     assert "source internal://skills/team-skill -&gt; internal://skills/team-skill-v2" in markdown
     assert "version 1.0.0 -&gt; 1.0.1" in markdown

@@ -151,7 +151,7 @@ The root object MUST include:
 | `summary` | Counts for `added`, `removed`, `changed`, and `duplicate_id_changes`. |
 | `added` | Registry skill entries that appeared in the after snapshot. |
 | `removed` | Registry skill entries absent from the after snapshot. |
-| `changed` | Entries with changed fields, keyed by `registry_key` and `id`. |
+| `changed` | Entries with changed fields, keyed by `registry_key` and `id`; entries MAY include an optional `skill` snapshot for PR-review display. |
 | `duplicate_id_changes` | Duplicate count changes by skill id. |
 
 Markdown registry diffs are presentation artifacts for PR review. Consumers that need stable parsing
@@ -263,6 +263,18 @@ keys and reviewer-facing field values:
     {
       "registry_key": "config/skills.yaml::skills/review.md::team-review",
       "id": "team-review",
+      "skill": {
+        "name": "Team Review",
+        "status": "passive",
+        "path": "skills/review.md",
+        "governance": {
+          "owner": "agent-platform",
+          "source": "internal://skills/team-review-v2",
+          "version": "1.0.1",
+          "lifecycle": "active",
+          "approvers": ["security", "staff-engineering"]
+        }
+      },
       "changes": {
         "content_hash": {
           "before": {"algorithm": "sha256", "value": "111111111111"},

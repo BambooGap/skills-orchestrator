@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Registry diff JSON changed entries now include an optional `skill` summary, and Markdown changed
+  rows use it to populate Status, Owner, and Path columns for PR review.
+
 ## [3.0.3] - 2026-06-21
 
 ### Added
