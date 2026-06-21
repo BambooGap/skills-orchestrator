@@ -73,18 +73,29 @@ task hash correlation, which is usually desirable for privacy.
 
 ## Import Provenance Boundary
 
-`skills-orchestrator import` only accepts GitHub URLs from `github.com`,
-`raw.githubusercontent.com`, or `api.github.com`. The importer rejects other hosts, limits imported
-content size, requires UTF-8 text, and validates frontmatter syntax when frontmatter is present.
+`skills-orchestrator import` only accepts HTTPS GitHub URLs from `github.com` or
+`raw.githubusercontent.com`. The importer rejects userinfo, query strings,
+fragments, non-GitHub download URLs, and HTTP redirects. Imported content is size-bounded, must be
+UTF-8 text, and must have valid frontmatter syntax when frontmatter is present.
+
+Import records observed source and provenance in `skills.yaml`: canonical source URL, requested
+ref, resolved commit, fetched content hash, and fetch timestamp. Frontmatter inside the imported
+file cannot override this observed `source` or `provenance`.
+
+Repository and `github.com/.../tree|blob/...` imports resolve the requested branch or tag to a
+commit first, then fetch contents through that immutable commit. Direct `raw.githubusercontent.com`
+imports must already use a full 40-character commit SHA; mutable raw refs such as `main`, `master`,
+or `feature/foo` are rejected.
 
 Import does not prove author identity, repository ownership, license compatibility, or semantic
-safety. Review imported skills before enabling them in shared CI or MCP runtime.
+safety. `builtin/engineering-grade` fails closed for unallowlisted licenses and requires provenance
+for HTTP(S)-sourced skills, but legal and semantic review remain human responsibilities.
 
 Recommended review steps:
 
 ```bash
 skills-orchestrator import <github-url> --dry-run
-skills-orchestrator check --config config/skills.yaml --policy-pack builtin/team-standard
+skills-orchestrator check --config config/skills.yaml --policy-pack builtin/engineering-grade
 git diff -- skills/ config/skills.yaml
 ```
 

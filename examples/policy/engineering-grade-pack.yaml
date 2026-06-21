@@ -5,9 +5,14 @@ description: Example local policy pack for stricter SkillOps metadata.
 rules:
   - id: require-review-window
     severity: error
-    required_fields: [reviewed_at, expires_at]
+    required_fields: [reviewed_at, expires_at, license]
+  - id: require-provenance
+    severity: warning
+    required_fields: [provenance]
   - id: active-or-beta-only
     severity: warning
     allowed_values:
       - field: lifecycle
         values: [active, beta]
+      - field: license
+        values: [MIT, Apache-2.0]

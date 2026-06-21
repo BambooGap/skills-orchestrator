@@ -25,6 +25,11 @@ skills-orchestrator check \
   --config config/skills.yaml \
   --policy-pack builtin/team-standard \
   --fail-on warning
+
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack builtin/engineering-grade \
+  --fail-on warning
 ```
 
 Generate evidence:

@@ -56,7 +56,7 @@ def test_team_standard_policy_pack_passes_complete_metadata(tmp_path):
         tmp_path,
         frontmatter_extra=(
             "owner: platform-team\n"
-            "source: https://example.com/skills/required\n"
+            "source: internal://skills/required\n"
             "version: 2026.06\n"
             "lifecycle: active\n"
             "approvers: [staff-engineering]\n"
@@ -73,10 +73,11 @@ def test_engineering_grade_pack_requires_review_window(tmp_path):
         tmp_path,
         frontmatter_extra=(
             "owner: platform-team\n"
-            "source: https://example.com/skills/required\n"
+            "source: internal://skills/required\n"
             "version: 2026.06\n"
             "lifecycle: active\n"
             "approvers: [staff-engineering]\n"
+            "license: MIT\n"
         ),
     )
 
@@ -84,6 +85,7 @@ def test_engineering_grade_pack_requires_review_window(tmp_path):
 
     rule_ids = {diagnostic.rule_id for diagnostic in report.diagnostics}
     assert "SO014" in rule_ids
+    assert "SO018" not in rule_ids
     assert "SO008" not in rule_ids
 
 
@@ -92,12 +94,13 @@ def test_engineering_grade_pack_passes_complete_metadata(tmp_path):
         tmp_path,
         frontmatter_extra=(
             "owner: platform-team\n"
-            "source: https://example.com/skills/required\n"
+            "source: internal://skills/required\n"
             "version: 2026.06\n"
             "lifecycle: active\n"
             "approvers: [staff-engineering]\n"
             "reviewed_at: 2026-06-21\n"
             "expires_at: 2999-01-01\n"
+            "license: mit\n"
         ),
     )
 
@@ -117,6 +120,7 @@ def test_engineering_grade_pack_rejects_invalid_and_expired_dates(tmp_path):
             "approvers: [staff-engineering]\n"
             "reviewed_at: yesterday\n"
             "expires_at: 2999-01-01\n"
+            "license: MIT\n"
         ),
     )
     expired_config = _workspace(
@@ -129,6 +133,7 @@ def test_engineering_grade_pack_rejects_invalid_and_expired_dates(tmp_path):
             "approvers: [staff-engineering]\n"
             "reviewed_at: 2000-01-01\n"
             "expires_at: 2000-01-02\n"
+            "license: MIT\n"
         ),
     )
 
@@ -150,12 +155,94 @@ def test_engineering_grade_pack_requires_dash_separated_iso_dates(tmp_path):
             "approvers: [staff-engineering]\n"
             "reviewed_at: 20260621\n"
             "expires_at: 29990101\n"
+            "license: MIT\n"
         ),
     )
 
     report = run_check(str(config), policy_packs=["builtin/engineering-grade"])
 
     assert [diagnostic.rule_id for diagnostic in report.diagnostics] == ["SO015"]
+
+
+def test_engineering_grade_pack_rejects_disallowed_license(tmp_path):
+    config = _workspace(
+        tmp_path,
+        frontmatter_extra=(
+            "owner: platform-team\n"
+            "source: internal\n"
+            "version: 1.0.0\n"
+            "lifecycle: active\n"
+            "approvers: [staff-engineering]\n"
+            "reviewed_at: 2026-06-21\n"
+            "expires_at: 2999-01-01\n"
+            "license: MIT OR GPL-3.0-only\n"
+        ),
+    )
+
+    report = run_check(str(config), policy_packs=["builtin/engineering-grade"])
+
+    assert [diagnostic.rule_id for diagnostic in report.diagnostics] == ["SO019"]
+
+
+def test_engineering_grade_pack_requires_external_provenance(tmp_path):
+    missing = _workspace(
+        tmp_path / "missing",
+        frontmatter_extra=(
+            "owner: platform-team\n"
+            "source: https://github.com/example/skills\n"
+            "version: 1.0.0\n"
+            "lifecycle: active\n"
+            "approvers: [staff-engineering]\n"
+            "reviewed_at: 2026-06-21\n"
+            "expires_at: 2999-01-01\n"
+            "license: MIT\n"
+        ),
+    )
+    complete = _workspace(
+        tmp_path / "complete",
+        frontmatter_extra=(
+            "owner: platform-team\n"
+            "source: https://github.com/example/skills\n"
+            "version: 1.0.0\n"
+            "lifecycle: active\n"
+            "approvers: [staff-engineering]\n"
+            "reviewed_at: 2026-06-21\n"
+            "expires_at: 2999-01-01\n"
+            "license: Apache-2.0\n"
+            "provenance:\n"
+            "  source_url: https://raw.githubusercontent.com/example/skills/main/required.md\n"
+            "  source_ref: main\n"
+            "  source_commit: 0123456789abcdef0123456789abcdef01234567\n"
+            "  content_hash: sha256:abc\n"
+            "  fetched_at: 2026-06-21T00:00:00Z\n"
+        ),
+    )
+
+    missing_report = run_check(str(missing), policy_packs=["builtin/engineering-grade"])
+    complete_report = run_check(str(complete), policy_packs=["builtin/engineering-grade"])
+
+    assert [diagnostic.rule_id for diagnostic in missing_report.diagnostics] == ["SO020"]
+    assert complete_report.diagnostics == []
+
+
+def test_engineering_grade_pack_requires_external_provenance_case_insensitive_scheme(tmp_path):
+    config = _workspace(
+        tmp_path,
+        frontmatter_extra=(
+            "owner: platform-team\n"
+            "source: HTTPS://github.com/example/skills\n"
+            "version: 1.0.0\n"
+            "lifecycle: active\n"
+            "approvers: [staff-engineering]\n"
+            "reviewed_at: 2026-06-21\n"
+            "expires_at: 2999-01-01\n"
+            "license: MIT\n"
+        ),
+    )
+
+    report = run_check(str(config), policy_packs=["builtin/engineering-grade"])
+
+    assert [diagnostic.rule_id for diagnostic in report.diagnostics] == ["SO020"]
 
 
 def test_team_standard_policy_pack_rejects_unknown_lifecycle(tmp_path):

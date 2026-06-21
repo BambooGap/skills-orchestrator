@@ -22,6 +22,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
 - [Registry And Evidence](registry-evidence.md): doctor, registry, evidence bundle, and integration catalog for SkillOps rollout.
 - [Adapters](adapters.md): AGENTS.md, Claude Skills, MCP client, and OpenAI Agents SDK bridge surfaces.
+- [Policy Packs](policy-packs.md): team-standard, engineering-grade, license allowlists, and import provenance checks.
 - [SkillOps Contract](../SPEC.md): executable v1 artifact contract for metadata, registry, diff, evidence, and adapters.
 - [Conformance](../CONFORMANCE.md): reproducible checks for local, CI, registry, and adapter conformance.
 - [Compatibility Policy](../COMPATIBILITY.md): stable contract surfaces, additive changes, and migration rules.

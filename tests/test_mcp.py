@@ -40,10 +40,10 @@ SAMPLE_SKILLS = [
         "git-operations", "Git 操作规范", "提交信息格式、分支命名约定", ["git", "base"], 50
     ),
     _make_skill(
-        "karpathy-guidelines",
-        "Karpathy Guidelines",
-        "减少 LLM 编码错误：简洁、外科式修改、目标驱动",
-        ["coding", "quality", "mindset"],
+        "systematic-debugging",
+        "系统化调试",
+        "复现问题、定位根因、最小化修复并验证结果",
+        ["debugging", "quality", "testing"],
         150,
     ),
     _make_skill(
@@ -175,7 +175,7 @@ class TestToolExecutor:
         results = self.executor.execute("list_skills", {})
         text = self._text(results)
         assert "git-worktrees" in text
-        assert "karpathy-guidelines" in text
+        assert "systematic-debugging" in text
 
     def test_list_skills_tag_filter(self):
         results = self.executor.execute("list_skills", {"tag": "git"})
@@ -219,15 +219,15 @@ class TestToolExecutor:
 
     # get_skill
     def test_get_skill_returns_content(self):
-        results = self.executor.execute("get_skill", {"id": "karpathy-guidelines"})
+        results = self.executor.execute("get_skill", {"id": "systematic-debugging"})
         text = self._text(results)
-        assert "Karpathy Guidelines" in text
-        assert "减少 LLM 编码错误" in text
+        assert "系统化调试" in text
+        assert "复现问题" in text
 
     def test_get_skill_applies_content_byte_limit(self):
         executor = ToolExecutor(MockRegistry(), max_content_bytes=12)
 
-        results = executor.execute("get_skill", {"id": "karpathy-guidelines"})
+        results = executor.execute("get_skill", {"id": "systematic-debugging"})
         text = self._text(results)
 
         assert "truncated: true" in text

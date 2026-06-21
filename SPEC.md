@@ -80,6 +80,8 @@ and shared skills SHOULD also include:
 | --- | --- | --- |
 | `reviewed_at` | string | ISO date in `YYYY-MM-DD` form. |
 | `expires_at` | string | ISO date in `YYYY-MM-DD` form; MUST be on or after `reviewed_at` and SHOULD be in the future. |
+| `license` | string | SPDX license id. Built-in allowlist is `MIT` and `Apache-2.0`. |
+| `provenance` | object | Required for externally sourced skills. SHOULD include `source_url`, `source_ref`, `source_commit`, `content_hash`, and `fetched_at`. |
 
 Engineering-grade policy check:
 
@@ -300,7 +302,17 @@ keys and reviewer-facing field values:
           "source": "internal://skills/team-review-v2",
           "version": "1.0.1",
           "lifecycle": "active",
-          "approvers": ["security", "staff-engineering"]
+          "approvers": ["security", "staff-engineering"],
+          "reviewed_at": "2026-06-21",
+          "expires_at": "2026-12-21",
+          "license": "Apache-2.0",
+          "provenance": {
+            "source_url": "https://raw.githubusercontent.com/example/skills/0123456789abcdef0123456789abcdef01234567/review.md",
+            "source_ref": "main",
+            "source_commit": "0123456789abcdef0123456789abcdef01234567",
+            "content_hash": "sha256:222222222222",
+            "fetched_at": "2026-06-21T00:00:00Z"
+          }
         }
       },
       "changes": {
@@ -314,14 +326,16 @@ keys and reviewer-facing field values:
             "source": "internal://skills/team-review",
             "version": "1.0.0",
             "lifecycle": "active",
-            "approvers": ["security"]
+            "approvers": ["security"],
+            "license": "MIT"
           },
           "after": {
             "owner": "agent-platform",
             "source": "internal://skills/team-review-v2",
             "version": "1.0.1",
             "lifecycle": "active",
-            "approvers": ["security", "staff-engineering"]
+            "approvers": ["security", "staff-engineering"],
+            "license": "Apache-2.0"
           }
         }
       }
@@ -331,9 +345,9 @@ keys and reviewer-facing field values:
 }
 ```
 
-Markdown registry diffs SHOULD render owner, source, version, lifecycle, approver, status, and hash
-changes directly for human review. Markdown remains a presentation format; consumers MUST NOT parse
-it as the stable contract.
+Markdown registry diffs SHOULD render owner, source, version, lifecycle, approver, review window,
+license, provenance, status, and hash changes directly for human review. Markdown remains a
+presentation format; consumers MUST NOT parse it as the stable contract.
 
 ### Diagnostic And Error Code Conventions
 

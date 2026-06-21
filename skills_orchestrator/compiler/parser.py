@@ -28,6 +28,8 @@ _SKILL_FRONTMATTER_FIELDS = {
     "approvers",
     "reviewed_at",
     "expires_at",
+    "license",
+    "provenance",
 }
 
 
@@ -195,6 +197,8 @@ class Parser:
             approvers=_coerce_list(meta.get("approvers", [])),
             reviewed_at=_metadata_text(meta, "reviewed_at"),
             expires_at=_metadata_text(meta, "expires_at"),
+            license=_metadata_text(meta, "license"),
+            provenance=_coerce_mapping(meta.get("provenance", {})),
             metadata=_extra_metadata(meta),
         )
 
@@ -240,6 +244,8 @@ class Parser:
                     approvers=o.get("approvers", skill.approvers),
                     reviewed_at=_metadata_text(o, "reviewed_at", default=skill.reviewed_at),
                     expires_at=_metadata_text(o, "expires_at", default=skill.expires_at),
+                    license=_metadata_text(o, "license", default=skill.license),
+                    provenance=_coerce_mapping(o.get("provenance", skill.provenance)),
                     metadata=skill.metadata,
                 )
             )
@@ -299,6 +305,8 @@ class Parser:
                     approvers=_coerce_list(raw.get("approvers", [])),
                     reviewed_at=_metadata_text(raw, "reviewed_at"),
                     expires_at=_metadata_text(raw, "expires_at"),
+                    license=_metadata_text(raw, "license"),
+                    provenance=_coerce_mapping(raw.get("provenance", {})),
                     metadata=_extra_metadata(raw),
                 )
             )
@@ -411,6 +419,22 @@ def _coerce_list(value) -> list:
     if isinstance(value, str):
         return [item.strip() for item in value.split(",") if item.strip()]
     return [value]
+
+
+def _coerce_mapping(value) -> dict:
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return {str(key): _metadata_mapping_value(item) for key, item in value.items()}
+    return {}
+
+
+def _metadata_mapping_value(value):
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if hasattr(value, "isoformat"):
+        return str(value.isoformat()).replace("+00:00", "Z")
+    return str(value)
 
 
 def _metadata_text(raw: dict, key: str, *, default: str = "") -> str:

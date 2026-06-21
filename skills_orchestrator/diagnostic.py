@@ -150,6 +150,27 @@ RULES: dict[str, DiagnosticRule] = {
         category=DiagnosticCategory.METADATA,
         description="A local declarative policy pack rule was not satisfied.",
     ),
+    "SO018": DiagnosticRule(
+        rule_id="SO018",
+        name="missing-license",
+        severity=DiagnosticSeverity.WARNING,
+        category=DiagnosticCategory.METADATA,
+        description="Engineering-grade policy requires skill license metadata.",
+    ),
+    "SO019": DiagnosticRule(
+        rule_id="SO019",
+        name="disallowed-license",
+        severity=DiagnosticSeverity.ERROR,
+        category=DiagnosticCategory.METADATA,
+        description="Engineering-grade policy only allows approved skill licenses.",
+    ),
+    "SO020": DiagnosticRule(
+        rule_id="SO020",
+        name="missing-import-provenance",
+        severity=DiagnosticSeverity.WARNING,
+        category=DiagnosticCategory.METADATA,
+        description="Externally sourced skills should carry import provenance.",
+    ),
 }
 
 

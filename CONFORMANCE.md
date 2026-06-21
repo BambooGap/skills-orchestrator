@@ -50,6 +50,11 @@ skills-orchestrator check \
   --fail-on warning
 ```
 
+Engineering-grade conformance includes trust metadata. Each skill SHOULD declare an SPDX-style
+`license`, reviewed skills SHOULD include `reviewed_at` and `expires_at`, and externally sourced
+skills SHOULD carry observed import `provenance` with `source_url`, `source_ref`, `source_commit`,
+`content_hash`, and `fetched_at`.
+
 ### Level 2: CI Evidence
 
 A project is Level 2 conformant when it produces machine-readable diagnostics and release evidence:
@@ -154,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.1.0
+      - uses: BambooGap/skills-orchestrator@v3.2.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

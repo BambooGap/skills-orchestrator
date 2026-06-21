@@ -3,7 +3,13 @@ version: "2.0"
 # ============ Skill 目录（自动发现，无需手动注册）============
 # Parser 递归扫描所有子目录，从每个 .md 文件的 frontmatter 读取元数据
 skill_dirs:
-  - ../skills   # 相对于本配置文件所在目录（config/）
+  - ../skills/coding   # 相对于本配置文件所在目录（config/）
+  - ../skills/docs
+  - ../skills/git
+  - ../skills/ops
+  - ../skills/planning
+  - ../skills/quality
+  - ../skills/review
 
 # ============ 区域定义 ============
 zones:
@@ -33,6 +39,7 @@ zones:
 # ============ 覆盖（只写例外，不写所有人）============
 # 用于覆盖 frontmatter 里的默认值
 # 例：企业强制区要求 chinese-code-review 变成 require
+# 未确认许可证的外部导入不进入默认 skill_dirs；先通过 provenance 和 license review 后再加入。
 overrides: []
 
 # ============ Combo 定义 ============

@@ -38,7 +38,9 @@
         "lifecycle",
         "approvers",
         "reviewed_at",
-        "expires_at"
+        "expires_at",
+        "license",
+        "provenance"
       ]
     },
     "scalarField": {
@@ -53,7 +55,8 @@
         "version",
         "lifecycle",
         "reviewed_at",
-        "expires_at"
+        "expires_at",
+        "license"
       ]
     },
     "rule": {

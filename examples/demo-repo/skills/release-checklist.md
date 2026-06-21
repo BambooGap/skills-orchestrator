@@ -12,6 +12,9 @@ source: repo://examples/demo-repo/skills/release-checklist.md
 version: 1.0.0
 lifecycle: active
 approvers: [release-team]
+reviewed_at: 2026-06-21
+expires_at: 2026-12-21
+license: MIT
 ---
 # Release Checklist
 

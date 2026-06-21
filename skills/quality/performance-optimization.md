@@ -11,6 +11,9 @@ owner: skills-orchestrator-core
 source: repo://skills/quality/performance-optimization.md
 version: 1.0.0
 lifecycle: active
+reviewed_at: 2026-06-21
+expires_at: 2027-06-21
+license: MIT
 ---
 # 性能优化方法论 Skill
 

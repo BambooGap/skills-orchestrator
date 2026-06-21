@@ -35,6 +35,8 @@ SKILL_POLICY_FIELDS = {
     "approvers",
     "reviewed_at",
     "expires_at",
+    "license",
+    "provenance",
 }
 ALLOWED_VALUE_POLICY_FIELDS = {
     "id",
@@ -48,6 +50,7 @@ ALLOWED_VALUE_POLICY_FIELDS = {
     "lifecycle",
     "reviewed_at",
     "expires_at",
+    "license",
 }
 
 
@@ -196,6 +199,8 @@ def _is_missing(value: Any) -> bool:
     if isinstance(value, str):
         return not value.strip()
     if isinstance(value, list):
+        return not value
+    if isinstance(value, dict):
         return not value
     return False
 

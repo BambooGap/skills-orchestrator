@@ -79,6 +79,9 @@ def _skill_component(skill: dict[str, Any]) -> dict[str, Any]:
     content_hash = skill["content_hash"]["value"]
     if content_hash:
         component["hashes"] = [{"alg": "SHA-256", "content": content_hash}]
+    license_id = str((skill.get("governance") or {}).get("license") or "").strip()
+    if license_id:
+        component["licenses"] = [{"license": {"id": license_id}}]
     return component
 
 

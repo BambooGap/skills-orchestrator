@@ -83,7 +83,12 @@
         "lifecycle": { "enum": ["active", "beta", "deprecated", "retired"] },
         "approvers": { "$ref": "#/$defs/stringList" },
         "reviewed_at": { "type": "string" },
-        "expires_at": { "type": "string" }
+        "expires_at": { "type": "string" },
+        "license": { "type": "string" },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+        }
       },
       "additionalProperties": true
     },

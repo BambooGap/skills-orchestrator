@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-06-21
+
+### Added
+- Added trust metadata fields for skill `license` and external import `provenance` across parser,
+  registry, instruction manifest, OPA input, CycloneDX export, and public JSON Schemas.
+- Added engineering-grade policy diagnostics `SO018`, `SO019`, and `SO020` for missing license,
+  disallowed license, and missing external import provenance.
+- Added safer GitHub skill import provenance capture, including observed commit, content hash, fetch
+  timestamp, HTTPS-only source validation, no-redirect raw downloads, and path-safe filenames.
+- Added default review-window and license metadata to the team-standard starter kit.
+
+### Changed
+- Expanded SkillOps Contract, conformance, security, and policy-pack docs to treat trust metadata as
+  part of the engineering-grade governance layer.
+- Updated the built-in example skills with review-window and license metadata.
+
+### Fixed
+- Pinned GitHub import downloads to the resolved commit so provenance cannot record one commit while
+  hashing bytes fetched from a later branch head.
+- Resolved bare repository imports through the repository default branch instead of assuming `main`.
+- Rejected mutable `raw.githubusercontent.com` refs for direct raw imports.
+- Made HTTP(S) external-source detection case-insensitive for `SO020`.
+
 ## [3.1.0] - 2026-06-21
 
 ### Added
