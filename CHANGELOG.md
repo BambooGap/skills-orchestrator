@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Upgraded pinned `github/codeql-action` references from v3 to the v4 commit SHA for CodeQL
+  analysis and SARIF upload.
+
 ## [3.0.5] - 2026-06-21
 
 ### Added
