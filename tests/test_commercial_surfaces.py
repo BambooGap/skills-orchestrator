@@ -14,6 +14,7 @@ from skills_orchestrator.org_registry import (
     diff_registries,
     format_registry_diff_markdown,
 )
+from skills_orchestrator.schema_validation import validate_document
 from skills_orchestrator.supply_chain import build_python_package_sbom
 from skills_orchestrator.supply_chain import _runtime_requirement_name
 
@@ -96,6 +97,23 @@ def test_registry_diff_reports_governance_and_hash_changes(tmp_path):
     assert diff["summary"]["changed"] == 1
     assert diff["changed"][0]["id"] == "team-skill"
     assert {"content_hash", "governance"}.issubset(diff["changed"][0]["changes"])
+
+
+def test_registry_changed_diff_json_validates_against_schema(tmp_path):
+    base_config = _workspace(tmp_path / "repo", owner="platform-team", body="# Skill\n")
+    base = build_registry([str(base_config)])
+    skill_file = tmp_path / "repo" / "skills" / "skill.md"
+    skill_file.write_text(
+        skill_file.read_text(encoding="utf-8").replace("version: 1.0.0\n", "version: 1.0.1\n"),
+        encoding="utf-8",
+    )
+    head = build_registry([str(base_config)])
+    diff_file = tmp_path / "registry-diff.json"
+    diff_file.write_text(json.dumps(diff_registries(base, head)), encoding="utf-8")
+
+    result = validate_document("registry-diff", str(diff_file))
+
+    assert result.valid is True
 
 
 def test_registry_diff_markdown_renders_pr_review_sections(tmp_path):

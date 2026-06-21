@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.4] - 2026-06-21
+
+### Added
+- Packaged built-in pipeline templates under `skills_orchestrator/config/pipelines/` so
+  `pipeline list` works from installed wheels and source checkouts.
+
 ### Changed
 - Registry diff JSON changed entries now include an optional `skill` summary, and Markdown changed
   rows use it to populate Status, Owner, and Path columns for PR review.
+
+### Fixed
+- Fixed `registry-diff` schema validation for changed entries that include the compact `skill`
+  summary.
+- Fixed installed-package `pipeline list` fallback so it no longer depends on the repository root
+  `config/pipelines` directory being present.
 
 ## [3.0.3] - 2026-06-21
 

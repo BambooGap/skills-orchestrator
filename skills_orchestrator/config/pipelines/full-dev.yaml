@@ -1,0 +1,35 @@
+id: full-dev
+name: 完整开发流程
+description: 从头脑风暴到上线的全流程，适合新功能开发
+steps:
+  - id: brainstorm
+    skill: brainstorming
+    next: [plan]
+    skip_if: scope_is_trivial
+    gate:
+      must_produce: brainstorm_output
+
+  - id: plan
+    skill: writing-plans
+    next: [develop]
+    gate:
+      must_produce: implementation_plan
+      min_length: 500
+
+  - id: develop
+    skill: tdd
+    next: [review]
+    gate:
+      must_produce: code_changes
+
+  - id: review
+    skill: pr-review
+    next: [finish]
+    gate:
+      must_produce: review_feedback
+
+  - id: finish
+    skill: finish-branch
+    next: []
+    gate:
+      must_produce: merge_confirmation

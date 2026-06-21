@@ -71,7 +71,8 @@ def _resolve_pipelines_dir(config_path: Optional[str] = None) -> Path:
     1. 各 pipeline 命令的 --pipelines-dir 参数（已实现）
     2. config 文件同级目录的 pipelines/
     3. 当前目录 config/pipelines
-    4. 包内 config/pipelines（开发环境 fallback）
+    4. 包内 config/pipelines（wheel / sdist）
+    5. 仓库根目录 config/pipelines（源码开发 fallback）
     """
     # 2. config 文件同级目录
     if config_path:
@@ -85,10 +86,15 @@ def _resolve_pipelines_dir(config_path: Optional[str] = None) -> Path:
     if pipelines_dir.is_dir():
         return pipelines_dir
 
-    # 4. 包内 config/pipelines（开发环境 fallback）
-    package_pipelines = Path(__file__).parent.parent / "config" / "pipelines"
+    # 4. 包内 config/pipelines（wheel / sdist）
+    package_pipelines = Path(__file__).parent / "config" / "pipelines"
     if package_pipelines.is_dir():
         return package_pipelines
+
+    # 5. 仓库根目录 config/pipelines（源码开发 fallback）
+    source_pipelines = Path(__file__).parent.parent / "config" / "pipelines"
+    if source_pipelines.is_dir():
+        return source_pipelines
 
     return pipelines_dir  # 返回默认路径（即使不存在）
 

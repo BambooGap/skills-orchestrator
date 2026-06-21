@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: BambooGap/skills-orchestrator@v3.0.3
+      - uses: BambooGap/skills-orchestrator@v3.0.4
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

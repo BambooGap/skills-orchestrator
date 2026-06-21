@@ -1,0 +1,36 @@
+id: bug-fix-with-abort
+name: Bug 修复（带失败处理）
+description: 完整的 bug 修复流程，支持失败时终止或重试
+steps:
+  - id: debug
+    skill: systematic-debugging
+    next: [fix]
+    gate:
+      must_produce: root_cause
+      min_length: 100
+      on_failure: abort  # 找不到原因就终止
+
+  - id: fix
+    skill: tdd
+    next: [review]
+    gate:
+      must_produce: code_changes
+
+  - id: review
+    skill: pr-review
+    next: [finish]
+    skip_if: skip_review
+    gate:
+      must_produce: review_feedback
+
+  - id: finish
+    skill: finish-branch
+    next: []
+    gate:
+      must_produce: commit_sha
+
+  - id: abort
+    skill: finish-branch
+    next: []
+    gate:
+      must_produce: abort_reason

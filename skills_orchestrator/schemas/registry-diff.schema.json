@@ -50,8 +50,19 @@
       "properties": {
         "registry_key": { "type": "string" },
         "id": { "type": "string" },
-        "skill": { "$ref": "#/$defs/skill" },
+        "skill": { "$ref": "#/$defs/changedSkillSnapshot" },
         "changes": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "changedSkillSnapshot": {
+      "type": "object",
+      "required": ["name", "status", "path", "governance"],
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string" },
+        "path": { "type": "string" },
+        "governance": { "type": "object" }
       },
       "additionalProperties": true
     }

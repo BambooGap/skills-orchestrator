@@ -1,6 +1,6 @@
 [project]
 name = "skills-orchestrator"
-version = "3.0.3"
+version = "3.0.4"
 description = "SkillOps / instruction-supply-chain control plane for AI-agent teams: policy packs, registry, evidence bundles, SARIF/CI, and MCP runtime."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -60,7 +60,12 @@ where = ["."]
 include = ["skills_orchestrator", "skills_orchestrator.*"]
 
 [tool.setuptools.package-data]
-"skills_orchestrator" = ["py.typed", "config/*.yaml", "schemas/*.schema.json"]
+"skills_orchestrator" = [
+    "py.typed",
+    "config/*.yaml",
+    "config/pipelines/*.yaml",
+    "schemas/*.schema.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
