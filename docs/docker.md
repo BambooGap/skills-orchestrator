@@ -10,6 +10,12 @@ docker build -t skills-orchestrator:local .
 docker run --rm skills-orchestrator:local --version
 ```
 
+Use the published release image when a CI host should not build the project first:
+
+```bash
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.0.0 --version
+```
+
 ## Run Against A Repository
 
 Mount the repository at `/workspace` and run commands from that directory:
@@ -18,7 +24,7 @@ Mount the repository at `/workspace` and run commands from that directory:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  skills-orchestrator:local \
+  ghcr.io/bamboogap/skills-orchestrator:v3.0.0 \
   check --config config/skills.yaml
 ```
 
@@ -28,7 +34,7 @@ Generate audit artifacts:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  skills-orchestrator:local \
+  ghcr.io/bamboogap/skills-orchestrator:v3.0.0 \
   manifest --config config/skills.yaml --format cyclonedx \
   --output instruction-manifest.cdx.json
 ```

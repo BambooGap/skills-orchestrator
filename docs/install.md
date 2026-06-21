@@ -51,6 +51,8 @@ See [GitHub Action](github-action.md) for inputs and SARIF permissions.
 Use Docker when CI hosts should not install Python packages directly:
 
 ```bash
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.0.0 --version
+
 docker build -t skills-orchestrator:local .
 docker run --rm -v "$PWD:/workspace" -w /workspace \
   skills-orchestrator:local check --config config/skills.yaml

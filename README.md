@@ -1,8 +1,21 @@
 # Skills Orchestrator
 
-**AI Agent 团队的 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
+[![PyPI](https://img.shields.io/pypi/v/skills-orchestrator.svg)](https://pypi.org/project/skills-orchestrator/)
+[![CI](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
+[![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**开源 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
 
 它不替代 Codex、Claude Code、Omnigent、CodeGraph、Superpowers 或业务记忆系统；它位于这些工具之间，负责回答团队最实际的问题：哪些 skills 可以用、谁负责、来源是否可信、CI 是否能阻断、审计证据在哪里，以及运行时应给 agent 注入哪些指令。
+
+| Surface | Current status | Entry point |
+|---------|----------------|-------------|
+| OSS CLI | `v3.0.0` on PyPI | `pip install skills-orchestrator` |
+| GitHub Action | `v3.0.0` release tag | `BambooGap/skills-orchestrator@v3.0.0` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.0.0` |
+| Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
 
 ```bash
 pip install skills-orchestrator
@@ -40,6 +53,12 @@ pip install skills-orchestrator
 ```
 
 > `pip` 包内置 `team-standard` starter kit；需要更多 examples 时再 clone 本仓库。
+
+不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
+
+```bash
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.0.0 --version
+```
 
 ### 初始化项目
 
@@ -161,9 +180,9 @@ skills-orchestrator schema validate \
   --input examples/commercial-handoff/registry-ingest.json
 ```
 
-The OSS core emits artifacts and contracts. Future GitHub App, hosted registry, and enterprise
-dashboard products should consume these files rather than reimplementing resolver or registry
-semantics.
+开源核心只负责产出本地 artifact 与机器可读合同。后续 GitHub App、hosted registry
+和 enterprise dashboard 应消费这些文件，而不是在 SaaS 后端里重新实现 resolver 或
+registry 语义。
 
 ### 导出 Instruction Manifest
 
