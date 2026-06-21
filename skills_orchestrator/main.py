@@ -857,6 +857,42 @@ def registry_diff(base: str, head: str, output_format: str, output: str | None, 
         raise SystemExit(1)
 
 
+@registry.command("comment-body")
+@click.argument("markdown_file")
+@click.option("--output", "-o", default=None, help="写入 PR comment Markdown；默认输出到 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+@click.option(
+    "--max-chars",
+    default=60000,
+    show_default=True,
+    help="GitHub comment body 最大字符数，超出时截断。",
+)
+def registry_comment_body(
+    markdown_file: str,
+    output: str | None,
+    force: bool,
+    max_chars: int,
+):
+    """从 registry diff Markdown 生成幂等 PR comment body。"""
+    from skills_orchestrator.github_pr import format_registry_diff_comment_file
+
+    try:
+        rendered = format_registry_diff_comment_file(markdown_file, max_chars=max_chars)
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"Registry diff comment body written: {output_path}"))
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 # ──────────────────────── Doctor 子命令 ────────────────────────
 
 
@@ -1020,6 +1056,167 @@ def usage_report(audit_dir: str | None, as_json: bool):
     lines.append("")
     lines.append(f"Searches with no result: {summary['searches_with_no_result']}")
     click.echo(console_safe_text("\n".join(lines)))
+
+
+# ──────────────────────── Adapters 子命令 ────────────────────────
+
+
+@cli.group()
+def adapters():
+    """生态适配器检测和 scaffold 输出"""
+    pass
+
+
+@adapters.command("inspect")
+@click.option("--path", "root", default=".", show_default=True, help="项目根目录")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+)
+def adapters_inspect(root: str, output_format: str):
+    """检测 AGENTS.md、Claude Skills、MCP、OpenAI Agents SDK 等适配面。"""
+    from skills_orchestrator.adapters import inspect_adapters
+
+    try:
+        payload = inspect_adapters(root)
+        if output_format == "json":
+            click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+            return
+        click.echo("Skills Orchestrator adapter inspection\n")
+        for surface in payload["surfaces"]:
+            status_text = "detected" if surface["detected"] else "not detected"
+            click.echo(f"{click.style(surface['name'], bold=True)} ({surface['id']})")
+            click.echo(f"  status: {status_text}")
+            click.echo(f"  direction: {surface['direction']}")
+            click.echo(f"  authority: {surface['authority']}")
+            if surface["paths"]:
+                click.echo(f"  paths: {', '.join(surface['paths'])}")
+            verification = surface["verification"]
+            click.echo(f"  verification: {verification['status']}")
+            click.echo(f"  checks: {', '.join(verification['checks'])}")
+            click.echo("")
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
+@adapters.group("export")
+def adapters_export():
+    """输出外部 agent runtime 的最小 scaffold"""
+    pass
+
+
+@adapters_export.command("mcp-client-config")
+@click.option("--config", "-c", default="config/skills.yaml", show_default=True)
+@click.option("--zone", "-z", default=None, help="可选 zone id")
+@click.option("--output", "-o", default=None, help="写入 JSON 文件；默认输出到 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+def adapters_export_mcp_client_config(
+    config: str,
+    zone: str | None,
+    output: str | None,
+    force: bool,
+):
+    """生成 stdio MCP client config。"""
+    from skills_orchestrator.adapters.scaffolds import (
+        format_mcp_client_config,
+        generate_mcp_client_config,
+    )
+
+    try:
+        rendered = format_mcp_client_config(generate_mcp_client_config(config, zone=zone))
+        _write_optional_output(rendered, output=output, force=force, label="MCP client config")
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
+@adapters_export.command("openai-agents-sdk")
+@click.option("--config", "-c", default="config/skills.yaml", show_default=True)
+@click.option("--zone", "-z", default=None, help="可选 zone id")
+@click.option("--output", "-o", default=None, help="写入 Python scaffold；默认输出到 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+def adapters_export_openai_agents_sdk(
+    config: str,
+    zone: str | None,
+    output: str | None,
+    force: bool,
+):
+    """生成 OpenAI Agents SDK + MCPServerStdio scaffold。"""
+    from skills_orchestrator.adapters.scaffolds import generate_openai_agents_sdk_scaffold
+
+    try:
+        rendered = generate_openai_agents_sdk_scaffold(config, zone=zone)
+        _write_optional_output(
+            rendered, output=output, force=force, label="OpenAI Agents SDK scaffold"
+        )
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
+def _write_optional_output(rendered: str, *, output: str | None, force: bool, label: str) -> None:
+    if output:
+        output_path = Path(output)
+        if output_path.exists() and not force:
+            raise click.ClickException(
+                f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+            )
+        output_path.write_text(rendered, encoding="utf-8")
+        click.echo(_ok(f"{label} written: {output_path}"))
+        return
+    click.echo(console_safe_text(rendered), nl=False)
+
+
+# ──────────────────────── Supply-chain 子命令 ────────────────────────
+
+
+@cli.group("supply-chain")
+def supply_chain():
+    """软件供应链证据输出"""
+    pass
+
+
+@supply_chain.command("sbom")
+@click.option("--project-name", default="skills-orchestrator", show_default=True)
+@click.option("--output", "-o", default=None, help="写入 CycloneDX JSON 文件；默认输出到 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+@click.option(
+    "--no-dependencies",
+    is_flag=True,
+    help="只输出当前包组件，不枚举已安装依赖。",
+)
+def supply_chain_sbom(
+    project_name: str,
+    output: str | None,
+    force: bool,
+    no_dependencies: bool,
+):
+    """生成 Python package CycloneDX SBOM。"""
+    from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
+
+    try:
+        sbom = build_python_package_sbom(
+            project_name=project_name,
+            include_dependencies=not no_dependencies,
+        )
+        rendered = format_sbom_json(sbom)
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"Package SBOM written: {output_path}"))
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
 
 
 # ──────────────────────── Pipeline 子命令 ────────────────────────

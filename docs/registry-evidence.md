@@ -1,6 +1,6 @@
 # Registry And Evidence
 
-`v2.6.x` hardens the commercial evidence layer for SkillOps teams:
+`v3.0.x` hardens the open-source evidence layer for SkillOps teams:
 
 - `doctor`: local readiness score and actionable findings.
 - `registry build`: organization-level skill inventory from one or more configs.
@@ -8,6 +8,8 @@
 - `evidence export`: release evidence bundle for CI artifacts, audits, or customer handoff.
 - `schema validate`: machine-checkable JSON Schema contracts for generated files.
 - `integrations list`: adjacent ecosystem catalog for agent runtimes, memory layers, and visualization tools.
+- `adapters inspect`: detected AGENTS.md, Claude Skills, MCP, and Agents SDK surfaces.
+- `supply-chain sbom`: Python package SBOM for the software distribution surface.
 
 ## Team Doctor
 
@@ -64,6 +66,9 @@ skills-orchestrator registry diff \
   registry-after.json \
   --format markdown \
   --output registry-diff.md
+
+skills-orchestrator registry comment-body registry-diff.md \
+  --output registry-diff-comment.md
 ```
 
 The registry is file-based by design. It does not run agents, index code, or require a database.
@@ -79,11 +84,29 @@ skills-orchestrator schema validate --kind manifest --input evidence/instruction
 skills-orchestrator schema validate --kind policy-opa-input --input evidence/policy-opa-input.json
 skills-orchestrator schema validate --kind doctor --input evidence/doctor.json
 skills-orchestrator schema validate --kind registry --input evidence/skill-registry.json
+skills-orchestrator schema validate --kind registry-diff --input evidence/registry-diff.json
+skills-orchestrator schema validate --kind adapter-inspect --input evidence/adapter-inspect.json
+skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbom.cdx.json
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 ```
 
 SARIF and CycloneDX keep using their upstream schemas; Skills Orchestrator only owns its native
-config and artifact contracts.
+config and artifact contracts. The commercial handoff schemas are additive contracts for future
+GitHub App, hosted registry, and enterprise dashboard consumers:
+
+```bash
+skills-orchestrator schema validate \
+  --kind github-app-installation \
+  --input examples/commercial-handoff/installation.json
+
+skills-orchestrator schema validate \
+  --kind hosted-registry-ingest \
+  --input examples/commercial-handoff/registry-ingest.json
+
+skills-orchestrator schema validate \
+  --kind enterprise-dashboard-snapshot \
+  --input examples/commercial-handoff/dashboard-snapshot.json
+```
 
 ## Evidence Bundle
 
@@ -119,3 +142,14 @@ The catalog defines ecosystem position, not hard dependencies. `skills-orchestra
 the SkillOps control plane: skills, routing decisions, policy reports, registry manifests, and audit
 evidence. Code graph, business memory, visualization, execution, and multi-agent orchestration tools
 should consume those artifacts instead of being embedded into this package.
+
+## Adapter Inspection
+
+```bash
+skills-orchestrator adapters inspect --path . --format json > adapter-inspect.json
+skills-orchestrator adapters export mcp-client-config --config config/skills.yaml
+skills-orchestrator adapters export openai-agents-sdk --config config/skills.yaml
+```
+
+Adapters are bridge contracts. They do not replace `build`, `sync agents-md`, MCP `serve`, or the
+native manifest.

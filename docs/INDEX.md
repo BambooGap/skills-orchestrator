@@ -10,7 +10,8 @@ Use this page as the team entry point for Skills Orchestrator.
 | Platform owner | [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md) | Roll the same contract across multiple repos. |
 | Security reviewer | [Manifest And Policy Exports](manifest-policy-exports.md), [Policy Packs](policy-packs.md) | Review instruction assets with machine-readable evidence. |
 | Release owner | [Release Verification](release-verification.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence. |
-| Agent runtime owner | [MCP Server](MCP_SERVER.md), [Pipelines](PIPELINES.md) | Route runtime context and preserve workflow state. |
+| Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Route runtime context and preserve workflow state. |
+| Commercial product owner | [Open-core Boundary](open-core-boundary.md), [GitHub App Blueprint](github-app.md), [Hosted Registry](hosted-registry.md), [Enterprise Dashboard](enterprise-dashboard.md) | Build hosted products around OSS artifact contracts. |
 
 ## Core Concepts
 
@@ -19,6 +20,9 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Instruction Supply Chain Roadmap](instruction-supply-chain-roadmap.md): long-term ecosystem direction.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
 - [Registry And Evidence](registry-evidence.md): doctor, registry, evidence bundle, and integration catalog for commercial rollout.
+- [Adapters](adapters.md): AGENTS.md, Claude Skills, MCP client, and OpenAI Agents SDK bridge surfaces.
+- [Open-core Boundary](open-core-boundary.md): what stays open-source and what belongs in hosted/enterprise layers.
+- [Commercial Handoff Examples](../examples/commercial-handoff/README.md): schema-valid example payloads for future hosted consumers.
 
 ## First Production Path
 

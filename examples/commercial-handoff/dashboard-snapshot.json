@@ -1,0 +1,28 @@
+{
+  "schema_version": "skills-orchestrator.enterprise-dashboard-snapshot.v1",
+  "generated_at": "2026-06-21T00:00:00Z",
+  "repository": {
+    "full_name": "example-org/example-repo",
+    "ref": "refs/heads/main",
+    "commit": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "readiness": {
+    "score": 92,
+    "grade": "production-ready"
+  },
+  "registry": {
+    "skills": 21,
+    "owners": 5,
+    "duplicate_skill_ids": 0
+  },
+  "policy": {
+    "errors": 0,
+    "warnings": 2,
+    "infos": 4
+  },
+  "artifacts": {
+    "evidence_manifest": "evidence/evidence-manifest.json",
+    "registry": "evidence/skill-registry.json",
+    "doctor": "evidence/doctor.json"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/enterprise-dashboard-snapshot.schema.json",
+  "title": "Skills Orchestrator Enterprise Dashboard Snapshot",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "repository", "readiness", "registry", "policy"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.enterprise-dashboard-snapshot.v1" },
+    "generated_at": { "type": "string" },
+    "repository": {
+      "type": "object",
+      "required": ["full_name", "ref"],
+      "properties": {
+        "full_name": { "type": "string" },
+        "ref": { "type": "string" },
+        "commit": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "readiness": {
+      "type": "object",
+      "required": ["score", "grade"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "grade": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "registry": {
+      "type": "object",
+      "required": ["skills", "owners", "duplicate_skill_ids"],
+      "properties": {
+        "skills": { "type": "integer", "minimum": 0 },
+        "owners": { "type": "integer", "minimum": 0 },
+        "duplicate_skill_ids": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "policy": {
+      "type": "object",
+      "required": ["errors", "warnings", "infos"],
+      "properties": {
+        "errors": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "integer", "minimum": 0 },
+        "infos": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,8 +1,10 @@
 import json
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
+from skills_orchestrator.adapters import inspect_adapters
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.compiler import Parser, Resolver
 from skills_orchestrator.compiler.instruction_manifest import build_instruction_manifest
@@ -13,6 +15,7 @@ from skills_orchestrator.main import cli
 from skills_orchestrator.org_registry import build_registry, diff_registries
 from skills_orchestrator.policy import build_opa_input
 from skills_orchestrator.schema_validation import list_schema_descriptors, load_schema
+from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
 
 
 def _schema_workspace(tmp_path):
@@ -68,14 +71,19 @@ def test_schema_resources_are_packaged_and_loadable():
     kinds = {descriptor.kind for descriptor in list_schema_descriptors()}
 
     assert {
+        "adapter-inspect",
         "check",
         "config",
         "doctor",
         "evidence",
+        "enterprise-dashboard-snapshot",
+        "github-app-installation",
+        "hosted-registry-ingest",
         "manifest",
         "policy-opa-input",
         "registry",
         "registry-diff",
+        "supply-chain-sbom",
     }.issubset(kinds)
     for kind in kinds:
         assert load_schema(kind)["$schema"] == "https://json-schema.org/draft/2020-12/schema"
@@ -92,6 +100,20 @@ def test_schema_resources_are_packaged_and_loadable():
         ("policy-opa-input", "policy-opa-input.json"),
         ("registry", "skill-registry.json"),
         ("registry-diff", "registry-diff.json"),
+        ("adapter-inspect", "adapter-inspect.json"),
+        ("supply-chain-sbom", "package-sbom.cdx.json"),
+        (
+            "github-app-installation",
+            "examples/commercial-handoff/installation.json",
+        ),
+        (
+            "hosted-registry-ingest",
+            "examples/commercial-handoff/registry-ingest.json",
+        ),
+        (
+            "enterprise-dashboard-snapshot",
+            "examples/commercial-handoff/dashboard-snapshot.json",
+        ),
     ],
 )
 def test_schema_validate_known_artifacts(tmp_path, monkeypatch, kind, filename):
@@ -190,6 +212,75 @@ def test_schema_list_json():
     assert "config" in {schema["kind"] for schema in payload["schemas"]}
 
 
+def test_hosted_registry_ingest_rejects_unsafe_artifact_paths(tmp_path):
+    payload = {
+        "schema_version": "skills-orchestrator.hosted-registry-ingest.v1",
+        "snapshot": {"id": "s1", "created_at": "2026-06-21T00:00:00Z"},
+        "source": {"repository": "org/repo", "commit": "abc"},
+        "artifacts": {
+            "registry": "../secret.json",
+            "evidence_manifest": "https://example.test/evidence.json",
+        },
+    }
+    input_file = tmp_path / "ingest.json"
+    input_file.write_text(json.dumps(payload), encoding="utf-8")
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "schema",
+            "validate",
+            "--kind",
+            "hosted-registry-ingest",
+            "--input",
+            str(input_file),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 1
+    result_payload = json.loads(result.output)
+    assert any(error["path"].startswith("$.artifacts") for error in result_payload["errors"])
+
+
+def test_github_app_installation_rejects_overbroad_permissions(tmp_path):
+    payload = {
+        "schema_version": "skills-orchestrator.github-app-installation.v1",
+        "installation": {"id": 1, "account": "org"},
+        "repository": {"full_name": "org/repo", "default_branch": "main"},
+        "permissions": {
+            "contents": "write",
+            "metadata": "read",
+            "pull_requests": "write",
+            "administration": "write",
+        },
+        "events": ["pull_request", "repository"],
+    }
+    input_file = tmp_path / "installation.json"
+    input_file.write_text(json.dumps(payload), encoding="utf-8")
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "schema",
+            "validate",
+            "--kind",
+            "github-app-installation",
+            "--input",
+            str(input_file),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 1
+    result_payload = json.loads(result.output)
+    assert any(error["path"].startswith("$.permissions") for error in result_payload["errors"])
+
+
 def _write_artifacts(config, root):
     cfg = Parser(str(config)).parse()
     resolved = Resolver(cfg).resolve()
@@ -219,3 +310,19 @@ def _write_artifacts(config, root):
         str(root / "evidence"),
         policy_packs=["builtin/team-standard"],
     )
+    (root / "adapter-inspect.json").write_text(
+        json.dumps(inspect_adapters(root), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    (root / "package-sbom.cdx.json").write_text(
+        format_sbom_json(build_python_package_sbom(include_dependencies=False)),
+        encoding="utf-8",
+    )
+    handoff = root / "examples" / "commercial-handoff"
+    handoff.mkdir(parents=True)
+    repo_examples = Path(__file__).resolve().parents[1] / "examples" / "commercial-handoff"
+    for name in ("installation.json", "registry-ingest.json", "dashboard-snapshot.json"):
+        (handoff / name).write_text(
+            (repo_examples / name).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )

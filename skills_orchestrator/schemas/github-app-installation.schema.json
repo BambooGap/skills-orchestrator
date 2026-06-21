@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/github-app-installation.schema.json",
+  "title": "Skills Orchestrator GitHub App Installation Contract",
+  "type": "object",
+  "required": ["schema_version", "installation", "repository", "permissions", "events"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.github-app-installation.v1" },
+    "installation": {
+      "type": "object",
+      "required": ["id", "account"],
+      "properties": {
+        "id": { "type": ["integer", "string"] },
+        "account": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "repository": {
+      "type": "object",
+      "required": ["full_name", "default_branch"],
+      "properties": {
+        "full_name": { "type": "string" },
+        "default_branch": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "permissions": {
+      "type": "object",
+      "required": ["contents", "metadata", "pull_requests"],
+      "properties": {
+        "contents": { "const": "read" },
+        "metadata": { "const": "read" },
+        "pull_requests": { "enum": ["read", "write"] },
+        "checks": { "enum": ["read", "write"] },
+        "security_events": { "enum": ["read", "write"] }
+      },
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "array",
+      "items": { "enum": ["pull_request", "push", "check_suite", "workflow_run"] },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

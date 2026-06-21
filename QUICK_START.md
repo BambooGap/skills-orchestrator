@@ -47,17 +47,19 @@ Commit or regenerate `skills.lock.json` consistently across the organization.
 permissions:
   contents: read
   security-events: write
+  pull-requests: write
 
 jobs:
   skills:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v2.6.0
+      - uses: BambooGap/skills-orchestrator@v3.0.0
         with:
           config: config/skills.yaml
           check-lock: skills.lock.json
           upload-sarif: true
+          comment-registry-diff: true
 ```
 
 See [docs/github-action.md](docs/github-action.md) for all inputs.
@@ -75,6 +77,9 @@ skills-orchestrator schema validate --kind manifest --input instruction-manifest
 skills-orchestrator schema validate --kind policy-opa-input --input policy-input.json
 skills-orchestrator registry diff registry-before.json registry-after.json \
   --format markdown --output registry-diff.md
+skills-orchestrator registry comment-body registry-diff.md --output registry-diff-comment.md
+skills-orchestrator supply-chain sbom --output package-sbom.cdx.json
+skills-orchestrator adapters inspect --format json > adapter-inspect.json
 ```
 
 See [docs/manifest-policy-exports.md](docs/manifest-policy-exports.md).
