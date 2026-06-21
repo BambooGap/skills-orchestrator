@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.6
+      - uses: BambooGap/skills-orchestrator@v3.1.0
         with:
           config: config/skills.yaml
 ```
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.6
+      - uses: BambooGap/skills-orchestrator@v3.1.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -82,7 +82,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v3.0.6
+      - uses: BambooGap/skills-orchestrator@v3.1.0
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -124,7 +124,7 @@ jobs:
 
 `action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
 repository can be used directly with a release tag, for example
-`BambooGap/skills-orchestrator@v3.0.6`, even before the Marketplace listing is public.
+`BambooGap/skills-orchestrator@v3.1.0`, even before the Marketplace listing is public.
 
 GitHub Marketplace listing is a separate release UI step, not something `gh release create`
 publishes automatically. GitHub's documented flow is to open the repository `action.yml`, draft a
@@ -144,7 +144,7 @@ Reference: [Publishing actions in GitHub Marketplace](https://docs.github.com/ac
 | `format` | `text` | Output format when `upload-sarif` is false: `text`, `json`, or `sarif`. |
 | `fail-on` | `error` | Exit threshold: `error`, `warning`, or `never`. |
 | `max-skill-bytes` | `20000` | Threshold for SO005 oversized-skill diagnostics. |
-| `policy-pack` | empty | Optional built-in policy pack, for example `builtin/team-standard`. |
+| `policy-pack` | empty | Optional built-in or local declarative policy pack, for example `builtin/team-standard` or `builtin/engineering-grade`. |
 | `upload-sarif` | `false` | Upload SARIF to GitHub Code Scanning. |
 | `sarif-file` | `skills-orchestrator.sarif` | SARIF file path used for uploads. |
 | `registry-diff` | `false` | Generate a base-vs-head registry diff Markdown artifact. |

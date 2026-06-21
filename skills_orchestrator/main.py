@@ -917,10 +917,16 @@ def registry_comment_body(
 @click.option("--agents-md", default="AGENTS.md", help="生成的 AGENTS.md 路径")
 @click.option(
     "--profile",
-    type=click.Choice(["adopter", "maintainer"]),
+    type=click.Choice(["adopter", "maintainer", "enterprise"]),
     default="adopter",
     show_default=True,
-    help="readiness 评分口径：adopter 面向接入仓库，maintainer 面向本项目发版。",
+    help="readiness 评分口径：adopter 面向接入仓库，maintainer 面向本项目发版，enterprise 面向证据包试点。",
+)
+@click.option(
+    "--evidence-dir",
+    default="evidence",
+    show_default=True,
+    help="enterprise profile 读取的证据包目录",
 )
 @click.option(
     "--format",
@@ -937,6 +943,7 @@ def doctor(
     check_lock: str | None,
     agents_md: str,
     profile: str,
+    evidence_dir: str,
     output_format: str,
     fail_under: int,
 ):
@@ -951,12 +958,93 @@ def doctor(
             check_lock=check_lock,
             agents_md=agents_md,
             profile=profile,
+            evidence_dir=evidence_dir,
         )
         if output_format == "json":
             click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
         else:
             click.echo(console_safe_text(format_doctor_text(payload)), nl=False)
         if fail_under and payload["score"] < fail_under:
+            raise SystemExit(1)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
+# ──────────────────────── Conformance 子命令 ────────────────────────
+
+
+@cli.group()
+def conformance():
+    """运行 SkillOps Contract 一致性验证"""
+    pass
+
+
+@conformance.command("run")
+@click.option(
+    "--config", "-c", default="config/skills.yaml", show_default=True, help="配置文件路径"
+)
+@click.option("--project-root", default=".", show_default=True, help="adapter inspect 的项目根目录")
+@click.option("--zone", "-z", default=None, help="指定 zone id")
+@click.option(
+    "--policy-pack",
+    "policy_packs",
+    multiple=True,
+    default=("builtin/team-standard",),
+    show_default=True,
+    help="启用治理规则包；可重复传入。",
+)
+@click.option(
+    "--profile",
+    type=click.Choice(["core", "enterprise"]),
+    default="core",
+    show_default=True,
+    help="一致性验证口径。",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+)
+@click.option(
+    "--fail-on",
+    type=click.Choice(["error", "warning", "never"]),
+    default="error",
+    show_default=True,
+    help="达到指定严重级别时返回非零退出码。",
+)
+def conformance_run(
+    config: str,
+    project_root: str,
+    zone: str | None,
+    policy_packs: tuple[str, ...],
+    profile: str,
+    output_format: str,
+    fail_on: str,
+):
+    """运行本地 SkillOps Contract 一致性检查。"""
+    from skills_orchestrator.conformance import (
+        conformance_should_fail,
+        format_conformance_text,
+        run_conformance,
+    )
+
+    try:
+        payload = run_conformance(
+            config,
+            project_root=project_root,
+            zone_id=zone,
+            policy_packs=policy_packs,
+            profile=profile,
+            fail_on=fail_on,
+        )
+        if output_format == "json":
+            click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            click.echo(console_safe_text(format_conformance_text(payload)), nl=False)
+        if conformance_should_fail(payload, fail_on):
             raise SystemExit(1)
     except Exception as exc:
         click.echo(_err(str(exc)), err=True)

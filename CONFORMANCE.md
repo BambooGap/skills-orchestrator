@@ -5,6 +5,24 @@ on executable checks, not project branding.
 
 ## Levels
 
+The executable shortcut for the core suite is:
+
+```bash
+skills-orchestrator conformance run \
+  --config config/skills.yaml \
+  --policy-pack builtin/team-standard
+
+skills-orchestrator conformance run \
+  --config config/skills.yaml \
+  --policy-pack builtin/engineering-grade \
+  --profile enterprise \
+  --format json > evidence/conformance.json
+
+skills-orchestrator schema validate \
+  --kind conformance \
+  --input evidence/conformance.json
+```
+
 ### Level 1: Local SkillOps
 
 A project is Level 1 conformant when it has a valid Skills Orchestrator config and skill metadata:
@@ -20,6 +38,15 @@ When the project claims team governance, it MUST also pass:
 skills-orchestrator check \
   --config config/skills.yaml \
   --policy-pack builtin/team-standard \
+  --fail-on warning
+```
+
+When the project claims engineering-grade governance, it SHOULD pass:
+
+```bash
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack builtin/engineering-grade \
   --fail-on warning
 ```
 
@@ -127,7 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.6
+      - uses: BambooGap/skills-orchestrator@v3.1.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

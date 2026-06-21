@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-06-21
+
+### Added
+- Added `conformance run` to execute the local SkillOps Contract suite across config schema,
+  check diagnostics, evidence artifacts, registry output, and adapter inspection.
+- Added `builtin/engineering-grade`, a policy pack that extends `builtin/team-standard` with
+  `reviewed_at` / `expires_at` review-window governance.
+- Added declarative local policy packs validated by `policy-pack.schema.json`; packs are data-only
+  YAML/JSON and do not execute repository Python code.
+- Added `doctor --profile enterprise` to verify schema-backed evidence bundles for enterprise
+  SkillOps pilots.
+- Added `conformance-report.schema.json` and `policy-pack.schema.json` to the public schema catalog.
+
+### Changed
+- Registry diff Markdown now expands `reviewed_at` and `expires_at` governance changes for PR
+  reviewers.
+
 ## [3.0.6] - 2026-06-21
 
 ### Changed

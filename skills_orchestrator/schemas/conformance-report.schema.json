@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/conformance-report.schema.json",
+  "title": "Skills Orchestrator Conformance Report",
+  "type": "object",
+  "required": ["schema_version", "tool", "profile", "status", "summary", "steps"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.conformance.v1" },
+    "generated_at": { "type": "string" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "profile": { "enum": ["core", "enterprise"] },
+    "config": { "type": "string" },
+    "zone": { "type": "string" },
+    "policy_packs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "status": { "enum": ["pass", "warn", "fail"] },
+    "summary": {
+      "type": "object",
+      "required": ["total", "passed", "warnings", "failed"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["pass", "warn", "fail"] },
+          "detail": { "type": "string" },
+          "artifact": { "type": "string" },
+          "metadata": { "type": "object" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

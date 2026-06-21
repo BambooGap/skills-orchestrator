@@ -32,6 +32,8 @@ def _workspace(tmp_path, *, owner: str = "platform-team", body: str = "# Skill\n
         "source: internal://skills/team-skill\n"
         "version: 1.0.0\n"
         "lifecycle: active\n"
+        "reviewed_at: 2026-06-21\n"
+        "expires_at: 2999-01-01\n"
         "---\n"
         f"{body}",
         encoding="utf-8",
@@ -173,6 +175,40 @@ def test_registry_changed_diff_json_validates_against_schema(tmp_path):
     assert result.valid is True
 
 
+def test_doctor_enterprise_profile_validates_evidence_bundle(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    export_evidence_bundle(str(config), str(tmp_path / "repo" / "evidence"))
+
+    payload = run_doctor(
+        str(config),
+        profile="enterprise",
+        evidence_dir=str(tmp_path / "repo" / "evidence"),
+    )
+
+    assert payload["profile"] == "enterprise"
+    assert payload["evidence"]["evidence_manifest"]["detail"] == "schema valid"
+    assert payload["evidence"]["evidence_check_json"]["detail"] == "schema valid"
+    assert payload["evidence"]["evidence_registry"]["detail"] == "schema valid"
+    assert not [issue for issue in payload["issues"] if issue["severity"] == "error"]
+
+
+def test_doctor_enterprise_profile_resolves_manifest_relative_artifacts(tmp_path, monkeypatch):
+    repo = tmp_path / "repo"
+    config = _workspace(repo, body="# Skill\n")
+    monkeypatch.chdir(tmp_path)
+    export_evidence_bundle(str(config), "repo/evidence")
+
+    payload = run_doctor(str(config), profile="enterprise", evidence_dir="evidence")
+
+    assert payload["evidence"]["evidence_manifest"]["detail"] == "schema valid"
+    assert payload["evidence"]["evidence_check_json"]["detail"] == "schema valid"
+    assert not [
+        issue
+        for issue in payload["issues"]
+        if issue["id"].startswith("DOCTOR_EVIDENCE_") and issue["severity"] == "error"
+    ]
+
+
 def test_registry_diff_markdown_renders_pr_review_sections(tmp_path):
     base_config = _workspace(tmp_path / "repo", owner="platform-team", body="# Skill\n")
     base = build_registry([str(base_config)])
@@ -187,6 +223,10 @@ def test_registry_diff_markdown_renders_pr_review_sections(tmp_path):
         .replace(
             "version: 1.0.0\n",
             "version: 1.0.1\n",
+        )
+        .replace(
+            "reviewed_at: 2026-06-21\n",
+            "reviewed_at: 2026-07-01\n",
         )
         + "\nChanged\n",
         encoding="utf-8",
@@ -207,6 +247,7 @@ def test_registry_diff_markdown_renders_pr_review_sections(tmp_path):
     assert "owner platform-team -&gt; agent-platform" in markdown
     assert "source internal://skills/team-skill -&gt; internal://skills/team-skill-v2" in markdown
     assert "version 1.0.0 -&gt; 1.0.1" in markdown
+    assert "reviewed_at 2026-06-21 -&gt; 2026-07-01" in markdown
 
 
 def test_registry_diff_reports_duplicate_skill_entities(tmp_path):

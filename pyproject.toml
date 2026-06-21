@@ -1,6 +1,6 @@
 [project]
 name = "skills-orchestrator"
-version = "3.0.6"
+version = "3.1.0"
 description = "SkillOps / instruction-supply-chain control plane for AI-agent teams: policy packs, registry, evidence bundles, SARIF/CI, and MCP runtime."
 readme = "README.md"
 requires-python = ">=3.12"

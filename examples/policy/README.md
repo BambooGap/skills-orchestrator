@@ -30,3 +30,18 @@ The generated tests verify that exported skill statuses match the resolver outpu
 
 For the complete artifact authority model, see
 [Manifest And Policy Exports](../../docs/manifest-policy-exports.md).
+
+## Declarative Policy Pack Example
+
+`engineering-grade-pack.yaml` is a safe local policy pack. It is data-only YAML and does not execute
+repository code.
+
+```bash
+skills-orchestrator schema validate \
+  --kind policy-pack \
+  --input examples/policy/engineering-grade-pack.yaml
+
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack examples/policy/engineering-grade-pack.yaml
+```

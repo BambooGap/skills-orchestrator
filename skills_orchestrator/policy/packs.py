@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
+import re
 
 from skills_orchestrator.diagnostic import Diagnostic
 from skills_orchestrator.models import Config, SkillMeta
+from skills_orchestrator.policy.declarative import (
+    declarative_policy_pack_diagnostics,
+    load_declarative_policy_pack,
+)
 
 
 TEAM_STANDARD_PACK = "builtin/team-standard"
+ENGINEERING_GRADE_PACK = "builtin/engineering-grade"
 ALLOWED_LIFECYCLES = {"active", "beta", "deprecated", "retired"}
 
 
@@ -30,7 +37,15 @@ BUILTIN_POLICY_PACKS: dict[str, PolicyPack] = {
             "Requires owner, source, version, lifecycle, and approver metadata "
             "needed for team review and commercial auditability."
         ),
-    )
+    ),
+    ENGINEERING_GRADE_PACK: PolicyPack(
+        pack_id=ENGINEERING_GRADE_PACK,
+        name="Engineering Grade",
+        description=(
+            "Includes team-standard governance and requires review-window metadata "
+            "for enterprise SkillOps change control."
+        ),
+    ),
 }
 
 
@@ -39,8 +54,14 @@ def normalize_policy_packs(policy_packs: list[str] | tuple[str, ...] | None) -> 
     normalized: list[str] = []
     for pack_id in policy_packs or []:
         if pack_id not in BUILTIN_POLICY_PACKS:
-            known = ", ".join(sorted(BUILTIN_POLICY_PACKS))
-            raise ValueError(f"Unknown policy pack '{pack_id}'. Built-in packs: {known}")
+            path = Path(pack_id).expanduser()
+            if not path.exists():
+                known = ", ".join(sorted(BUILTIN_POLICY_PACKS))
+                raise ValueError(
+                    f"Unknown policy pack '{pack_id}'. Built-in packs: {known}. "
+                    "Or pass a local declarative policy pack YAML/JSON file."
+                )
+            load_declarative_policy_pack(pack_id)
         if pack_id not in normalized:
             normalized.append(pack_id)
     return normalized
@@ -52,8 +73,15 @@ def policy_pack_diagnostics(
     """Run diagnostics contributed by policy packs."""
     normalized = normalize_policy_packs(policy_packs)
     diagnostics: list[Diagnostic] = []
-    if TEAM_STANDARD_PACK in normalized:
+    if TEAM_STANDARD_PACK in normalized or ENGINEERING_GRADE_PACK in normalized:
         diagnostics.extend(_team_standard_diagnostics(cfg))
+    if ENGINEERING_GRADE_PACK in normalized:
+        diagnostics.extend(_engineering_grade_diagnostics(cfg))
+    for pack_id in normalized:
+        if pack_id in BUILTIN_POLICY_PACKS:
+            continue
+        pack = load_declarative_policy_pack(pack_id)
+        diagnostics.extend(declarative_policy_pack_diagnostics(cfg, pack))
     return diagnostics
 
 
@@ -131,6 +159,101 @@ def _team_standard_diagnostics(cfg: Config) -> list[Diagnostic]:
                 )
             )
     return diagnostics
+
+
+def _engineering_grade_diagnostics(cfg: Config) -> list[Diagnostic]:
+    diagnostics: list[Diagnostic] = []
+    today = date.today()
+    for skill in cfg.skills:
+        path = _skill_path(cfg, skill)
+        rel = _relative_path(path, Path(cfg.base_dir))
+
+        if not skill.reviewed_at.strip() or not skill.expires_at.strip():
+            missing = [
+                field
+                for field, value in (
+                    ("reviewed_at", skill.reviewed_at),
+                    ("expires_at", skill.expires_at),
+                )
+                if not value.strip()
+            ]
+            diagnostics.append(
+                Diagnostic.from_rule(
+                    "SO014",
+                    f"Skill '{skill.id}' is missing review-window metadata required by {ENGINEERING_GRADE_PACK}: {', '.join(missing)}.",
+                    file=rel,
+                    line=1,
+                    skill_id=skill.id,
+                    suggested_fix="Add reviewed_at: YYYY-MM-DD and expires_at: YYYY-MM-DD to the skill frontmatter.",
+                    metadata={
+                        "policy_pack": ENGINEERING_GRADE_PACK,
+                        "missing_fields": missing,
+                    },
+                )
+            )
+            continue
+
+        reviewed_at = _parse_policy_date(skill.reviewed_at)
+        expires_at = _parse_policy_date(skill.expires_at)
+        if reviewed_at is None or expires_at is None:
+            diagnostics.append(
+                Diagnostic.from_rule(
+                    "SO015",
+                    f"Skill '{skill.id}' has invalid review-window dates; expected YYYY-MM-DD.",
+                    file=rel,
+                    line=1,
+                    skill_id=skill.id,
+                    suggested_fix="Use ISO dates such as reviewed_at: 2026-06-21 and expires_at: 2026-12-21.",
+                    metadata={
+                        "policy_pack": ENGINEERING_GRADE_PACK,
+                        "reviewed_at": skill.reviewed_at,
+                        "expires_at": skill.expires_at,
+                    },
+                )
+            )
+            continue
+
+        if expires_at < reviewed_at:
+            diagnostics.append(
+                Diagnostic.from_rule(
+                    "SO015",
+                    f"Skill '{skill.id}' expires_at is earlier than reviewed_at.",
+                    file=rel,
+                    line=1,
+                    skill_id=skill.id,
+                    suggested_fix="Set expires_at to a date after reviewed_at.",
+                    metadata={
+                        "policy_pack": ENGINEERING_GRADE_PACK,
+                        "reviewed_at": skill.reviewed_at,
+                        "expires_at": skill.expires_at,
+                    },
+                )
+            )
+        elif expires_at < today:
+            diagnostics.append(
+                Diagnostic.from_rule(
+                    "SO016",
+                    f"Skill '{skill.id}' review window expired on {skill.expires_at}.",
+                    file=rel,
+                    line=1,
+                    skill_id=skill.id,
+                    suggested_fix="Review the skill, update reviewed_at, and set a future expires_at date.",
+                    metadata={
+                        "policy_pack": ENGINEERING_GRADE_PACK,
+                        "expires_at": skill.expires_at,
+                    },
+                )
+            )
+    return diagnostics
+
+
+def _parse_policy_date(value: str) -> date | None:
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
 
 
 def _skill_path(cfg: Config, skill: SkillMeta) -> Path:

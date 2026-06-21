@@ -1,0 +1,13 @@
+schema_version: skills-orchestrator.policy-pack.v1
+id: org/engineering-grade
+name: Organization Engineering Grade
+description: Example local policy pack for stricter SkillOps metadata.
+rules:
+  - id: require-review-window
+    severity: error
+    required_fields: [reviewed_at, expires_at]
+  - id: active-or-beta-only
+    severity: warning
+    allowed_values:
+      - field: lifecycle
+        values: [active, beta]

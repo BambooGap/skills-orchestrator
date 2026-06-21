@@ -6,6 +6,7 @@ from click.testing import CliRunner
 
 from skills_orchestrator.adapters import inspect_adapters
 from skills_orchestrator.checker import run_check
+from skills_orchestrator.conformance import run_conformance
 from skills_orchestrator.compiler import Parser, Resolver
 from skills_orchestrator.compiler.instruction_manifest import build_instruction_manifest
 from skills_orchestrator.evidence import export_evidence_bundle
@@ -77,6 +78,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "adapter-inspect",
         "check",
         "config",
+        "conformance",
         "doctor",
         "evidence",
         "enterprise-dashboard-snapshot",
@@ -84,6 +86,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "hosted-registry-ingest",
         "manifest",
         "policy-opa-input",
+        "policy-pack",
         "registry",
         "registry-diff",
         "supply-chain-sbom",
@@ -97,10 +100,12 @@ def test_schema_resources_are_packaged_and_loadable():
     [
         ("config", "config/skills.yaml"),
         ("check", "check.json"),
+        ("conformance", "conformance.json"),
         ("doctor", "doctor.json"),
         ("evidence", "evidence/evidence-manifest.json"),
         ("manifest", "instruction-manifest.json"),
         ("policy-opa-input", "policy-opa-input.json"),
+        ("policy-pack", "policy-pack.yaml"),
         ("registry", "skill-registry.json"),
         ("registry-diff", "registry-diff.json"),
         ("adapter-inspect", "adapter-inspect.json"),
@@ -289,6 +294,10 @@ def _write_artifacts(config, root):
     resolved = Resolver(cfg).resolve()
     check_report = run_check(str(config), policy_packs=["builtin/team-standard"])
     (root / "check.json").write_text(format_diagnostics_json(check_report), encoding="utf-8")
+    conformance = run_conformance(str(config), project_root=str(root))
+    (root / "conformance.json").write_text(
+        json.dumps(conformance, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     manifest = build_instruction_manifest(str(config), cfg, resolved)
     (root / "instruction-manifest.json").write_text(
         format_instruction_manifest_json(manifest), encoding="utf-8"
@@ -296,6 +305,17 @@ def _write_artifacts(config, root):
     opa_input = build_opa_input(cfg, resolved)
     (root / "policy-opa-input.json").write_text(
         json.dumps(opa_input, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    (root / "policy-pack.yaml").write_text(
+        """
+schema_version: skills-orchestrator.policy-pack.v1
+id: org/schema-fixture
+rules:
+  - id: require-owner
+    severity: warning
+    required_fields: [owner]
+""",
+        encoding="utf-8",
     )
     doctor_result = CliRunner().invoke(cli, ["doctor", "--config", str(config), "--format", "json"])
     assert doctor_result.exit_code == 0
