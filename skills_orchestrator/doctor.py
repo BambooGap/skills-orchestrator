@@ -392,7 +392,7 @@ def _schema_detail(kind: str, path: Path) -> str:
         return "schema valid"
     return "schema invalid: " + "; ".join(
         f"{issue.path}: {issue.message}" for issue in result.errors[:3]
-            )
+    )
 
 
 def _resolve_evidence_artifact_path(path_text: str, *, root: Path, manifest_path: Path) -> Path:

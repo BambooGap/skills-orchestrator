@@ -56,7 +56,9 @@ zones:
 def _oversized_workspace(tmp_path):
     config = _workspace(tmp_path)
     skill_file = tmp_path / "skills" / "review.md"
-    skill_file.write_text(skill_file.read_text(encoding="utf-8") + "\n" + ("x" * 21000), encoding="utf-8")
+    skill_file.write_text(
+        skill_file.read_text(encoding="utf-8") + "\n" + ("x" * 21000), encoding="utf-8"
+    )
     return config
 
 

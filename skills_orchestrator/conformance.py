@@ -130,8 +130,7 @@ def run_conformance(
         enterprise_blockers = [
             step
             for step in steps
-            if step.status == "fail"
-            or (fail_on == "warning" and step.status in {"fail", "warn"})
+            if step.status == "fail" or (fail_on == "warning" and step.status in {"fail", "warn"})
         ]
         steps.append(
             ConformanceStep(

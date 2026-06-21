@@ -922,7 +922,12 @@ def registry_comment_body(
     show_default=True,
     help="readiness 评分口径：adopter 面向接入仓库，maintainer 面向本项目发版，enterprise 面向证据包试点。",
 )
-@click.option("--evidence-dir", default="evidence", show_default=True, help="enterprise profile 读取的证据包目录")
+@click.option(
+    "--evidence-dir",
+    default="evidence",
+    show_default=True,
+    help="enterprise profile 读取的证据包目录",
+)
 @click.option(
     "--format",
     "output_format",
@@ -976,7 +981,9 @@ def conformance():
 
 
 @conformance.command("run")
-@click.option("--config", "-c", default="config/skills.yaml", show_default=True, help="配置文件路径")
+@click.option(
+    "--config", "-c", default="config/skills.yaml", show_default=True, help="配置文件路径"
+)
 @click.option("--project-root", default=".", show_default=True, help="adapter inspect 的项目根目录")
 @click.option("--zone", "-z", default=None, help="指定 zone id")
 @click.option(
