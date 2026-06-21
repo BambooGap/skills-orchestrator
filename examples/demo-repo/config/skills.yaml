@@ -1,0 +1,17 @@
+version: "1.0"
+
+skill_dirs:
+  - ../skills
+
+zones:
+  - id: default
+    name: Default demo zone
+    load_policy: free
+    priority: 0
+    rules: []
+
+combos:
+  - id: pr-review
+    name: PR review flow
+    description: Review pull request skill changes before merge.
+    skills: [code-review, release-checklist]

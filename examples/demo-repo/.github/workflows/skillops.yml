@@ -1,0 +1,25 @@
+name: SkillOps Demo
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  skillops:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: BambooGap/skills-orchestrator@v3.0.1
+        with:
+          config: config/skills.yaml
+          policy-pack: builtin/team-standard
+          upload-sarif: true
+          registry-config-glob: config/skills.yaml
+          comment-registry-diff: true

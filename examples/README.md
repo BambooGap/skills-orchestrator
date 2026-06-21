@@ -45,6 +45,20 @@
 
 ---
 
+### [SkillOps Demo Repo](demo-repo/)
+
+**适合**：外部评估者、平台团队、安全团队
+
+**展示内容**：
+- 如何跑通 SkillOps Contract v1 的 conformance checks
+- 如何生成 SARIF、registry diff、PR comment body 和 evidence bundle
+- 如何验证 AGENTS.md、Claude Skills、MCP config、OpenAI Agents SDK adapter surface
+- 如何把同一套流程复制到独立 GitHub repo
+
+**时间**：20 分钟
+
+---
+
 ## 🚀 快速开始
 
 1. 选择一个适合你的示例
@@ -62,6 +76,11 @@
 1. [团队协作示例](team-collab/) → 理解团队配置
 2. [基础示例](basic/) → 了解基本用法
 3. [多平台同步示例](multi-platform/) → 支持团队成员的不同工具
+
+**外部评估者**：
+1. [SkillOps Demo Repo](demo-repo/) → 直接跑 conformance 和证据导出
+2. [SPEC.md](../SPEC.md) → 检查合同字段
+3. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 
 ## 💡 提示
 

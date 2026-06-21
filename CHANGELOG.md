@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-06-21
+
+### Added
+- Added `SPEC.md` for the executable SkillOps Contract v1 across skill metadata, registry, registry diff, evidence bundle, adapter inspection, and package SBOM surfaces.
+- Added `CONFORMANCE.md` with reproducible local, CI, registry, and adapter conformance checks.
+- Added `SECURITY.md` with the MCP trust model, HMAC audit boundary, import provenance boundary, and vulnerability reporting flow.
+- Added a runnable `examples/demo-repo/` fixture covering SARIF, registry diff, PR comment body, evidence bundle export, and adapter inspection.
+- Added GitHub Action Marketplace branding metadata.
+- Added minimal honest governance files for the current early-stage single-maintainer project state.
+
+### Changed
+- Updated README, docs, and examples to point at `v3.0.1` release entry points.
+- Added the demo repo conformance smoke to CI.
+
 ## [3.0.0] - 2026-06-21
 
 ### Added

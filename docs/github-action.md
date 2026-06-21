@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.0
+      - uses: BambooGap/skills-orchestrator@v3.0.1
         with:
           config: config/skills.yaml
 ```
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.0.0
+      - uses: BambooGap/skills-orchestrator@v3.0.1
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -82,7 +82,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v3.0.0
+      - uses: BambooGap/skills-orchestrator@v3.0.1
         with:
           config: config/skills.yaml
           registry-diff: true
