@@ -165,6 +165,44 @@ zones:
     assert payload["diagnostics"][0]["rule_id"] == "SO000"
 
 
+def test_check_reports_invalid_frontmatter_load_policy_with_skill_location(workspace):
+    skill_path = workspace["root"] / "skills" / "test-skill.md"
+    skill_path.write_text(
+        skill_path.read_text(encoding="utf-8").replace(
+            "load_policy: free", "load_policy: bogus-policy"
+        ),
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    json_result = runner.invoke(cli, ["check", "--config", workspace["config"], "--format", "json"])
+    text_result = runner.invoke(cli, ["check", "--config", workspace["config"], "--format", "text"])
+    sarif_result = runner.invoke(
+        cli, ["check", "--config", workspace["config"], "--format", "sarif"]
+    )
+
+    assert json_result.exit_code == 1
+    json_payload = json.loads(json_result.output)
+    diagnostic = json_payload["diagnostics"][0]
+    assert diagnostic["rule_id"] == "SO013"
+    assert diagnostic["file"] == "skills/test-skill.md"
+    assert diagnostic["line"] == 6
+    assert diagnostic["skill_id"] == "test-skill"
+    assert "bogus-policy" in diagnostic["message"]
+
+    assert text_result.exit_code == 1
+    assert "SO013" in text_result.output
+    assert "skills/test-skill.md:6" in text_result.output
+
+    assert sarif_result.exit_code == 1
+    sarif_payload = json.loads(sarif_result.output)
+    result = sarif_payload["runs"][0]["results"][0]
+    assert result["ruleId"] == "SO013"
+    location = result["locations"][0]["physicalLocation"]
+    assert location["artifactLocation"]["uri"] == "skills/test-skill.md"
+    assert location["region"]["startLine"] == 6
+
+
 def test_check_sarif_format_happy_path(workspace):
     runner = CliRunner()
     result = runner.invoke(cli, ["check", "--config", workspace["config"], "--format", "sarif"])

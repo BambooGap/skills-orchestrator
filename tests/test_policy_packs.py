@@ -86,6 +86,21 @@ def test_team_standard_policy_pack_rejects_unknown_lifecycle(tmp_path):
     assert invalid[0].severity == DiagnosticSeverity.ERROR
 
 
+def test_team_standard_policy_pack_treats_null_governance_as_missing(tmp_path):
+    config = _workspace(
+        tmp_path,
+        frontmatter_extra=(
+            "owner:\nsource:\nversion:\nlifecycle:\napprovers: [staff-engineering]\n"
+        ),
+    )
+
+    report = run_check(str(config), policy_packs=["builtin/team-standard"])
+
+    by_rule = {diagnostic.rule_id: diagnostic for diagnostic in report.diagnostics}
+    assert {"SO008", "SO009", "SO010", "SO011"}.issubset(by_rule)
+    assert by_rule["SO011"].severity == DiagnosticSeverity.ERROR
+
+
 def test_check_cli_policy_pack_json(tmp_path):
     config = _workspace(tmp_path)
     runner = CliRunner()

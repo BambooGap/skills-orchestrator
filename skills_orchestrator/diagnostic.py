@@ -115,6 +115,13 @@ RULES: dict[str, DiagnosticRule] = {
         category=DiagnosticCategory.METADATA,
         description="Required runtime skills should carry approver metadata.",
     ),
+    "SO013": DiagnosticRule(
+        rule_id="SO013",
+        name="invalid-load-policy",
+        severity=DiagnosticSeverity.ERROR,
+        category=DiagnosticCategory.METADATA,
+        description="Skill load_policy must be one of the supported values.",
+    ),
 }
 
 

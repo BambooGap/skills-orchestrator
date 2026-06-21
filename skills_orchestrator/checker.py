@@ -9,6 +9,7 @@ from typing import Iterable
 import yaml
 
 from skills_orchestrator.compiler import Parser, Resolver, SkillsLock
+from skills_orchestrator.compiler.parser import SkillDiagnosticError
 from skills_orchestrator.diagnostic import Diagnostic, DiagnosticReport
 from skills_orchestrator.models import Config, ResolvedConfig, SkillMeta, Zone
 from skills_orchestrator.policy.packs import policy_pack_diagnostics
@@ -35,7 +36,24 @@ def run_check(
 ) -> DiagnosticReport:
     """Run non-mutating checks and return structured diagnostics."""
     parser = Parser(config_path)
-    cfg = parser.parse()
+    try:
+        cfg = parser.parse()
+    except SkillDiagnosticError as exc:
+        return DiagnosticReport(
+            diagnostics=[
+                Diagnostic.from_rule(
+                    exc.rule_id,
+                    str(exc),
+                    file=exc.file,
+                    line=exc.line,
+                    skill_id=exc.skill_id,
+                    suggested_fix=exc.suggested_fix,
+                )
+            ],
+            total_skills=0,
+            zones=0,
+            combos=0,
+        )
 
     diagnostics: list[Diagnostic] = []
     diagnostics.extend(_duplicate_id_diagnostics(config_path))

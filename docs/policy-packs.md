@@ -58,7 +58,7 @@ These fields are exported in:
 ## GitHub Action
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v3.0.4
+- uses: BambooGap/skills-orchestrator@v3.0.5
   with:
     config: config/skills.yaml
     policy-pack: builtin/team-standard

@@ -79,6 +79,63 @@ def test_registry_build_summarizes_governed_skills(tmp_path):
     assert skill["governance"]["source"] == "internal://skills/team-skill"
 
 
+def test_registry_explicit_skill_paths_resolve_from_project_root(tmp_path):
+    repo = tmp_path / "repo"
+    skills_dir = repo / "skills"
+    config_dir = repo / "config"
+    skills_dir.mkdir(parents=True)
+    config_dir.mkdir()
+    skill_file = skills_dir / "real.md"
+    skill_file.write_text("# Real\n", encoding="utf-8")
+    config = config_dir / "skills.yaml"
+    config.write_text(
+        """
+version: "2.0"
+skills:
+  - id: real-skill
+    name: Real Skill
+    path: skills/real.md
+    summary: Real file exists.
+    tags: [test]
+    load_policy: free
+    priority: 10
+    zones: [default]
+    owner: platform-team
+    source: internal://real
+    version: 1.0.0
+    lifecycle: active
+  - id: ghost-skill
+    name: Ghost Skill
+    path: skills/does-not-exist.md
+    summary: Missing file referenced explicitly.
+    tags: [test]
+    load_policy: free
+    priority: 10
+    zones: [default]
+    owner: platform-team
+    source: internal://ghost
+    version: 1.0.0
+    lifecycle: active
+zones:
+  - id: default
+    name: Default
+    load_policy: free
+    rules: []
+""",
+        encoding="utf-8",
+    )
+
+    registry = build_registry([str(config)])
+    skills = {skill["id"]: skill for skill in registry["configs"][0]["skills"]}
+
+    assert registry["configs"][0]["base_dir"] == str(repo)
+    assert skills["real-skill"]["path"] == "skills/real.md"
+    assert skills["real-skill"]["missing_file"] is False
+    assert len(skills["real-skill"]["content_hash"]["value"]) == 64
+    assert skills["ghost-skill"]["missing_file"] is True
+    assert skills["ghost-skill"]["content_hash"]["value"] == ""
+
+
 def test_registry_diff_reports_governance_and_hash_changes(tmp_path):
     base_config = _workspace(tmp_path / "repo", owner="platform-team", body="# Skill\n")
     base = build_registry([str(base_config)])

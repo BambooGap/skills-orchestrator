@@ -8,6 +8,7 @@ import yaml
 from skills_orchestrator.security import validate_path_within_root, validate_skill_id
 from skills_orchestrator.models import Zone, Rule, SkillMeta, Combo, Config
 
+VALID_SKILL_LOAD_POLICIES = ("require", "free")
 
 _SKILL_FRONTMATTER_FIELDS = {
     "id",
@@ -28,6 +29,27 @@ _SKILL_FRONTMATTER_FIELDS = {
     "reviewed_at",
     "expires_at",
 }
+
+
+class SkillDiagnosticError(ValueError):
+    """Parser error that can be reported as a structured skill diagnostic."""
+
+    def __init__(
+        self,
+        rule_id: str,
+        message: str,
+        *,
+        file: str | None = None,
+        line: int | None = None,
+        skill_id: str | None = None,
+        suggested_fix: str | None = None,
+    ):
+        super().__init__(message)
+        self.rule_id = rule_id
+        self.file = file
+        self.line = line
+        self.skill_id = skill_id
+        self.suggested_fix = suggested_fix
 
 
 class Parser:
@@ -126,7 +148,6 @@ class Parser:
         if isinstance(tags, str):
             tags = [t.strip() for t in tags.split(",") if t.strip()]
 
-        load_policy = meta.get("load_policy", "free")
         priority = int(meta.get("priority", 50))
         zones = meta.get("zones", ["default"])
         if isinstance(zones, str):
@@ -148,24 +169,32 @@ class Parser:
                 f"安全拦截: Skill 路径 '{md_file}' 尝试逃逸项目根目录 '{self.base_dir}'"
             )
 
+        load_policy = _skill_load_policy(
+            meta,
+            default="free",
+            file=stored_path,
+            line=_frontmatter_key_line(content, "load_policy"),
+            skill_id=skill_id,
+        )
+
         return SkillMeta(
             id=skill_id,
-            name=name,
+            name=_metadata_text_value(name),
             path=stored_path,
-            summary=summary,
+            summary=_metadata_text_value(summary),
             tags=tags,
             load_policy=load_policy,
             priority=priority,
             zones=zones,
             conflict_with=conflict_with,
-            base=base,
-            owner=str(meta.get("owner", "")),
-            source=str(meta.get("source", "")),
-            version=str(meta.get("version", "")),
-            lifecycle=str(meta.get("lifecycle", "active")),
+            base=_metadata_text_value(base),
+            owner=_metadata_text(meta, "owner"),
+            source=_metadata_text(meta, "source"),
+            version=_metadata_text(meta, "version"),
+            lifecycle=_metadata_text(meta, "lifecycle", default="active"),
             approvers=_coerce_list(meta.get("approvers", [])),
-            reviewed_at=str(meta.get("reviewed_at", "")),
-            expires_at=str(meta.get("expires_at", "")),
+            reviewed_at=_metadata_text(meta, "reviewed_at"),
+            expires_at=_metadata_text(meta, "expires_at"),
             metadata=_extra_metadata(meta),
         )
 
@@ -195,22 +224,22 @@ class Parser:
             result.append(
                 SkillMeta(
                     id=skill.id,
-                    name=o.get("name", skill.name),
+                    name=_metadata_text(o, "name", default=skill.name),
                     path=skill.path,
-                    summary=o.get("summary", skill.summary),
+                    summary=_metadata_text(o, "summary", default=skill.summary),
                     tags=o.get("tags", skill.tags),
-                    load_policy=o.get("load_policy", skill.load_policy),
+                    load_policy=_skill_load_policy(o, default=skill.load_policy),
                     priority=o.get("priority", skill.priority),
                     zones=o.get("zones", skill.zones),
                     conflict_with=o.get("conflict_with", skill.conflict_with),
                     base=skill.base,  # base 只从文件 frontmatter 读取，不可被 overrides 覆盖
-                    owner=o.get("owner", skill.owner),
-                    source=o.get("source", skill.source),
-                    version=o.get("version", skill.version),
-                    lifecycle=o.get("lifecycle", skill.lifecycle),
+                    owner=_metadata_text(o, "owner", default=skill.owner),
+                    source=_metadata_text(o, "source", default=skill.source),
+                    version=_metadata_text(o, "version", default=skill.version),
+                    lifecycle=_metadata_text(o, "lifecycle", default=skill.lifecycle),
                     approvers=o.get("approvers", skill.approvers),
-                    reviewed_at=o.get("reviewed_at", skill.reviewed_at),
-                    expires_at=o.get("expires_at", skill.expires_at),
+                    reviewed_at=_metadata_text(o, "reviewed_at", default=skill.reviewed_at),
+                    expires_at=_metadata_text(o, "expires_at", default=skill.expires_at),
                     metadata=skill.metadata,
                 )
             )
@@ -248,22 +277,28 @@ class Parser:
             skills.append(
                 SkillMeta(
                     id=validate_skill_id(raw["id"], "skill id"),
-                    name=raw["name"],
+                    name=_metadata_text(raw, "name"),
                     path=path,
-                    summary=raw["summary"],
+                    summary=_metadata_text(raw, "summary"),
                     tags=raw.get("tags", []),
-                    load_policy=raw.get("load_policy", "free"),
+                    load_policy=_skill_load_policy(
+                        raw,
+                        default="free",
+                        file=str(self.config_path),
+                        line=1,
+                        skill_id=raw["id"],
+                    ),
                     priority=raw.get("priority", 0),
                     zones=raw.get("zones", []),
                     conflict_with=raw.get("conflict_with", []),
-                    base=raw.get("base", ""),
-                    owner=raw.get("owner", ""),
-                    source=raw.get("source", ""),
-                    version=raw.get("version", ""),
-                    lifecycle=raw.get("lifecycle", "active"),
+                    base=_metadata_text(raw, "base"),
+                    owner=_metadata_text(raw, "owner"),
+                    source=_metadata_text(raw, "source"),
+                    version=_metadata_text(raw, "version"),
+                    lifecycle=_metadata_text(raw, "lifecycle", default="active"),
                     approvers=_coerce_list(raw.get("approvers", [])),
-                    reviewed_at=raw.get("reviewed_at", ""),
-                    expires_at=raw.get("expires_at", ""),
+                    reviewed_at=_metadata_text(raw, "reviewed_at"),
+                    expires_at=_metadata_text(raw, "expires_at"),
                     metadata=_extra_metadata(raw),
                 )
             )
@@ -322,6 +357,9 @@ class Parser:
         config_dir = self.config_dir.resolve()
         paths = [config_dir]
 
+        if raw.get("skills") and config_dir.name == "config":
+            paths.append(config_dir.parent)
+
         for dir_expr in raw.get("skill_dirs", []):
             resolved = (config_dir / self._expand_skill_dir(dir_expr)).resolve()
             if resolved.exists():
@@ -373,6 +411,54 @@ def _coerce_list(value) -> list:
     if isinstance(value, str):
         return [item.strip() for item in value.split(",") if item.strip()]
     return [value]
+
+
+def _metadata_text(raw: dict, key: str, *, default: str = "") -> str:
+    if key not in raw:
+        return default
+    return _metadata_text_value(raw.get(key))
+
+
+def _metadata_text_value(value) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _skill_load_policy(
+    raw: dict,
+    *,
+    default: str,
+    file: str | None = None,
+    line: int | None = None,
+    skill_id: str | None = None,
+) -> str:
+    value = _metadata_text(raw, "load_policy", default=default)
+    if value not in VALID_SKILL_LOAD_POLICIES:
+        allowed = ", ".join(VALID_SKILL_LOAD_POLICIES)
+        display = value if value else "<empty>"
+        raise SkillDiagnosticError(
+            "SO013",
+            f"Skill '{skill_id or '<unknown>'}' has invalid load_policy '{display}'; expected one of: {allowed}.",
+            file=file,
+            line=line,
+            skill_id=skill_id,
+            suggested_fix=f"Set load_policy to one of: {allowed}.",
+        )
+    return value
+
+
+def _frontmatter_key_line(content: str, key: str) -> int:
+    if not content.startswith("---"):
+        return 1
+    for line_number, line in enumerate(content.splitlines(), start=1):
+        if line_number == 1:
+            continue
+        if line == "---":
+            return 1
+        if line.lstrip().startswith(f"{key}:"):
+            return line_number
+    return 1
 
 
 def _extra_metadata(raw: dict) -> dict:

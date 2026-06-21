@@ -302,6 +302,39 @@ def test_explicit_skill_path_within_project_allowed(tmp_path):
     assert config.skills[0].path == "skills/inside.md"
 
 
+def test_explicit_skill_path_from_config_dir_cannot_escape_project_root(tmp_path):
+    repo = tmp_path / "repo"
+    config_dir = repo / "config"
+    config_dir.mkdir(parents=True)
+    outside = tmp_path / "outside.md"
+    outside.write_text("# Outside\n", encoding="utf-8")
+
+    config_file = config_dir / "skills.yaml"
+    config_file.write_text(
+        textwrap.dedent(
+            """
+            version: "1.0"
+            zones:
+              - id: default
+                name: 默认区
+                load_policy: free
+                priority: 0
+                rules: []
+            skills:
+              - id: outside
+                name: Outside
+                path: ../outside.md
+                summary: s
+                tags: []
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="路径逃逸"):
+        Parser(str(config_file)).parse()
+
+
 def test_skill_id_path_traversal_rejected_from_frontmatter(tmp_path):
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()

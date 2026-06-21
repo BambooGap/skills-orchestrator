@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.5] - 2026-06-21
+
+### Added
+- Added `SO013` for skill-level `load_policy` validation so CI JSON/SARIF output points to the
+  offending skill file instead of a generic fatal config error.
+
+### Changed
+- Clarified the SkillOps Contract `missing_file` boundary: explicit `skills[].path` references keep
+  registry entries with `missing_file=true`; `skill_dirs` auto-discovery deletions are represented
+  as removed entries or combo-reference errors.
+- Updated current install, GitHub Action, and container examples to `v3.0.5`.
+
+### Fixed
+- Normalized null and blank governance metadata so `owner:`, `source:`, `version:`, and
+  `lifecycle:` no longer become the literal string `"None"` and bypass policy checks.
+- Fixed explicit `skills[].path` resolution for the standard `config/skills.yaml` layout so existing
+  files such as `skills/real.md` are not misreported as `missing_file=true`.
+
 ## [3.0.4] - 2026-06-21
 
 ### Added

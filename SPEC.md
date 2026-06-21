@@ -320,8 +320,12 @@ it as the stable contract.
 
 - `conflict_with` MAY be one-way. A resolver MAY enforce the one-way conflict, while conformance
   tooling SHOULD warn that asymmetric conflicts are weaker audit evidence than symmetric conflicts.
-- Missing skill files MUST keep their registry entries when the config references them and MUST set
-  `missing_file` to `true`.
+- Missing skill files referenced by explicit `skills[].path` entries MUST keep their registry
+  entries and MUST set `missing_file` to `true`.
+- Missing files from `skill_dirs` auto-discovery are not retained as registry entries because the
+  deleted file is no longer discoverable. Registry diffs SHOULD represent these as removed entries
+  when comparing two snapshots. A combo or zone reference to a no-longer-discovered skill MAY fail
+  validation before registry generation.
 - Unknown additive fields in v1 artifacts MUST be ignored by default by non-strict consumers.
 - Absolute local paths SHOULD be redacted in Markdown or comments intended for pull requests.
 - Hosted registries, dashboards, and GitHub Apps SHOULD consume generated artifacts. They SHOULD
