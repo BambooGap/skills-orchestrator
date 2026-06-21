@@ -28,6 +28,15 @@ def _manifest_workspace(tmp_path):
         "version: 1.0.0\n"
         "lifecycle: active\n"
         "approvers: [staff-engineering]\n"
+        "reviewed_at: 2026-06-21\n"
+        "expires_at: 2999-01-01\n"
+        "license: Apache-2.0\n"
+        "provenance:\n"
+        "  source_url: https://raw.githubusercontent.com/example/repo/main/child.md\n"
+        "  source_ref: main\n"
+        "  source_commit: 0123456789abcdef0123456789abcdef01234567\n"
+        "  content_hash: sha256:abc\n"
+        "  fetched_at: 2026-06-21T00:00:00Z\n"
         "tags: [child]\n"
         "---\n"
         "# Child\n",
@@ -81,6 +90,8 @@ def test_build_instruction_manifest_records_full_hash_and_base(tmp_path):
     assert child["missing_file"] is False
     assert child["governance"]["owner"] == "platform-team"
     assert child["governance"]["approvers"] == ["staff-engineering"]
+    assert child["governance"]["license"] == "Apache-2.0"
+    assert child["governance"]["provenance"]["source_commit"].startswith("012345")
 
 
 def test_instruction_manifest_cyclonedx_maps_skills_and_dependencies(tmp_path):
@@ -97,6 +108,7 @@ def test_instruction_manifest_cyclonedx_maps_skills_and_dependencies(tmp_path):
         component for component in bom["components"] if component["bom-ref"] == "skill:child"
     )
     assert child["type"] == "data"
+    assert child["licenses"] == [{"license": {"id": "Apache-2.0"}}]
     assert len(child["hashes"][0]["content"]) == 64
     assert {"ref": "skill:child", "dependsOn": ["skill:base"]} in bom["dependencies"]
     assert any(prop["name"] == "skills-orchestrator:governance" for prop in child["properties"])

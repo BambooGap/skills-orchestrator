@@ -293,6 +293,8 @@ def _change_details(changes: dict[str, Any]) -> str:
             "approvers",
             "reviewed_at",
             "expires_at",
+            "license",
+            "provenance",
         ):
             before_value = _governance_value(before_governance.get(field))
             after_value = _governance_value(after_governance.get(field))
@@ -314,6 +316,8 @@ def _governance_value(value: Any) -> str:
         return ""
     if isinstance(value, list):
         return ", ".join(str(item) for item in value)
+    if isinstance(value, dict):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
     return str(value)
 
 

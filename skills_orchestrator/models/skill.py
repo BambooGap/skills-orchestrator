@@ -25,6 +25,8 @@ class SkillMeta:
     approvers: List[str] = field(default_factory=list)
     reviewed_at: str = ""
     expires_at: str = ""
+    license: str = ""
+    provenance: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):

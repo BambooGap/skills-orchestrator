@@ -11,6 +11,9 @@ owner: skills-orchestrator-core
 source: repo://skills/coding/error-handling.md
 version: 1.0.0
 lifecycle: active
+reviewed_at: 2026-06-21
+expires_at: 2027-06-21
+license: MIT
 ---
 # 错误处理规范 Skill
 

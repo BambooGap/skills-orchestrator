@@ -125,6 +125,8 @@ def _skill_entry(
             "approvers": list(skill.approvers),
             "reviewed_at": skill.reviewed_at,
             "expires_at": skill.expires_at,
+            "license": skill.license,
+            "provenance": dict(skill.provenance),
         },
         "metadata": dict(skill.metadata),
         "block_reason": block_reasons.get(skill.id, ""),

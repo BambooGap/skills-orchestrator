@@ -11,6 +11,9 @@ owner: skills-orchestrator-core
 source: repo://skills/review/chinese-code-review.md
 version: 1.0.0
 lifecycle: active
+reviewed_at: 2026-06-21
+expires_at: 2027-06-21
+license: MIT
 approvers: [skills-orchestrator-maintainers]
 ---
 # 中文代码审查 Skill

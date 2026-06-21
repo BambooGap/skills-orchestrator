@@ -52,11 +52,40 @@
         "name": { "type": "string" },
         "status": { "enum": ["forced", "passive", "blocked"] },
         "path": { "type": "string" },
-        "governance": { "type": "object" },
+        "governance": { "$ref": "#/$defs/governance" },
         "content_hash": { "type": "object" },
         "missing_file": { "type": "boolean" }
       },
       "additionalProperties": true
+    },
+    "governance": {
+      "type": "object",
+      "properties": {
+        "owner": { "type": "string" },
+        "source": { "type": "string" },
+        "version": { "type": "string" },
+        "lifecycle": { "type": "string" },
+        "approvers": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reviewed_at": { "type": "string" },
+        "expires_at": { "type": "string" },
+        "license": { "type": "string" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      },
+      "additionalProperties": true
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "source_url": { "type": "string" },
+        "source_ref": { "type": "string" },
+        "source_commit": { "type": "string" },
+        "content_hash": { "type": "string" },
+        "fetched_at": { "type": "string" }
+      },
+      "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
     }
   }
 }

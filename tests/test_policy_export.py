@@ -23,6 +23,13 @@ def _policy_workspace(tmp_path):
         "source: internal://alpha\n"
         "version: 1.0.0\n"
         "lifecycle: active\n"
+        "license: MIT\n"
+        "provenance:\n"
+        "  source_url: https://raw.githubusercontent.com/example/repo/main/alpha.md\n"
+        "  source_ref: main\n"
+        "  source_commit: 0123456789abcdef0123456789abcdef01234567\n"
+        "  content_hash: sha256:abc\n"
+        "  fetched_at: 2026-06-21T00:00:00Z\n"
         "---\n"
         "# Alpha\n",
         encoding="utf-8",
@@ -69,6 +76,8 @@ def test_build_opa_input_exports_resolver_facts(tmp_path):
     beta = next(skill for skill in payload["skills"] if skill["id"] == "beta")
     assert alpha["effective_load_policy"] == "require"
     assert alpha["governance"]["owner"] == "platform-team"
+    assert alpha["governance"]["license"] == "MIT"
+    assert alpha["governance"]["provenance"]["source_ref"] == "main"
     assert beta["status"] == "blocked"
     assert beta["block_reason"]
 

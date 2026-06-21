@@ -7,10 +7,18 @@ load_policy: free
 priority: 150
 zones: [default]
 source: https://github.com/forrestchang/andrej-karpathy-skills
-license: MIT
+license: NOASSERTION
 owner: skills-orchestrator-core
 version: 1.0.0
 lifecycle: active
+reviewed_at: 2026-06-21
+expires_at: 2027-06-21
+provenance:
+  source_url: https://github.com/forrestchang/andrej-karpathy-skills
+  source_ref: main
+  source_commit: 2c606141936f1eeef17fa3043a72095b4765b9c2
+  content_hash: sha256:048ab6eea1efd2be58ae5181599b219d6f250fb5dc087a99b14ec40938b167a0
+  fetched_at: 2026-06-21T16:05:15Z
 ---
 
 # Karpathy Guidelines

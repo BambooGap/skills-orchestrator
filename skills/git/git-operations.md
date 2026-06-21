@@ -11,6 +11,9 @@ owner: skills-orchestrator-core
 source: repo://skills/git/git-operations.md
 version: 1.0.0
 lifecycle: active
+reviewed_at: 2026-06-21
+expires_at: 2027-06-21
+license: MIT
 ---
 # Git 操作规范 Skill
 

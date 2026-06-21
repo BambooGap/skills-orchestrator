@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import date, timedelta
 from pathlib import Path
 
 import click
@@ -147,6 +148,8 @@ def init(
                 "approvers": _coerce_list(meta.get("approvers", [])),
                 "reviewed_at": meta.get("reviewed_at", ""),
                 "expires_at": meta.get("expires_at", ""),
+                "license": meta.get("license", ""),
+                "provenance": meta.get("provenance", {}),
             }
         )
 
@@ -250,7 +253,8 @@ def _team_standard_config(config_path: Path, skills_dir: Path) -> str:
 
 
 def _team_engineering_standards_skill() -> str:
-    return """---
+    reviewed_at, expires_at = _default_review_window()
+    return f"""---
 id: team-engineering-standards
 name: Team Engineering Standards
 summary: Shared engineering standards for agent-assisted work in this repository.
@@ -262,6 +266,9 @@ owner: agent-platform
 source: repo://skills/team/engineering-standards.md
 version: 1.0.0
 lifecycle: active
+reviewed_at: {reviewed_at}
+expires_at: {expires_at}
+license: MIT
 ---
 
 # Team Engineering Standards
@@ -272,7 +279,8 @@ Record skipped verification with the exact command and reason.
 
 
 def _team_code_review_skill() -> str:
-    return """---
+    reviewed_at, expires_at = _default_review_window()
+    return f"""---
 id: team-code-review
 name: Team Code Review
 summary: Required code review checklist for changes made by agents or humans.
@@ -285,6 +293,9 @@ source: repo://skills/team/code-review.md
 version: 1.0.0
 lifecycle: active
 approvers: [agent-platform]
+reviewed_at: {reviewed_at}
+expires_at: {expires_at}
+license: MIT
 ---
 
 # Team Code Review
@@ -295,7 +306,8 @@ Findings must include file paths, impact, and a concrete fix direction.
 
 
 def _team_release_checklist_skill() -> str:
-    return """---
+    reviewed_at, expires_at = _default_review_window()
+    return f"""---
 id: team-release-checklist
 name: Team Release Checklist
 summary: Required release readiness checks for SkillOps-controlled repositories.
@@ -308,6 +320,9 @@ source: repo://skills/team/release-checklist.md
 version: 1.0.0
 lifecycle: active
 approvers: [release-owner]
+reviewed_at: {reviewed_at}
+expires_at: {expires_at}
+license: MIT
 ---
 
 # Team Release Checklist
@@ -364,6 +379,11 @@ def _template_config_path(output: str | None, project_root: Path) -> Path:
     except ValueError as exc:
         raise click.ClickException("--output 必须位于当前项目目录内") from exc
     return resolved
+
+
+def _default_review_window() -> tuple[str, str]:
+    reviewed = date.today()
+    return reviewed.isoformat(), (reviewed + timedelta(days=180)).isoformat()
 
 
 def _reject_symlink_target(path: Path, project_root: Path) -> None:

@@ -11,6 +11,9 @@ owner: skills-orchestrator-core
 source: repo://skills/coding/code-style.md
 version: 1.0.0
 lifecycle: active
+reviewed_at: 2026-06-21
+expires_at: 2027-06-21
+license: MIT
 ---
 # 代码风格规范 Skill
 
@@ -156,4 +159,4 @@ def get_tier_discount(years: int) -> float:
 
 - 与 `chinese-code-review` 配合：review 时检查命名和函数大小
 - 与 `refactoring` 配合：重构的目标状态就是符合本 skill 的标准
-- 与 `karpathy-guidelines` 配合：最小化实现与代码风格共同减少认知负担
+- 与 `systematic-debugging` 配合：用可复现问题和最小改动减少认知负担

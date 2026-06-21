@@ -82,7 +82,7 @@ TOOL_GET_SKILL = types.Tool(
         "properties": {
             "id": {
                 "type": "string",
-                "description": "Skill ID，如 'karpathy-guidelines'、'git-worktrees'",
+                "description": "Skill ID，如 'git-worktrees'、'systematic-debugging'",
             }
         },
         "required": ["id"],

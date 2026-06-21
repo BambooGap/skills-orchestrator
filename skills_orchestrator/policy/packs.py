@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 import re
+from urllib.parse import urlparse
 
 from skills_orchestrator.diagnostic import Diagnostic
 from skills_orchestrator.models import Config, SkillMeta
@@ -18,6 +19,14 @@ from skills_orchestrator.policy.declarative import (
 TEAM_STANDARD_PACK = "builtin/team-standard"
 ENGINEERING_GRADE_PACK = "builtin/engineering-grade"
 ALLOWED_LIFECYCLES = {"active", "beta", "deprecated", "retired"}
+ENGINEERING_GRADE_ALLOWED_LICENSES = {"Apache-2.0", "MIT"}
+REQUIRED_PROVENANCE_FIELDS = {
+    "source_url",
+    "source_ref",
+    "source_commit",
+    "content_hash",
+    "fetched_at",
+}
 
 
 @dataclass(frozen=True)
@@ -42,8 +51,8 @@ BUILTIN_POLICY_PACKS: dict[str, PolicyPack] = {
         pack_id=ENGINEERING_GRADE_PACK,
         name="Engineering Grade",
         description=(
-            "Includes team-standard governance and requires review-window metadata "
-            "for enterprise SkillOps change control."
+            "Includes team-standard governance and requires review-window, license, "
+            "and external import provenance metadata for enterprise SkillOps change control."
         ),
     ),
 }
@@ -168,6 +177,68 @@ def _engineering_grade_diagnostics(cfg: Config) -> list[Diagnostic]:
         path = _skill_path(cfg, skill)
         rel = _relative_path(path, Path(cfg.base_dir))
 
+        normalized_license = _normalize_license_id(skill.license)
+        if not skill.license.strip():
+            diagnostics.append(
+                Diagnostic.from_rule(
+                    "SO018",
+                    f"Skill '{skill.id}' is missing license metadata required by {ENGINEERING_GRADE_PACK}.",
+                    file=rel,
+                    line=1,
+                    skill_id=skill.id,
+                    suggested_fix="Add license: MIT or license: Apache-2.0 to the skill frontmatter.",
+                    metadata={
+                        "policy_pack": ENGINEERING_GRADE_PACK,
+                        "allowed_licenses": sorted(ENGINEERING_GRADE_ALLOWED_LICENSES),
+                    },
+                )
+            )
+        elif normalized_license not in ENGINEERING_GRADE_ALLOWED_LICENSES:
+            diagnostics.append(
+                Diagnostic.from_rule(
+                    "SO019",
+                    f"Skill '{skill.id}' license '{skill.license}' is not allowed by {ENGINEERING_GRADE_PACK}.",
+                    file=rel,
+                    line=1,
+                    skill_id=skill.id,
+                    suggested_fix=(
+                        "Use one of: " + ", ".join(sorted(ENGINEERING_GRADE_ALLOWED_LICENSES)) + "."
+                    ),
+                    metadata={
+                        "policy_pack": ENGINEERING_GRADE_PACK,
+                        "allowed_licenses": sorted(ENGINEERING_GRADE_ALLOWED_LICENSES),
+                        "license": skill.license,
+                        "normalized_license": normalized_license,
+                    },
+                )
+            )
+
+        if _is_external_source(skill.source):
+            missing_provenance = sorted(
+                field
+                for field in REQUIRED_PROVENANCE_FIELDS
+                if not str(skill.provenance.get(field, "")).strip()
+            )
+            if missing_provenance:
+                diagnostics.append(
+                    Diagnostic.from_rule(
+                        "SO020",
+                        f"Externally sourced skill '{skill.id}' is missing import provenance: {', '.join(missing_provenance)}.",
+                        file=rel,
+                        line=1,
+                        skill_id=skill.id,
+                        suggested_fix=(
+                            "Record provenance.source_url, source_ref, source_commit, "
+                            "content_hash, and fetched_at for imported external skills."
+                        ),
+                        metadata={
+                            "policy_pack": ENGINEERING_GRADE_PACK,
+                            "missing_fields": missing_provenance,
+                            "source": skill.source,
+                        },
+                    )
+                )
+
         if not skill.reviewed_at.strip() or not skill.expires_at.strip():
             missing = [
                 field
@@ -254,6 +325,19 @@ def _parse_policy_date(value: str) -> date | None:
         return date.fromisoformat(value)
     except ValueError:
         return None
+
+
+def _is_external_source(source: str) -> bool:
+    return urlparse(source).scheme.lower() in {"http", "https"}
+
+
+def _normalize_license_id(value: str) -> str:
+    cleaned = value.strip()
+    if cleaned.lower() == "mit":
+        return "MIT"
+    if cleaned.lower() == "apache-2.0":
+        return "Apache-2.0"
+    return cleaned
 
 
 def _skill_path(cfg: Config, skill: SkillMeta) -> Path:

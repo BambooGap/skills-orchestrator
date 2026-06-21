@@ -33,13 +33,16 @@ This pack adds governance diagnostics:
 
 ## `builtin/engineering-grade`
 
-This pack includes `builtin/team-standard` and adds review-window diagnostics:
+This pack includes `builtin/team-standard` and adds trust metadata diagnostics:
 
 | Rule | Severity | Requirement |
 | --- | --- | --- |
 | `SO014` | warning | every shared skill should have `reviewed_at` and `expires_at` |
 | `SO015` | error | review-window dates must use `YYYY-MM-DD`, and `expires_at` must be on or after `reviewed_at` |
 | `SO016` | error | `expires_at` must not be in the past |
+| `SO018` | warning | every shared skill should have `license` metadata |
+| `SO019` | error | `license` must be allowlisted; built-in allowlist is `MIT` and `Apache-2.0` |
+| `SO020` | warning | HTTP(S)-sourced skills should have import provenance |
 
 ```bash
 skills-orchestrator check \
@@ -77,7 +80,7 @@ skills-orchestrator check --config config/skills.yaml --policy-pack policy-pack.
 
 `required_fields` can target any supported skill metadata field. `allowed_values` is intentionally
 limited to scalar fields such as `lifecycle`, `load_policy`, `owner`, `source`, `version`,
-`reviewed_at`, and `expires_at`; list fields such as `tags` and `approvers` are not accepted there.
+`reviewed_at`, `expires_at`, and `license`; list fields such as `tags` and `approvers` are not accepted there.
 
 ## Frontmatter Shape
 
@@ -95,6 +98,13 @@ lifecycle: active
 approvers: [security-review, staff-engineering]
 reviewed_at: 2026-06-21
 expires_at: 2026-12-21
+license: Apache-2.0
+provenance:
+  source_url: https://raw.githubusercontent.com/example/skills/0123456789abcdef0123456789abcdef01234567/team-review.md
+  source_ref: main
+  source_commit: 0123456789abcdef0123456789abcdef01234567
+  content_hash: sha256:...
+  fetched_at: 2026-06-21T00:00:00Z
 ---
 ```
 
@@ -109,7 +119,7 @@ These fields are exported in:
 ## GitHub Action
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v3.1.0
+- uses: BambooGap/skills-orchestrator@v3.2.0
   with:
     config: config/skills.yaml
     policy-pack: builtin/engineering-grade
@@ -123,7 +133,8 @@ For SARIF upload, also set `upload-sarif: true` and grant `security-events: writ
 1. Run the pack without `--fail-on warning` and review findings.
 2. Add `owner`, `source`, `version`, and `lifecycle` to every shared skill.
 3. Add `approvers` to required skills.
-4. Add `reviewed_at` and `expires_at` before enabling `builtin/engineering-grade`.
-5. Regenerate `skills.lock.json`.
-6. Turn on `--fail-on warning` in protected branch CI.
-7. Add `doctor --profile adopter`, `conformance run`, and `evidence export` to release verification.
+4. Add `reviewed_at`, `expires_at`, and `license` before enabling `builtin/engineering-grade`.
+5. For imported HTTP(S) skills, record provenance with `skills-orchestrator import` or equivalent reviewed metadata.
+6. Regenerate `skills.lock.json`.
+7. Turn on `--fail-on warning` in protected branch CI.
+8. Add `doctor --profile adopter`, `conformance run`, and `evidence export` to release verification.
