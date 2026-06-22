@@ -119,7 +119,7 @@ These fields are exported in:
 ## GitHub Action
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v4.0.0
+- uses: BambooGap/skills-orchestrator@v4.0.1
   with:
     config: config/skills.yaml
     policy-pack: builtin/engineering-grade

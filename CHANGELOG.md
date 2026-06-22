@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.1] - 2026-06-23
+
+### Fixed
+- Fixed the registry/evidence documentation to validate the SBOM artifact at
+  `evidence/package-sbom.cdx.json`, matching the output written by `evidence export`.
+
+### Changed
+- Updated current install, Action, container, and PyPI examples to `v4.0.1` so release artifacts,
+  package metadata, and documentation snapshots stay aligned after the v4.0 documentation fix.
+
 ## [4.0.0] - 2026-06-22
 
 ### Added
