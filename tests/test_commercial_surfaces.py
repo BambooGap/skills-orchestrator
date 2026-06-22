@@ -157,6 +157,7 @@ def test_reviewer_summary_collects_trace_graph_diff_and_evidence(tmp_path):
 
     assert summary["schema_version"] == REVIEWER_SUMMARY_SCHEMA_VERSION
     assert summary["check"]["status"] == "pass"
+    assert summary["ci_explainability"]["status"] == "pass"
     assert summary["policy_trace"]["total"] > 0
     assert summary["registry_diff"]["status"] == "review"
     assert summary["registry_diff"]["changed"] == 1
@@ -345,6 +346,7 @@ def test_action_exposes_reviewer_pack_outputs_and_delays_failure():
     assert "dashboard-snapshot" in action["inputs"]
     assert "check-json-file" in action["outputs"]
     assert "policy-trace-file" in action["outputs"]
+    assert "ci-explainability-file" in action["outputs"]
     assert "registry-graph-file" in action["outputs"]
     assert "evidence-bundle-hash" in action["outputs"]
     assert "reviewer-summary-file" in action["outputs"]
@@ -466,6 +468,7 @@ def test_doctor_enterprise_profile_validates_evidence_bundle(tmp_path):
     assert payload["profile"] == "enterprise"
     assert payload["evidence"]["evidence_manifest"]["detail"] == "schema valid"
     assert payload["evidence"]["evidence_check_json"]["detail"] == "schema valid"
+    assert payload["evidence"]["evidence_ci_explainability"]["detail"] == "schema valid"
     assert payload["evidence"]["evidence_registry"]["detail"] == "schema valid"
     assert payload["evidence"]["adapter_inspect"]["detail"] == "schema valid"
     assert payload["evidence"]["package_sbom"]["detail"] == "schema valid"
@@ -484,6 +487,7 @@ def test_doctor_enterprise_profile_resolves_manifest_relative_artifacts(tmp_path
 
     assert payload["evidence"]["evidence_manifest"]["detail"] == "schema valid"
     assert payload["evidence"]["evidence_check_json"]["detail"] == "schema valid"
+    assert payload["evidence"]["evidence_ci_explainability"]["detail"] == "schema valid"
     assert not [
         issue
         for issue in payload["issues"]
@@ -819,18 +823,24 @@ def test_evidence_export_writes_bundle(tmp_path, monkeypatch):
 
     assert (out_dir / "check.json").exists()
     assert (out_dir / "check.sarif").exists()
+    assert (out_dir / "ci-explainability.json").exists()
     assert (out_dir / "instruction-manifest.json").exists()
     assert (out_dir / "policy-opa-input.json").exists()
     assert (out_dir / "doctor.json").exists()
     assert (out_dir / "adapter-inspect.json").exists()
     assert (out_dir / "package-sbom.cdx.json").exists()
     assert json.loads((out_dir / "evidence-manifest.json").read_text())["files"] == bundle["files"]
+    assert "ci_explainability" in bundle["files"]
     assert "adapter_inspect" in bundle["files"]
     assert "package_sbom" in bundle["files"]
     assert bundle["ledger"]["previous_bundle_hash"] == ""
     assert len(bundle["ledger"]["bundle_hash"]) == 64
     check_hash = hashlib.sha256((out_dir / "check.json").read_bytes()).hexdigest()
     assert bundle["ledger"]["artifact_hashes"]["check_json"]["value"] == check_hash
+    assert (
+        validate_document("ci-explainability", str(out_dir / "ci-explainability.json")).valid
+        is True
+    )
     assert validate_document("evidence", str(out_dir / "evidence-manifest.json")).valid is True
 
 

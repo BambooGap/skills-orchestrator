@@ -125,6 +125,16 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v2.4.0",
         consumers=("ci", "sarif", "platform-review"),
     ),
+    "ci-explainability": SchemaDescriptor(
+        kind="ci-explainability",
+        filename="ci-explainability.schema.json",
+        title="CI Explainability",
+        description="CI decision and failure-explainability contract derived from check output.",
+        contract_id="skills-orchestrator.ci-explainability.v1",
+        stability="stable",
+        since="v4.1.0",
+        consumers=("ci", "pull-request", "platform-review"),
+    ),
     "doctor": SchemaDescriptor(
         kind="doctor",
         filename="doctor-report.schema.json",

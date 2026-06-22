@@ -205,6 +205,51 @@ represented as an agent reasoning trace or runtime execution graph.
 `policy_trace` is additive in the v1 JSON Schema for backwards compatibility with older v3.x check
 reports. v3.4 and newer emitters MUST include it, and `conformance run` MUST fail when it is absent.
 
+## CI Explainability Contract
+
+The CI explainability contract is the reviewer- and platform-facing explanation layer derived from
+`check --format json`. The registered schema kind is `ci-explainability`, backed by
+`ci-explainability.schema.json`.
+
+Build and validate:
+
+```bash
+skills-orchestrator check \
+  --config config/skills.yaml \
+  --policy-pack builtin/team-standard \
+  --format json > check.json
+
+skills-orchestrator explainability build \
+  --check-json check.json \
+  --config config/skills.yaml \
+  --output ci-explainability.json \
+  --force
+
+skills-orchestrator schema validate \
+  --kind ci-explainability \
+  --input ci-explainability.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `skills-orchestrator.ci-explainability.v1`. |
+| `tool` | Tool metadata, including the emitting package version when available. |
+| `source` | Source artifact metadata, including the config path and check schema version when known. |
+| `status` | One of `pass`, `warn`, or `fail`, derived from check diagnostics. |
+| `summary` | Counts for decisions, diagnostics, severities, and project shape. |
+| `ci_decision` | CI outcome, blocking flag, fail-on threshold, and human-readable reason. |
+| `decisions` | Normalized policy decision trace items. |
+| `failure_explainability` | Reviewer-focused failure explanations for non-passing decisions. |
+
+Each `decisions` item MUST include `rule_id`, `outcome`, `scope`, `reason`, `location`,
+`input_facts`, and `ci_effect`. Failed decision items SHOULD include `severity`, `diagnostic`, and
+`suggested_fix` when the underlying check report provides them.
+
+This contract explains CI rule evaluation and PR failure causes. It MUST NOT be represented as an
+agent chain-of-thought trace, runtime execution graph, or general-purpose policy runtime.
+
 ## Registry Contract
 
 The registry contract is the organization inventory format. The registered schema kind is

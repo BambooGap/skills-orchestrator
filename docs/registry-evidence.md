@@ -129,6 +129,9 @@ Validate config and generated JSON artifacts independently in CI:
 ```bash
 skills-orchestrator schema validate --kind config --input config/skills.yaml
 skills-orchestrator schema validate --kind check --input evidence/check.json
+skills-orchestrator schema validate \
+  --kind ci-explainability \
+  --input evidence/ci-explainability.json
 skills-orchestrator schema validate --kind manifest --input evidence/instruction-manifest.json
 skills-orchestrator schema validate --kind policy-opa-input --input evidence/policy-opa-input.json
 skills-orchestrator schema validate --kind doctor --input evidence/doctor.json
@@ -182,6 +185,7 @@ The bundle writes:
 
 - `check.json`
 - `check.sarif`
+- `ci-explainability.json`
 - `instruction-manifest.json`
 - `policy-opa-input.json`
 - `policy-proof.rego`

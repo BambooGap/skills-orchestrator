@@ -76,8 +76,12 @@ def test_run_conformance_core_report_validates(tmp_path):
 
     assert payload["status"] == "pass"
     assert payload["summary"]["failed"] == 0
-    assert payload["summary"]["total"] == 12
+    assert payload["summary"]["total"] == 14
     assert any(step["id"] == "policy-trace" for step in payload["steps"])
+    assert any(step["id"] == "ci-explainability" for step in payload["steps"])
+    negative = next(step for step in payload["steps"] if step["id"] == "negative-conformance-suite")
+    assert negative["status"] == "pass"
+    assert negative["metadata"]["passed"] == negative["metadata"]["total"]
     assert any(step["id"] == "evidence-ledger" for step in payload["steps"])
     assert any(step["id"] == "registry-graph" for step in payload["steps"])
     assert validate_document("conformance", str(report_file)).valid is True

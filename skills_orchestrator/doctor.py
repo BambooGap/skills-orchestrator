@@ -316,6 +316,7 @@ def _enterprise_evidence(
 
     expected_schema = {
         "check_json": "check",
+        "ci_explainability": "ci-explainability",
         "instruction_manifest": "manifest",
         "opa_input": "policy-opa-input",
         "doctor": "doctor",

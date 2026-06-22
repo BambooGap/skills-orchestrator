@@ -3,6 +3,11 @@ from pathlib import Path
 
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.diagnostic import DiagnosticSeverity
+from skills_orchestrator.explainability import (
+    SCHEMA_VERSION as CI_EXPLAINABILITY_SCHEMA_VERSION,
+    build_ci_explainability,
+    format_ci_explainability_json,
+)
 from skills_orchestrator.formatters import format_diagnostics_json, format_diagnostics_sarif
 
 
@@ -118,3 +123,27 @@ def test_policy_trace_records_passed_policy_rules(tmp_path):
     assert not report.diagnostics
     assert {"SO008", "SO009", "SO010", "SO011", "SO012"}.issubset(passed)
     assert passed["SO008"]["scope"] == "policy_pack"
+
+
+def test_ci_explainability_summarizes_blocking_failures(tmp_path):
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    (skills_dir / "missing.md").write_text(
+        "---\nid: missing\nname: Missing\n---\n# Missing\n",
+        encoding="utf-8",
+    )
+    config = _write_config(tmp_path, skills_dir)
+    report = run_check(str(config))
+
+    payload = build_ci_explainability(report, config_path=str(config))
+    rendered = json.loads(format_ci_explainability_json(payload))
+
+    assert rendered["schema_version"] == CI_EXPLAINABILITY_SCHEMA_VERSION
+    assert rendered["status"] == "warn"
+    assert rendered["ci_decision"]["outcome"] == "warn"
+    assert rendered["ci_decision"]["blocking"] is False
+    assert rendered["summary"]["failed"] >= 1
+    assert rendered["decisions"][0]["rule_id"] == "SO001"
+    assert rendered["failure_explainability"][0]["rule_id"] == "SO001"
+    assert rendered["failure_explainability"][0]["severity"] == "warning"
+    assert rendered["failure_explainability"][0]["location"]["file"].endswith("missing.md")

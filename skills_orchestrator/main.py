@@ -1091,6 +1091,94 @@ def conformance_run(
         raise SystemExit(1)
 
 
+# ──────────────────────── Explainability 子命令 ────────────────────────
+
+
+@cli.group()
+def explainability():
+    """导出 CI-level policy decision explainability"""
+    pass
+
+
+@explainability.command("build")
+@click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
+@click.option("--check-json", default=None, help="复用已有 check --format json 输出")
+@click.option("--zone", "-z", default=None, help="指定 zone id")
+@click.option("--check-lock", default=None, help="检查指定 skills.lock.json 是否过期")
+@click.option(
+    "--max-skill-bytes",
+    default=20000,
+    show_default=True,
+    type=int,
+    help="SO005 oversized-skill 阈值",
+)
+@click.option(
+    "--policy-pack",
+    "policy_packs",
+    multiple=True,
+    default=(),
+    help="启用治理规则包；可重复传入。",
+)
+@click.option(
+    "--fail-on",
+    type=click.Choice(["error", "warning", "never"]),
+    default="error",
+    show_default=True,
+    help="解释 CI 是否阻塞时使用的严重级别。",
+)
+@click.option("--output", "-o", default=None, help="写入 ci-explainability.json；默认 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+def explainability_build(
+    config: str,
+    check_json: str | None,
+    zone: str | None,
+    check_lock: str | None,
+    max_skill_bytes: int,
+    policy_packs: tuple[str, ...],
+    fail_on: str,
+    output: str | None,
+    force: bool,
+):
+    """生成机器可读的 CI 失败原因与 policy decision trace。"""
+    from skills_orchestrator.explainability import (
+        build_ci_explainability,
+        build_ci_explainability_from_check_payload,
+        format_ci_explainability_json,
+    )
+
+    try:
+        if check_json:
+            check_payload = json.loads(Path(check_json).read_text(encoding="utf-8"))
+            payload = build_ci_explainability_from_check_payload(
+                check_payload,
+                config_path=config,
+                fail_on=fail_on,
+            )
+        else:
+            report = run_check(
+                config,
+                zone_id=zone,
+                check_lock=check_lock,
+                max_skill_bytes=max_skill_bytes,
+                policy_packs=policy_packs,
+            )
+            payload = build_ci_explainability(report, config_path=config, fail_on=fail_on)
+        rendered = format_ci_explainability_json(payload)
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"CI explainability written: {output_path}"))
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 # ──────────────────────── Evidence 子命令 ────────────────────────
 
 

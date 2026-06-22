@@ -10,6 +10,10 @@ from skills_orchestrator.conformance import run_conformance
 from skills_orchestrator.compiler import Parser, Resolver
 from skills_orchestrator.compiler.instruction_manifest import build_instruction_manifest
 from skills_orchestrator.evidence import export_evidence_bundle
+from skills_orchestrator.explainability import (
+    build_ci_explainability,
+    format_ci_explainability_json,
+)
 from skills_orchestrator.formatters import format_diagnostics_json
 from skills_orchestrator.formatters.manifest import format_instruction_manifest_json
 from skills_orchestrator.main import cli
@@ -81,6 +85,7 @@ def test_schema_resources_are_packaged_and_loadable():
     assert {
         "adapter-inspect",
         "check",
+        "ci-explainability",
         "config",
         "conformance",
         "doctor",
@@ -108,6 +113,7 @@ def test_schema_resources_are_packaged_and_loadable():
     [
         ("config", "config/skills.yaml"),
         ("check", "check.json"),
+        ("ci-explainability", "ci-explainability.json"),
         ("conformance", "conformance.json"),
         ("doctor", "doctor.json"),
         ("evidence", "evidence/evidence-manifest.json"),
@@ -338,6 +344,12 @@ def _write_artifacts(config, root):
     resolved = Resolver(cfg).resolve()
     check_report = run_check(str(config), policy_packs=["builtin/team-standard"])
     (root / "check.json").write_text(format_diagnostics_json(check_report), encoding="utf-8")
+    (root / "ci-explainability.json").write_text(
+        format_ci_explainability_json(
+            build_ci_explainability(check_report, config_path=str(config))
+        ),
+        encoding="utf-8",
+    )
     conformance = run_conformance(str(config), project_root=str(root))
     (root / "conformance.json").write_text(
         json.dumps(conformance, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

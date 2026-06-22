@@ -12,6 +12,10 @@ from skills_orchestrator.checker import run_check
 from skills_orchestrator.compiler import Parser, Resolver
 from skills_orchestrator.compiler.instruction_manifest import build_instruction_manifest
 from skills_orchestrator.doctor import run_doctor
+from skills_orchestrator.explainability import (
+    build_ci_explainability,
+    format_ci_explainability_json,
+)
 from skills_orchestrator.formatters import format_diagnostics_json, format_diagnostics_sarif
 from skills_orchestrator.formatters.manifest import format_instruction_manifest_json
 from skills_orchestrator.org_registry import build_registry
@@ -65,6 +69,12 @@ def export_evidence_bundle(
     files = {
         "check_json": _write(output / "check.json", format_diagnostics_json(check_report)),
         "check_sarif": _write(output / "check.sarif", format_diagnostics_sarif(check_report)),
+        "ci_explainability": _write(
+            output / "ci-explainability.json",
+            format_ci_explainability_json(
+                build_ci_explainability(check_report, config_path=config_path)
+            ),
+        ),
         "instruction_manifest": _write(
             output / "instruction-manifest.json", format_instruction_manifest_json(manifest)
         ),

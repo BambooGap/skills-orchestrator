@@ -98,6 +98,9 @@ outputs:
   policy-trace-file:
     description: Absolute path to extracted policy trace JSON.
     value: ${{ steps.check.outputs.policy_trace_file }}
+  ci-explainability-file:
+    description: Absolute path to CI explainability JSON.
+    value: ${{ steps.check.outputs.ci_explainability_file }}
   registry-diff-file:
     description: Absolute path to the generated registry diff Markdown file.
     value: ${{ steps.registry_diff.outputs.markdown_file }}
@@ -173,6 +176,7 @@ runs:
         mkdir -p "$artifact_root"
         check_json_path="$artifact_root/check.json"
         policy_trace_path="$artifact_root/policy-trace.json"
+        ci_explainability_path="$artifact_root/ci-explainability.json"
 
         set +e
         skills-orchestrator check "${base_args[@]}" --fail-on never --format json > "$check_json_path"
@@ -180,11 +184,19 @@ runs:
         set -e
         if [ "$json_status" -eq 0 ]; then
           python -c 'import json,sys; data=json.load(open(sys.argv[1], encoding="utf-8")); json.dump({"schema_version":"skills-orchestrator.policy-trace.v1","policy_trace":data.get("policy_trace",[])}, open(sys.argv[2],"w",encoding="utf-8"), ensure_ascii=False, indent=2); open(sys.argv[2],"a",encoding="utf-8").write("\n")' "$check_json_path" "$policy_trace_path"
+          skills-orchestrator explainability build \
+            --check-json "$check_json_path" \
+            --config "$CONFIG" \
+            --fail-on "$FAIL_ON" \
+            --output "$ci_explainability_path" \
+            --force
         else
           printf '{"schema_version":"skills-orchestrator.policy-trace.v1","policy_trace":[]}\n' > "$policy_trace_path"
+          printf '{"schema_version":"skills-orchestrator.ci-explainability.v1","generated_at":"","tool":{"name":"skills-orchestrator","version":""},"source":{"kind":"check","config":""},"status":"fail","summary":{"total_decisions":0,"passed":0,"failed":0,"skipped":0,"diagnostics":0,"errors":1,"warnings":0,"infos":0},"ci_decision":{"outcome":"fail","blocking":true,"fail_on":"error","reason":"check JSON generation failed"},"decisions":[],"failure_explainability":[]}\n' > "$ci_explainability_path"
         fi
         echo "check_json_file=$check_json_path" >> "$GITHUB_OUTPUT"
         echo "policy_trace_file=$policy_trace_path" >> "$GITHUB_OUTPUT"
+        echo "ci_explainability_file=$ci_explainability_path" >> "$GITHUB_OUTPUT"
 
         if [ "$UPLOAD_SARIF" = "true" ]; then
           case "$SARIF_FILE" in

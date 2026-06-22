@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-06-23
+
+### Added
+- Added a stable `ci-explainability` schema and `skills-orchestrator explainability build`
+  command for CI-level decision explainability derived from check output.
+- Added `ci-explainability.json` to evidence bundles and GitHub Action outputs so PR and CI
+  workflows can consume failure reasons without parsing raw check reports.
+- Added a negative conformance suite covering missing governance metadata, external skill
+  provenance/license failures, and duplicate skill ids.
+
+### Changed
+- Reviewer summaries now include CI explainability details and a dedicated failure explanation
+  table when SkillOps checks produce findings.
+- Core conformance now validates 14 steps, adding CI explainability and negative conformance
+  coverage to the existing contract checks.
+
 ## [4.0.1] - 2026-06-23
 
 ### Fixed
