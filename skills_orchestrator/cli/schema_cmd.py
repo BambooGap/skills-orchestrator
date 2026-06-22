@@ -35,22 +35,17 @@ def schema_list(output_format: str) -> None:
     if output_format == "json":
         payload = {
             "schema_version": "skills-orchestrator.schema-catalog.v1",
-            "schemas": [
-                {
-                    "kind": descriptor.kind,
-                    "title": descriptor.title,
-                    "description": descriptor.description,
-                    "file": descriptor.filename,
-                }
-                for descriptor in descriptors
-            ],
+            "schemas": [descriptor.to_catalog_entry() for descriptor in descriptors],
         }
         click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
         return
 
     click.echo("Available schemas:")
     for descriptor in descriptors:
-        click.echo(f"  {descriptor.kind}: {descriptor.title} ({descriptor.filename})")
+        click.echo(
+            f"  {descriptor.kind}: {descriptor.title} "
+            f"[{descriptor.stability}] ({descriptor.filename})"
+        )
 
 
 @schema.command("validate")

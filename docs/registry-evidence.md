@@ -1,6 +1,6 @@
 # Registry And Evidence
 
-`v3.4.x` hardens the open-source evidence layer for SkillOps teams:
+`v3.9.x` hardens the open-source evidence layer for SkillOps teams:
 
 - `doctor`: local readiness score and actionable findings.
 - `registry build`: organization-level skill inventory from one or more configs.
@@ -8,6 +8,7 @@
 - `registry diff`: PR/release review between two registry snapshots, including Markdown output.
 - `evidence export`: release evidence bundle with artifact hashes and bundle hash ledger.
 - `schema validate`: machine-checkable JSON Schema contracts for generated files.
+- `schema list --format json`: machine-checkable catalog of stable and preview contract surfaces.
 - `integrations list`: adjacent ecosystem catalog for agent runtimes, memory layers, and visualization tools.
 - `adapters inspect`: detected AGENTS.md, Claude Skills, MCP, and Agents SDK surfaces.
 - `supply-chain sbom`: Python package SBOM for the software distribution surface.
@@ -136,11 +137,15 @@ skills-orchestrator schema validate --kind registry-diff --input evidence/regist
 skills-orchestrator schema validate --kind adapter-inspect --input evidence/adapter-inspect.json
 skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbom.cdx.json
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
+skills-orchestrator schema list --format json > evidence/schema-catalog.json
+skills-orchestrator schema validate --kind schema-catalog --input evidence/schema-catalog.json
 ```
 
 SARIF and CycloneDX keep using their upstream schemas; Skills Orchestrator only owns its native
-config and artifact contracts. The commercial handoff schemas are additive contracts for future
-GitHub App, hosted registry, and enterprise dashboard consumers:
+config and artifact contracts. The schema catalog declares each native contract's `contract_id`,
+`stability`, `since`, and intended consumers so platform teams can audit compatibility without
+scraping docs. The commercial handoff schemas are additive preview contracts for future GitHub App,
+hosted registry, and enterprise dashboard consumers:
 
 ```bash
 skills-orchestrator schema validate \

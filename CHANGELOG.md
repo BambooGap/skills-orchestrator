@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-06-22
+
+### Added
+- Added `schema-catalog.schema.json` so `schema list --format json` is itself a
+  machine-validated SkillOps contract.
+- Added contract catalog metadata for every registered schema: `contract_id`, `stability`,
+  `since`, and intended `consumers`.
+
+### Changed
+- Expanded schema catalog text/JSON output to distinguish stable contracts from preview
+  commercial handoff contracts before the 4.0 line.
+- Updated current install, Action, container, and pilot workflow examples to `v3.9.0`.
+
 ## [3.8.0] - 2026-06-22
 
 ### Added

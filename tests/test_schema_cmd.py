@@ -15,7 +15,11 @@ from skills_orchestrator.formatters.manifest import format_instruction_manifest_
 from skills_orchestrator.main import cli
 from skills_orchestrator.org_registry import build_registry, build_registry_graph, diff_registries
 from skills_orchestrator.policy import build_opa_input
-from skills_orchestrator.schema_validation import list_schema_descriptors, load_schema
+from skills_orchestrator.schema_validation import (
+    list_schema_descriptors,
+    load_schema,
+    validate_document,
+)
 from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
 
 
@@ -91,6 +95,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "registry",
         "registry-diff",
         "registry-graph",
+        "schema-catalog",
         "supply-chain-sbom",
     }.issubset(kinds)
     for kind in kinds:
@@ -216,7 +221,7 @@ def test_schema_validate_config_matches_parser_compatibility(tmp_path, config_te
     assert result.exit_code == 0
 
 
-def test_schema_list_json():
+def test_schema_list_json(tmp_path):
     runner = CliRunner()
 
     result = runner.invoke(cli, ["schema", "list", "--format", "json"])
@@ -224,7 +229,14 @@ def test_schema_list_json():
     assert result.exit_code == 0
     payload = json.loads(result.output)
     assert payload["schema_version"] == "skills-orchestrator.schema-catalog.v1"
-    assert "config" in {schema["kind"] for schema in payload["schemas"]}
+    schemas = {schema["kind"]: schema for schema in payload["schemas"]}
+    assert "config" in schemas
+    assert schemas["config"]["stability"] == "stable"
+    assert schemas["config"]["contract_id"] == "skills-orchestrator.config.v1"
+    assert schemas["enterprise-dashboard-rollup"]["stability"] == "preview"
+    catalog_file = tmp_path / "schema-catalog.json"
+    catalog_file.write_text(result.output, encoding="utf-8")
+    assert validate_document("schema-catalog", str(catalog_file)).valid is True
 
 
 def test_hosted_registry_ingest_rejects_unsafe_artifact_paths(tmp_path):
