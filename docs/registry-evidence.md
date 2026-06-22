@@ -136,7 +136,7 @@ skills-orchestrator schema validate --kind registry --input evidence/skill-regis
 skills-orchestrator schema validate --kind registry-graph --input evidence/registry-graph.json
 skills-orchestrator schema validate --kind registry-diff --input evidence/registry-diff.json
 skills-orchestrator schema validate --kind adapter-inspect --input evidence/adapter-inspect.json
-skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbom.cdx.json
+skills-orchestrator schema validate --kind supply-chain-sbom --input evidence/package-sbom.cdx.json
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 skills-orchestrator schema list --format json > evidence/schema-catalog.json
 skills-orchestrator schema validate --kind schema-catalog --input evidence/schema-catalog.json
