@@ -1151,6 +1151,76 @@ def evidence_export(
         raise SystemExit(1)
 
 
+# ──────────────────────── Reviewer 子命令 ────────────────────────
+
+
+@cli.group()
+def reviewer():
+    """生成 PR reviewer 可读的 SkillOps 汇总"""
+    pass
+
+
+@reviewer.command("summary")
+@click.option("--check-json", default=None, help="check --format json 输出路径")
+@click.option("--registry-diff-json", default=None, help="registry diff --format json 输出路径")
+@click.option("--registry-diff-markdown", default=None, help="registry diff Markdown 输出路径")
+@click.option("--registry-graph", default=None, help="registry graph JSON 输出路径")
+@click.option("--evidence-manifest", default=None, help="evidence-manifest.json 输出路径")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["markdown", "json"]),
+    default="markdown",
+    show_default=True,
+    help="输出格式",
+)
+@click.option("--output", "-o", default=None, help="写入 reviewer summary 文件；默认 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+def reviewer_summary(
+    check_json: str | None,
+    registry_diff_json: str | None,
+    registry_diff_markdown: str | None,
+    registry_graph: str | None,
+    evidence_manifest: str | None,
+    output_format: str,
+    output: str | None,
+    force: bool,
+):
+    """汇总 check、policy trace、registry graph 和 evidence ledger。"""
+    from skills_orchestrator.reviewer import (
+        build_reviewer_summary,
+        format_reviewer_summary_json,
+        render_reviewer_summary_markdown,
+    )
+
+    try:
+        summary = build_reviewer_summary(
+            check_json=check_json,
+            registry_diff_json=registry_diff_json,
+            registry_diff_markdown=registry_diff_markdown,
+            registry_graph=registry_graph,
+            evidence_manifest=evidence_manifest,
+        )
+        rendered = (
+            format_reviewer_summary_json(summary)
+            if output_format == "json"
+            else render_reviewer_summary_markdown(summary)
+        )
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"Reviewer summary written: {output_path}"))
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 # ──────────────────────── Usage 子命令 ────────────────────────
 
 

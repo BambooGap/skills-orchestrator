@@ -62,14 +62,55 @@ inputs:
     description: "Update an idempotent pull request comment with the registry diff. Requires pull-requests: write."
     default: "false"
     required: false
+  reviewer-summary:
+    description: "Generate a reviewer-facing SkillOps summary from check, registry, graph, and evidence artifacts."
+    default: "false"
+    required: false
+  reviewer-summary-file:
+    description: Relative output filename for the reviewer summary Markdown artifact.
+    default: skillops-review-summary.md
+    required: false
+  export-evidence:
+    description: "Export a full evidence bundle artifact. reviewer-summary=true also exports evidence."
+    default: "false"
+    required: false
+  evidence-dir:
+    description: Relative output directory name for the evidence bundle under the runner temp directory.
+    default: evidence
+    required: false
+  registry-graph-file:
+    description: Relative output filename for the registry graph JSON artifact.
+    default: registry-graph.json
+    required: false
 
 outputs:
+  check-json-file:
+    description: Absolute path to check --format json output.
+    value: ${{ steps.check.outputs.check_json_file }}
+  policy-trace-file:
+    description: Absolute path to extracted policy trace JSON.
+    value: ${{ steps.check.outputs.policy_trace_file }}
   registry-diff-file:
     description: Absolute path to the generated registry diff Markdown file.
     value: ${{ steps.registry_diff.outputs.markdown_file }}
+  registry-diff-json-file:
+    description: Absolute path to the generated registry diff JSON file.
+    value: ${{ steps.registry_diff.outputs.json_file }}
   registry-comment-body:
     description: Absolute path to the generated PR comment body Markdown file.
-    value: ${{ steps.registry_diff.outputs.comment_body }}
+    value: ${{ steps.reviewer_summary.outputs.comment_body || steps.registry_diff.outputs.comment_body }}
+  registry-graph-file:
+    description: Absolute path to the generated registry graph JSON file.
+    value: ${{ steps.registry_graph.outputs.graph_file }}
+  evidence-manifest-file:
+    description: Absolute path to the generated evidence manifest.
+    value: ${{ steps.evidence.outputs.evidence_manifest }}
+  evidence-bundle-hash:
+    description: SHA-256 bundle hash from evidence-manifest.json.
+    value: ${{ steps.evidence.outputs.bundle_hash }}
+  reviewer-summary-file:
+    description: Absolute path to the generated reviewer summary Markdown file.
+    value: ${{ steps.reviewer_summary.outputs.summary_file }}
 
 runs:
   using: composite
@@ -96,23 +137,43 @@ runs:
       run: |
         set -euo pipefail
 
-        args=(
+        base_args=(
           --config "$CONFIG"
-          --fail-on "$FAIL_ON"
           --max-skill-bytes "$MAX_SKILL_BYTES"
         )
 
         if [ -n "$ZONE" ]; then
-          args+=(--zone "$ZONE")
+          base_args+=(--zone "$ZONE")
         fi
 
         if [ -n "$CHECK_LOCK" ]; then
-          args+=(--check-lock "$CHECK_LOCK")
+          base_args+=(--check-lock "$CHECK_LOCK")
         fi
 
         if [ -n "$POLICY_PACK" ]; then
-          args+=(--policy-pack "$POLICY_PACK")
+          while IFS= read -r pack; do
+            if [ -n "$pack" ]; then
+              base_args+=(--policy-pack "$pack")
+            fi
+          done <<< "$POLICY_PACK"
         fi
+
+        artifact_root="${RUNNER_TEMP:-.}/skills-orchestrator/check"
+        mkdir -p "$artifact_root"
+        check_json_path="$artifact_root/check.json"
+        policy_trace_path="$artifact_root/policy-trace.json"
+
+        set +e
+        skills-orchestrator check "${base_args[@]}" --fail-on never --format json > "$check_json_path"
+        json_status=$?
+        set -e
+        if [ "$json_status" -eq 0 ]; then
+          python -c 'import json,sys; data=json.load(open(sys.argv[1], encoding="utf-8")); json.dump({"schema_version":"skills-orchestrator.policy-trace.v1","policy_trace":data.get("policy_trace",[])}, open(sys.argv[2],"w",encoding="utf-8"), ensure_ascii=False, indent=2); open(sys.argv[2],"a",encoding="utf-8").write("\n")' "$check_json_path" "$policy_trace_path"
+        else
+          printf '{"schema_version":"skills-orchestrator.policy-trace.v1","policy_trace":[]}\n' > "$policy_trace_path"
+        fi
+        echo "check_json_file=$check_json_path" >> "$GITHUB_OUTPUT"
+        echo "policy_trace_file=$policy_trace_path" >> "$GITHUB_OUTPUT"
 
         if [ "$UPLOAD_SARIF" = "true" ]; then
           case "$SARIF_FILE" in
@@ -127,14 +188,17 @@ runs:
           mkdir -p "$(dirname "$sarif_path")"
 
           set +e
-          skills-orchestrator check "${args[@]}" --format sarif > "$sarif_path"
+          skills-orchestrator check "${base_args[@]}" --fail-on "$FAIL_ON" --format sarif > "$sarif_path"
           status=$?
           set -e
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           echo "sarif_file=$sarif_path" >> "$GITHUB_OUTPUT"
         else
-          skills-orchestrator check "${args[@]}" --format "$FORMAT"
-          echo "exit_code=0" >> "$GITHUB_OUTPUT"
+          set +e
+          skills-orchestrator check "${base_args[@]}" --fail-on "$FAIL_ON" --format "$FORMAT"
+          status=$?
+          set -e
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Upload SARIF
@@ -142,11 +206,6 @@ runs:
       uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
       with:
         sarif_file: ${{ steps.check.outputs.sarif_file }}
-
-    - name: Fail after SARIF upload
-      if: ${{ inputs.upload-sarif == 'true' && steps.check.outputs.exit_code != '0' }}
-      shell: bash
-      run: exit "${{ steps.check.outputs.exit_code }}"
 
     - name: Build registry diff
       id: registry_diff
@@ -170,6 +229,7 @@ runs:
         base_tree="$registry_root/base-tree"
         base_registry="$registry_root/base-registry.json"
         head_registry="$registry_root/head-registry.json"
+        json_file="$registry_root/registry-diff.json"
         markdown_file="$registry_root/$REGISTRY_DIFF_FILE"
         comment_body="$registry_root/registry-diff-comment.md"
 
@@ -209,6 +269,10 @@ runs:
         )
         skills-orchestrator registry build "${build_args[@]}" --output "$head_registry"
         skills-orchestrator registry diff "$base_registry" "$head_registry" \
+          --format json \
+          --output "$json_file" \
+          --force
+        skills-orchestrator registry diff "$base_registry" "$head_registry" \
           --format markdown \
           --output "$markdown_file" \
           --force
@@ -216,8 +280,138 @@ runs:
           --output "$comment_body" \
           --force
 
+        echo "json_file=$json_file" >> "$GITHUB_OUTPUT"
         echo "markdown_file=$markdown_file" >> "$GITHUB_OUTPUT"
         echo "comment_body=$comment_body" >> "$GITHUB_OUTPUT"
+
+    - name: Build registry graph
+      id: registry_graph
+      if: ${{ inputs.reviewer-summary == 'true' }}
+      shell: bash
+      env:
+        REGISTRY_CONFIG_GLOB: ${{ inputs.registry-config-glob }}
+        REGISTRY_GRAPH_FILE: ${{ inputs.registry-graph-file }}
+      run: |
+        set -euo pipefail
+
+        case "$REGISTRY_GRAPH_FILE" in
+          ""|/*|*..*|*$'\n'*|*$'\r'*)
+            echo "Invalid registry-graph-file input: must be a relative path without '..' or newlines" >&2
+            exit 2
+            ;;
+        esac
+
+        graph_root="${RUNNER_TEMP:-.}/skills-orchestrator/registry-graph"
+        graph_file="$graph_root/$REGISTRY_GRAPH_FILE"
+        mkdir -p "$(dirname "$graph_file")"
+
+        build_args=()
+        while IFS= read -r pattern; do
+          if [ -n "$pattern" ]; then
+            build_args+=(--config-glob "$pattern")
+          fi
+        done <<< "$REGISTRY_CONFIG_GLOB"
+        if [ "${#build_args[@]}" -eq 0 ]; then
+          echo "registry-config-glob must contain at least one path or glob" >&2
+          exit 2
+        fi
+
+        skills-orchestrator registry graph "${build_args[@]}" --output "$graph_file"
+        echo "graph_file=$graph_file" >> "$GITHUB_OUTPUT"
+
+    - name: Export evidence bundle
+      id: evidence
+      if: ${{ inputs.reviewer-summary == 'true' || inputs.export-evidence == 'true' }}
+      shell: bash
+      env:
+        CONFIG: ${{ inputs.config }}
+        ZONE: ${{ inputs.zone }}
+        CHECK_LOCK: ${{ inputs.check-lock }}
+        POLICY_PACK: ${{ inputs.policy-pack }}
+        EVIDENCE_DIR: ${{ inputs.evidence-dir }}
+      run: |
+        set -euo pipefail
+
+        case "$EVIDENCE_DIR" in
+          ""|/*|*..*|*$'\n'*|*$'\r'*)
+            echo "Invalid evidence-dir input: must be a relative path without '..' or newlines" >&2
+            exit 2
+            ;;
+        esac
+
+        evidence_root="${RUNNER_TEMP:-.}/skills-orchestrator"
+        evidence_dir="$evidence_root/$EVIDENCE_DIR"
+        args=(--config "$CONFIG" --out "$evidence_dir")
+        if [ -n "$ZONE" ]; then
+          args+=(--zone "$ZONE")
+        fi
+        if [ -n "$CHECK_LOCK" ]; then
+          args+=(--check-lock "$CHECK_LOCK")
+        fi
+        if [ -n "$POLICY_PACK" ]; then
+          while IFS= read -r pack; do
+            if [ -n "$pack" ]; then
+              args+=(--policy-pack "$pack")
+            fi
+          done <<< "$POLICY_PACK"
+        fi
+
+        skills-orchestrator evidence export "${args[@]}"
+        manifest="$evidence_dir/evidence-manifest.json"
+        bundle_hash="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["ledger"]["bundle_hash"])' "$manifest")"
+        echo "evidence_manifest=$manifest" >> "$GITHUB_OUTPUT"
+        echo "bundle_hash=$bundle_hash" >> "$GITHUB_OUTPUT"
+
+    - name: Build reviewer summary
+      id: reviewer_summary
+      if: ${{ inputs.reviewer-summary == 'true' }}
+      shell: bash
+      env:
+        REVIEWER_SUMMARY_FILE: ${{ inputs.reviewer-summary-file }}
+        CHECK_JSON: ${{ steps.check.outputs.check_json_file }}
+        REGISTRY_DIFF_JSON: ${{ steps.registry_diff.outputs.json_file }}
+        REGISTRY_DIFF_MARKDOWN: ${{ steps.registry_diff.outputs.markdown_file }}
+        REGISTRY_GRAPH: ${{ steps.registry_graph.outputs.graph_file }}
+        EVIDENCE_MANIFEST: ${{ steps.evidence.outputs.evidence_manifest }}
+        COMMENT_REGISTRY_DIFF: ${{ inputs.comment-registry-diff }}
+      run: |
+        set -euo pipefail
+
+        case "$REVIEWER_SUMMARY_FILE" in
+          ""|/*|*..*|*$'\n'*|*$'\r'*)
+            echo "Invalid reviewer-summary-file input: must be a relative path without '..' or newlines" >&2
+            exit 2
+            ;;
+        esac
+
+        summary_root="${RUNNER_TEMP:-.}/skills-orchestrator/reviewer"
+        summary_file="$summary_root/$REVIEWER_SUMMARY_FILE"
+        mkdir -p "$(dirname "$summary_file")"
+
+        args=(reviewer summary --check-json "$CHECK_JSON" --output "$summary_file" --force)
+        if [ -n "$REGISTRY_DIFF_JSON" ] && [ -f "$REGISTRY_DIFF_JSON" ]; then
+          args+=(--registry-diff-json "$REGISTRY_DIFF_JSON")
+        fi
+        if [ -n "$REGISTRY_DIFF_MARKDOWN" ] && [ -f "$REGISTRY_DIFF_MARKDOWN" ]; then
+          args+=(--registry-diff-markdown "$REGISTRY_DIFF_MARKDOWN")
+        fi
+        if [ -n "$REGISTRY_GRAPH" ] && [ -f "$REGISTRY_GRAPH" ]; then
+          args+=(--registry-graph "$REGISTRY_GRAPH")
+        fi
+        if [ -n "$EVIDENCE_MANIFEST" ] && [ -f "$EVIDENCE_MANIFEST" ]; then
+          args+=(--evidence-manifest "$EVIDENCE_MANIFEST")
+        fi
+
+        skills-orchestrator "${args[@]}"
+        echo "summary_file=$summary_file" >> "$GITHUB_OUTPUT"
+
+        if [ "$COMMENT_REGISTRY_DIFF" = "true" ]; then
+          comment_body="$summary_root/reviewer-comment.md"
+          skills-orchestrator registry comment-body "$summary_file" \
+            --output "$comment_body" \
+            --force
+          echo "comment_body=$comment_body" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Comment registry diff
       if: ${{ inputs.comment-registry-diff == 'true' && github.event_name == 'pull_request' }}
@@ -225,7 +419,12 @@ runs:
       env:
         GITHUB_TOKEN: ${{ github.token }}
         GITHUB_API_URL: ${{ github.api_url }}
-        COMMENT_BODY: ${{ steps.registry_diff.outputs.comment_body }}
+        COMMENT_BODY: ${{ steps.reviewer_summary.outputs.comment_body || steps.registry_diff.outputs.comment_body }}
       run: |
         set -euo pipefail
         python -m skills_orchestrator.integrations.github_pr_comment --body-file "$COMMENT_BODY"
+
+    - name: Fail after SkillOps artifacts
+      if: ${{ steps.check.outputs.exit_code != '0' }}
+      shell: bash
+      run: exit "${{ steps.check.outputs.exit_code }}"

@@ -1,10 +1,14 @@
 import hashlib
 import json
+from pathlib import Path
 
+import yaml
 from click.testing import CliRunner
 
+from skills_orchestrator.checker import run_check
 from skills_orchestrator.doctor import run_doctor
 from skills_orchestrator.evidence import export_evidence_bundle
+from skills_orchestrator.formatters import format_diagnostics_json
 from skills_orchestrator.github_pr import (
     REGISTRY_DIFF_COMMENT_MARKER,
     format_registry_diff_comment,
@@ -15,6 +19,11 @@ from skills_orchestrator.org_registry import (
     build_registry,
     diff_registries,
     format_registry_diff_markdown,
+)
+from skills_orchestrator.reviewer import (
+    SCHEMA_VERSION as REVIEWER_SUMMARY_SCHEMA_VERSION,
+    build_reviewer_summary,
+    render_reviewer_summary_markdown,
 )
 from skills_orchestrator.schema_validation import validate_document
 from skills_orchestrator.supply_chain import build_python_package_sbom
@@ -98,6 +107,103 @@ def test_registry_graph_exports_governance_relationships(tmp_path):
     assert graph["summary"]["nodes"] == len(graph["nodes"])
     assert graph["summary"]["edges"] == len(graph["edges"])
     assert validate_document("registry-graph", str(graph_file)).valid is True
+
+
+def test_reviewer_summary_collects_trace_graph_diff_and_evidence(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    check_file = tmp_path / "check.json"
+    check_file.write_text(
+        format_diagnostics_json(run_check(str(config), policy_packs=["builtin/team-standard"])),
+        encoding="utf-8",
+    )
+    base = build_registry([str(config)])
+    skill_file = tmp_path / "repo" / "skills" / "skill.md"
+    skill_file.write_text(
+        skill_file.read_text(encoding="utf-8").replace("version: 1.0.0\n", "version: 1.0.1\n"),
+        encoding="utf-8",
+    )
+    head = build_registry([str(config)])
+    diff = diff_registries(base, head)
+    diff_json = tmp_path / "registry-diff.json"
+    diff_json.write_text(json.dumps(diff), encoding="utf-8")
+    diff_markdown = tmp_path / "registry-diff.md"
+    diff_markdown.write_text(format_registry_diff_markdown(diff), encoding="utf-8")
+    graph = build_registry_graph(head)
+    graph_file = tmp_path / "registry-graph.json"
+    graph_file.write_text(json.dumps(graph), encoding="utf-8")
+    evidence_dir = tmp_path / "repo" / "evidence"
+    bundle = export_evidence_bundle(
+        str(config),
+        str(evidence_dir),
+        policy_packs=["builtin/team-standard"],
+    )
+
+    summary = build_reviewer_summary(
+        check_json=check_file,
+        registry_diff_json=diff_json,
+        registry_diff_markdown=diff_markdown,
+        registry_graph=graph_file,
+        evidence_manifest=evidence_dir / "evidence-manifest.json",
+    )
+    markdown = render_reviewer_summary_markdown(summary)
+
+    assert summary["schema_version"] == REVIEWER_SUMMARY_SCHEMA_VERSION
+    assert summary["check"]["status"] == "pass"
+    assert summary["policy_trace"]["total"] > 0
+    assert summary["registry_diff"]["status"] == "review"
+    assert summary["registry_diff"]["changed"] == 1
+    assert summary["registry_graph"]["nodes"] == graph["summary"]["nodes"]
+    assert summary["evidence"]["bundle_hash"] == bundle["ledger"]["bundle_hash"]
+    assert "# SkillOps Reviewer Summary" in markdown
+    assert "team-skill" in markdown
+    assert "Bundle hash" in markdown
+
+
+def test_reviewer_summary_cli_outputs_json(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    check_file = tmp_path / "check.json"
+    check_file.write_text(
+        format_diagnostics_json(run_check(str(config), policy_packs=["builtin/team-standard"])),
+        encoding="utf-8",
+    )
+    evidence_dir = tmp_path / "repo" / "evidence"
+    export_evidence_bundle(str(config), str(evidence_dir), policy_packs=["builtin/team-standard"])
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "reviewer",
+            "summary",
+            "--check-json",
+            str(check_file),
+            "--evidence-manifest",
+            str(evidence_dir / "evidence-manifest.json"),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == REVIEWER_SUMMARY_SCHEMA_VERSION
+    assert payload["evidence"]["status"] == "pass"
+
+
+def test_action_exposes_reviewer_pack_outputs_and_delays_failure():
+    action = yaml.safe_load(Path("action.yml").read_text(encoding="utf-8"))
+
+    assert "reviewer-summary" in action["inputs"]
+    assert "check-json-file" in action["outputs"]
+    assert "policy-trace-file" in action["outputs"]
+    assert "registry-graph-file" in action["outputs"]
+    assert "evidence-bundle-hash" in action["outputs"]
+    assert "reviewer-summary-file" in action["outputs"]
+
+    step_names = [step["name"] for step in action["runs"]["steps"]]
+    assert step_names.index("Build reviewer summary") < step_names.index(
+        "Fail after SkillOps artifacts"
+    )
 
 
 def test_registry_explicit_skill_paths_resolve_from_project_root(tmp_path):
