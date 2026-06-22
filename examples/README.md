@@ -59,6 +59,20 @@
 
 ---
 
+### [Pilot Repository Examples](pilot-repos/)
+
+**适合**：平台团队、开源采用评估、真实仓库试点
+
+**展示内容**：
+- Healthchecks / Umami / Woodpecker 风格仓库的最小接入包
+- `config/skills.yaml`、sample skills、GitHub Action workflow 和 evidence 目录
+- advisory → warning gate → engineering gate 的迁移路径
+- 如何把 SkillOps 放进真实 PR review，而不是只跑 demo
+
+**时间**：15 分钟
+
+---
+
 ## 🚀 快速开始
 
 1. 选择一个适合你的示例
@@ -79,8 +93,9 @@
 
 **外部评估者**：
 1. [SkillOps Demo Repo](demo-repo/) → 直接跑 conformance 和证据导出
-2. [SPEC.md](../SPEC.md) → 检查合同字段
-3. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
+2. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
+3. [SPEC.md](../SPEC.md) → 检查合同字段
+4. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 
 ## 💡 提示
 

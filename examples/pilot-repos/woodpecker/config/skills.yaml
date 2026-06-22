@@ -1,0 +1,17 @@
+version: "1.0"
+
+skill_dirs:
+  - ../skills
+
+zones:
+  - id: default
+    name: Woodpecker pilot
+    load_policy: free
+    priority: 0
+    rules: []
+
+combos:
+  - id: ci-safety-review
+    name: CI safety review
+    description: Review pipeline, runner, and plugin changes before rollout.
+    skills: [pipeline-change-review, runner-security-review, plugin-release-gate]

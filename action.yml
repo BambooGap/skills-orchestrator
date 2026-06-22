@@ -1,5 +1,5 @@
 name: Skills Orchestrator Check
-description: Enforce SkillOps policy packs, emit SARIF/JSON evidence, and upload AI-agent skill findings to GitHub Code Scanning.
+description: Enforce SkillOps policy packs, SARIF, registry diff, and evidence checks for AI-agent skills.
 
 branding:
   icon: shield

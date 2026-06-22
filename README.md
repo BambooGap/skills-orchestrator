@@ -4,7 +4,7 @@
 [![CI](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v3.2.1-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v3.3.0-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -13,10 +13,11 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v3.2.1` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v3.2.1` release tag | `BambooGap/skills-orchestrator@v3.2.1` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.2.1` |
+| OSS CLI | `v3.3.0` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v3.3.0` release tag | `BambooGap/skills-orchestrator@v3.3.0` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.3.0` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
+| Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
 
 ```bash
@@ -64,7 +65,7 @@ Use `python3.12`, `pipx --python python3.12`, `uvx --python 3.12`, or the Docker
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.2.1 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.3.0 --version
 ```
 
 ### 初始化项目
@@ -129,7 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.2.1
+      - uses: BambooGap/skills-orchestrator@v3.3.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -142,12 +143,27 @@ jobs:
 
 Docker 运行方式见 [Docker Usage](docs/docker.md)。
 
+### 15 分钟试点接入
+
+如果你是在一个真实仓库里第一次试点，优先走 adoption playbook，而不是直接启用最严格的
+enterprise gate：
+
+1. 用 `init --template team-standard` 生成 starter kit。
+2. 先跑 `doctor --profile adopter` 和 `conformance run --profile core`。
+3. 在 GitHub Action 里先用 advisory 或 warning gate。
+4. 等 registry diff 和 SARIF 对 reviewer 有用后，再升级到 `builtin/engineering-grade`。
+
+完整步骤见 [Adoption Playbook](docs/adoption-playbook.md)。可复制的真实仓库形态示例见
+[Pilot Repository Examples](examples/pilot-repos/README.md)。
+
 ### 规范、一致性与可运行 Demo
 
 - [SkillOps Contract v1](SPEC.md): skill metadata、registry、diff、evidence、adapter 的机器可测试规范。
 - [Conformance](CONFORMANCE.md): 如何用 `conformance run`、`schema validate`、`check`、`registry`、`evidence` 验证兼容性。
 - [Security Policy](SECURITY.md): MCP trust model、HMAC audit、import provenance 和漏洞报告流程。
 - [Demo Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
+- [Adoption Playbook](docs/adoption-playbook.md): 从 advisory CI 到 blocking gate 的试点路径。
+- [Pilot Repository Examples](examples/pilot-repos/README.md): Healthchecks、Umami、Woodpecker 风格仓库的最小接入包。
 
 ### SkillOps Readiness 与证据包
 

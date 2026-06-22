@@ -1,0 +1,17 @@
+version: "1.0"
+
+skill_dirs:
+  - ../skills
+
+zones:
+  - id: default
+    name: Healthchecks pilot
+    load_policy: free
+    priority: 0
+    rules: []
+
+combos:
+  - id: incident-release-review
+    name: Incident-safe release review
+    description: Review alerting changes with runbook and release checks.
+    skills: [incident-runbook-review, alert-delivery-release]
