@@ -150,6 +150,12 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         title="Registry Diff",
         description="Diff between two registry JSON exports.",
     ),
+    "registry-graph": SchemaDescriptor(
+        kind="registry-graph",
+        filename="registry-graph.schema.json",
+        title="Registry Graph",
+        description="Graph export for skill ownership, source, combo, and conflict relationships.",
+    ),
     "supply-chain-sbom": SchemaDescriptor(
         kind="supply-chain-sbom",
         filename="supply-chain-sbom.schema.json",

@@ -13,7 +13,7 @@ from skills_orchestrator.evidence import export_evidence_bundle
 from skills_orchestrator.formatters import format_diagnostics_json
 from skills_orchestrator.formatters.manifest import format_instruction_manifest_json
 from skills_orchestrator.main import cli
-from skills_orchestrator.org_registry import build_registry, diff_registries
+from skills_orchestrator.org_registry import build_registry, build_registry_graph, diff_registries
 from skills_orchestrator.policy import build_opa_input
 from skills_orchestrator.schema_validation import list_schema_descriptors, load_schema
 from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
@@ -89,6 +89,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "policy-pack",
         "registry",
         "registry-diff",
+        "registry-graph",
         "supply-chain-sbom",
     }.issubset(kinds)
     for kind in kinds:
@@ -108,6 +109,7 @@ def test_schema_resources_are_packaged_and_loadable():
         ("policy-pack", "policy-pack.yaml"),
         ("registry", "skill-registry.json"),
         ("registry-diff", "registry-diff.json"),
+        ("registry-graph", "registry-graph.json"),
         ("adapter-inspect", "adapter-inspect.json"),
         ("supply-chain-sbom", "package-sbom.cdx.json"),
         (
@@ -327,6 +329,10 @@ rules:
     registry_diff = diff_registries(registry, registry)
     (root / "registry-diff.json").write_text(
         json.dumps(registry_diff, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    registry_graph = build_registry_graph(registry)
+    (root / "registry-graph.json").write_text(
+        json.dumps(registry_graph, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     export_evidence_bundle(
         str(config),

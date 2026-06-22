@@ -24,6 +24,10 @@
     "diagnostics": {
       "type": "array",
       "items": { "$ref": "#/$defs/diagnostic" }
+    },
+    "policy_trace": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/policy_trace_item" }
     }
   },
   "additionalProperties": true,
@@ -40,6 +44,26 @@
         "skill_id": { "type": ["string", "null"] },
         "category": { "type": ["string", "null"] },
         "suggested_fix": { "type": ["string", "null"] },
+        "metadata": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "policy_trace_item": {
+      "type": "object",
+      "required": ["rule_id", "outcome", "scope", "reason", "input_facts"],
+      "properties": {
+        "rule_id": { "type": "string", "minLength": 1 },
+        "outcome": { "enum": ["pass", "fail", "skip"] },
+        "scope": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string" },
+        "input_facts": { "type": "object" },
+        "file": { "type": ["string", "null"] },
+        "line": { "type": ["integer", "null"], "minimum": 1 },
+        "skill_id": { "type": ["string", "null"] },
+        "policy_pack": { "type": ["string", "null"] },
+        "diagnostic": {
+          "anyOf": [{ "$ref": "#/$defs/diagnostic" }, { "type": "null" }]
+        },
         "metadata": { "type": "object" }
       },
       "additionalProperties": true

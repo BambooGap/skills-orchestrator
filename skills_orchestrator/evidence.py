@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,7 @@ def export_evidence_bundle(
     policy_packs: tuple[str, ...] | list[str] = (),
     check_lock: str | None = None,
     agents_md: str = "AGENTS.md",
+    previous_bundle_hash: str | None = None,
 ) -> dict[str, Any]:
     """Write a local evidence bundle and return its manifest."""
     output = Path(out_dir)
@@ -91,7 +93,13 @@ def export_evidence_bundle(
         "zone": zone_id or manifest["zone"]["id"],
         "policy_packs": list(policy_packs),
         "files": files,
+        "ledger": {
+            "artifact_hashes": _artifact_hashes(files),
+            "previous_bundle_hash": previous_bundle_hash or "",
+            "bundle_hash": "",
+        },
     }
+    bundle["ledger"]["bundle_hash"] = _bundle_hash(bundle)
     _write(
         output / "evidence-manifest.json",
         json.dumps(bundle, ensure_ascii=False, indent=2) + "\n",
@@ -111,3 +119,22 @@ def _workspace_root(config_path: str) -> Path:
 def _write(path: Path, content: str) -> str:
     path.write_text(content, encoding="utf-8")
     return str(path)
+
+
+def _artifact_hashes(files: dict[str, str]) -> dict[str, dict[str, str]]:
+    hashes: dict[str, dict[str, str]] = {}
+    for label, path_text in sorted(files.items()):
+        path = Path(path_text)
+        hashes[label] = {
+            "alg": "SHA-256",
+            "value": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "path": path_text,
+        }
+    return hashes
+
+
+def _bundle_hash(bundle: dict[str, Any]) -> str:
+    payload = json.loads(json.dumps(bundle, ensure_ascii=False, sort_keys=True))
+    payload["ledger"]["bundle_hash"] = ""
+    canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

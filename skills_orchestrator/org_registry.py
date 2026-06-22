@@ -55,6 +55,147 @@ def write_registry(registry: dict, output_path: str) -> None:
     )
 
 
+def build_registry_graph(registry: dict[str, Any]) -> dict[str, Any]:
+    """Build a structural governance graph from a registry payload."""
+    nodes: dict[str, dict[str, Any]] = {}
+    edges: dict[str, dict[str, Any]] = {}
+
+    def add_node(node_id: str, node_type: str, label: str, **properties: Any) -> None:
+        existing = nodes.get(node_id)
+        payload = {
+            "id": node_id,
+            "type": node_type,
+            "label": label,
+            "properties": {
+                key: value for key, value in properties.items() if value not in (None, "")
+            },
+        }
+        if existing:
+            existing["properties"].update(payload["properties"])
+            return
+        nodes[node_id] = payload
+
+    def add_edge(
+        source: str, target: str, edge_type: str, label: str | None = None, **properties: Any
+    ) -> None:
+        edge_id = f"{source}::{edge_type}::{target}"
+        edges[edge_id] = {
+            "id": edge_id,
+            "source": source,
+            "target": target,
+            "type": edge_type,
+            "label": label or edge_type,
+            "properties": {
+                key: value for key, value in properties.items() if value not in (None, "")
+            },
+        }
+
+    for config in registry.get("configs", []):
+        config_path = config.get("path", "")
+        config_id = _graph_id("config", config_path)
+        add_node(
+            config_id,
+            "config",
+            config_path or "config",
+            path=config_path,
+            base_dir=config.get("base_dir", ""),
+            summary=config.get("summary", {}),
+        )
+
+        zone = config.get("zone") or {}
+        zone_id = _graph_id("zone", f"{config_path}:{zone.get('id', 'default')}")
+        add_node(
+            zone_id,
+            "zone",
+            zone.get("id", "default"),
+            name=zone.get("name", ""),
+            load_policy=zone.get("load_policy", ""),
+            priority=zone.get("priority", 0),
+        )
+        add_edge(config_id, zone_id, "config_uses_zone")
+
+        skills_by_id: dict[str, str] = {}
+        for skill in config.get("skills", []):
+            registry_key = skill.get("registry_key") or _registry_key(
+                config_path, skill.get("id", ""), skill.get("path", "")
+            )
+            skill_id = _graph_id("skill", registry_key)
+            skills_by_id[skill.get("id", "")] = skill_id
+            governance = skill.get("governance") or {}
+            add_node(
+                skill_id,
+                "skill",
+                skill.get("id", ""),
+                registry_key=registry_key,
+                name=skill.get("name", ""),
+                status=skill.get("status", ""),
+                path=skill.get("path", ""),
+                tags=skill.get("tags", []),
+                priority=skill.get("priority"),
+                content_hash=skill.get("content_hash", {}),
+                missing_file=skill.get("missing_file", False),
+                lifecycle=governance.get("lifecycle", ""),
+                license=governance.get("license", ""),
+            )
+            add_edge(config_id, skill_id, "config_contains_skill", status=skill.get("status", ""))
+
+            owner = governance.get("owner") or "(unowned)"
+            owner_id = _graph_id("owner", owner)
+            add_node(owner_id, "owner", owner, skill_count=registry.get("owners", {}).get(owner))
+            add_edge(skill_id, owner_id, "skill_owned_by")
+
+            source = governance.get("source", "")
+            if source:
+                source_id = _graph_id("source", source)
+                add_node(source_id, "source", source)
+                add_edge(skill_id, source_id, "skill_sourced_from")
+
+        for combo in config.get("combos", []):
+            combo_id = _graph_id("combo", f"{config_path}:{combo.get('id', '')}")
+            add_node(
+                combo_id,
+                "combo",
+                combo.get("id", ""),
+                name=combo.get("name", ""),
+                description=combo.get("description", ""),
+            )
+            add_edge(config_id, combo_id, "config_defines_combo")
+            for member in combo.get("members", []):
+                member_node = skills_by_id.get(member)
+                if member_node:
+                    add_edge(member_node, combo_id, "skill_member_of_combo")
+
+        for skill in config.get("skills", []):
+            source_node = skills_by_id.get(skill.get("id", ""))
+            if not source_node:
+                continue
+            for conflict_id in skill.get("conflict_with", []):
+                target_node = skills_by_id.get(conflict_id)
+                if target_node:
+                    add_edge(source_node, target_node, "skill_conflicts_with")
+
+    return {
+        "schema_version": "skills-orchestrator.registry-graph.v1",
+        "generated_at": _now_iso(),
+        "tool": registry.get("tool", {"name": "skills-orchestrator", "version": __version__}),
+        "summary": {
+            "nodes": len(nodes),
+            "edges": len(edges),
+            "configs": registry.get("summary", {}).get("configs", 0),
+            "skill_refs": registry.get("summary", {}).get("skill_refs", 0),
+        },
+        "nodes": [nodes[key] for key in sorted(nodes)],
+        "edges": [edges[key] for key in sorted(edges)],
+    }
+
+
+def write_registry_graph(graph: dict[str, Any], output_path: str) -> None:
+    """Write registry graph JSON to a file."""
+    Path(output_path).write_text(
+        json.dumps(graph, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def diff_registries(base: dict, head: dict) -> dict[str, Any]:
     """Diff two registry payloads by registry entity and content/governance facts."""
     base_skills = _skills_by_key(base)
@@ -159,6 +300,7 @@ def _config_entry(config_path: str, *, zone_id: str | None) -> dict[str, Any]:
         "base_dir": cfg.base_dir,
         "zone": manifest["zone"],
         "summary": manifest["summary"],
+        "combos": manifest["combos"],
         "skills": [
             {
                 "registry_key": _registry_key(config_display_path, skill["id"], skill["path"]),
@@ -166,6 +308,13 @@ def _config_entry(config_path: str, *, zone_id: str | None) -> dict[str, Any]:
                 "name": skill["name"],
                 "status": skill["status"],
                 "path": skill["path"],
+                "source_load_policy": skill["source_load_policy"],
+                "effective_load_policy": skill["effective_load_policy"],
+                "priority": skill["priority"],
+                "zones": skill["zones"],
+                "tags": skill["tags"],
+                "base": skill["base"],
+                "conflict_with": skill["conflict_with"],
                 "governance": skill["governance"],
                 "content_hash": skill["content_hash"],
                 "missing_file": skill["missing_file"],
@@ -192,6 +341,10 @@ def _skills_by_key(registry: dict) -> dict[str, dict[str, Any]]:
 
 def _registry_key(config_path: str, skill_id: str, skill_path: str) -> str:
     return f"{config_path}::{skill_path}::{skill_id}"
+
+
+def _graph_id(node_type: str, value: str) -> str:
+    return f"{node_type}:{value}"
 
 
 def _duplicate_id_changes(base: dict, head: dict) -> list[dict[str, Any]]:

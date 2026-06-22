@@ -1,11 +1,12 @@
 # Registry And Evidence
 
-`v3.0.x` hardens the open-source evidence layer for SkillOps teams:
+`v3.4.x` hardens the open-source evidence layer for SkillOps teams:
 
 - `doctor`: local readiness score and actionable findings.
 - `registry build`: organization-level skill inventory from one or more configs.
+- `registry graph`: derived ownership, source, combo, and conflict graph from registry facts.
 - `registry diff`: PR/release review between two registry snapshots, including Markdown output.
-- `evidence export`: release evidence bundle for CI artifacts, audits, or customer handoff.
+- `evidence export`: release evidence bundle with artifact hashes and bundle hash ledger.
 - `schema validate`: machine-checkable JSON Schema contracts for generated files.
 - `integrations list`: adjacent ecosystem catalog for agent runtimes, memory layers, and visualization tools.
 - `adapters inspect`: detected AGENTS.md, Claude Skills, MCP, and Agents SDK surfaces.
@@ -104,6 +105,21 @@ skills-orchestrator registry comment-body registry-diff.md \
 
 The registry is file-based by design. It does not run agents, index code, or require a database.
 
+Export a structural graph when platform teams need ownership and dependency review:
+
+```bash
+skills-orchestrator registry graph \
+  --config-glob "config/skills.yaml" \
+  --output registry-graph.json
+
+skills-orchestrator schema validate \
+  --kind registry-graph \
+  --input registry-graph.json
+```
+
+The graph is derived from registry JSON facts. It is not a hosted graph database or runtime
+orchestration graph.
+
 ## Schema Validation
 
 Validate config and generated JSON artifacts independently in CI:
@@ -115,6 +131,7 @@ skills-orchestrator schema validate --kind manifest --input evidence/instruction
 skills-orchestrator schema validate --kind policy-opa-input --input evidence/policy-opa-input.json
 skills-orchestrator schema validate --kind doctor --input evidence/doctor.json
 skills-orchestrator schema validate --kind registry --input evidence/skill-registry.json
+skills-orchestrator schema validate --kind registry-graph --input evidence/registry-graph.json
 skills-orchestrator schema validate --kind registry-diff --input evidence/registry-diff.json
 skills-orchestrator schema validate --kind adapter-inspect --input evidence/adapter-inspect.json
 skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbom.cdx.json
@@ -160,6 +177,10 @@ The bundle writes:
 - `adapter-inspect.json`
 - `package-sbom.cdx.json`
 - `evidence-manifest.json`
+
+`evidence-manifest.json` includes a `ledger` object with `artifact_hashes`, `bundle_hash`, and
+`previous_bundle_hash`. These hashes are useful for release comparison and audit continuity. They
+are not a replacement for signed provenance or external attestation.
 
 Use the folder as a CI artifact or release attachment. It contains metadata and hashes, not raw
 runtime task text.

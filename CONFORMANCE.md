@@ -72,6 +72,10 @@ skills-orchestrator schema validate --kind check --input evidence/check.json
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 ```
 
+`evidence/check.json` MUST include `policy_trace` entries for CI rule evaluation. This is
+conformance evidence for deterministic policy checks, not proof of agent runtime behavior.
+`evidence/evidence-manifest.json` MUST include a ledger with artifact hashes and a bundle hash.
+
 SARIF should be uploaded to GitHub Code Scanning or an equivalent SARIF consumer when the CI system
 supports it.
 
@@ -87,6 +91,14 @@ skills-orchestrator registry build \
 skills-orchestrator schema validate \
   --kind registry \
   --input evidence/skill-registry.json
+
+skills-orchestrator registry graph \
+  --config-glob "config/skills.yaml" \
+  --output evidence/registry-graph.json
+
+skills-orchestrator schema validate \
+  --kind registry-graph \
+  --input evidence/registry-graph.json
 ```
 
 Pull request review SHOULD compare a base registry and head registry:

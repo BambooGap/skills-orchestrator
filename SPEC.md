@@ -10,10 +10,12 @@ Normative terms use RFC 2119 meanings: MUST, MUST NOT, SHOULD, MAY.
 
 ## Scope
 
-SkillOps Contract v1 covers five artifact families:
+SkillOps Contract v1 covers seven artifact families:
 
 - skill metadata in `skills.yaml` and skill frontmatter,
+- check reports with CI policy trace,
 - organization registry JSON,
+- registry graph JSON,
 - registry diff JSON and Markdown,
 - evidence bundle manifests,
 - adapter inspection reports.
@@ -117,6 +119,43 @@ skills-orchestrator schema validate \
 Resolvers MAY allow asymmetric `conflict_with` declarations. A one-way conflict remains valid, but
 conformance checks SHOULD treat it as weaker audit evidence than symmetric declarations.
 
+## Check Report And Policy Trace Contract
+
+The check report contract records machine-readable diagnostics and CI policy trace. The registered
+schema kind is `check`, backed by `check-report.schema.json`.
+
+```bash
+skills-orchestrator check --config config/skills.yaml --format json > check.json
+skills-orchestrator schema validate --kind check --input check.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `1.0`. |
+| `tool` | Tool metadata, including the emitting package version when available. |
+| `summary` | Diagnostic and project counts. |
+| `diagnostics` | Diagnostic findings keyed by rule id. |
+| `policy_trace` | Rule evaluation trace items. |
+
+Each `policy_trace` item MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `rule_id` | SkillOps diagnostic rule id or compatible rule identifier. |
+| `outcome` | One of `pass`, `fail`, or `skip`. |
+| `scope` | Evaluation scope such as `metadata`, `resolver`, `lock`, or `policy_pack`. |
+| `reason` | Human-readable reason for the outcome. |
+| `input_facts` | Machine-readable facts used by the check. |
+
+Failed trace items SHOULD embed the corresponding diagnostic in `diagnostic`. Policy-pack trace
+items SHOULD include `policy_pack`. This trace is a CI rule-evaluation trace; it MUST NOT be
+represented as an agent reasoning trace or runtime execution graph.
+
+`policy_trace` is additive in the v1 JSON Schema for backwards compatibility with older v3.x check
+reports. v3.4 and newer emitters MUST include it, and `conformance run` MUST fail when it is absent.
+
 ## Registry Contract
 
 The registry contract is the organization inventory format. The registered schema kind is
@@ -157,6 +196,39 @@ Every registry skill entry MUST include:
 | `governance` | Owner/source/version/lifecycle/approver metadata. |
 | `content_hash` | Hash information for drift review. |
 | `missing_file` | Boolean indicating whether the skill file was missing. |
+
+## Registry Graph Contract
+
+The registry graph contract is a derived structural view over the organization registry. The
+registered schema kind is `registry-graph`, backed by `registry-graph.schema.json`.
+
+```bash
+skills-orchestrator registry graph \
+  --config-glob "config/skills.yaml" \
+  --output registry-graph.json
+
+skills-orchestrator schema validate \
+  --kind registry-graph \
+  --input registry-graph.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `skills-orchestrator.registry-graph.v1`. |
+| `tool` | Tool metadata. |
+| `summary` | Counts for nodes, edges, configs, and skill refs. |
+| `nodes` | Graph nodes. |
+| `edges` | Graph edges. |
+
+Node types currently include `config`, `zone`, `skill`, `owner`, `source`, and `combo`. Edge types
+currently include `config_uses_zone`, `config_contains_skill`, `skill_owned_by`,
+`skill_sourced_from`, `config_defines_combo`, `skill_member_of_combo`, and
+`skill_conflicts_with`.
+
+The registry graph is an artifact contract, not a database API. It SHOULD be regenerated from
+registry input and MAY be consumed by hosted registries, graph viewers, or platform review tools.
 
 ## Registry Diff Contract
 
@@ -216,9 +288,26 @@ The manifest MUST include:
 | `zone` | Effective zone id. |
 | `policy_packs` | Policy packs used when generating evidence. |
 | `files` | Object mapping evidence labels to generated paths. |
+| `ledger` | Hash ledger for evidence artifacts and bundle chaining. |
 
 An evidence bundle SHOULD include native JSON check output, SARIF, native instruction manifest, OPA
-input, Rego test fixture, doctor report, registry JSON, and the evidence manifest.
+input, Rego test fixture, doctor report, registry JSON, adapter inspection, package SBOM, and the
+evidence manifest.
+
+The `ledger` object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `artifact_hashes` | Object keyed by evidence label; each value records `alg`, `value`, and `path`. |
+| `bundle_hash` | SHA-256 hash over the evidence manifest payload with `bundle_hash` set to empty string. |
+| `previous_bundle_hash` | Previous bundle hash for simple hash-chain continuity, or empty string. |
+
+Ledger hashes are integrity evidence for generated artifacts. They do not imply cryptographic
+signing, attestation, or SLSA compliance by themselves.
+
+`ledger` is additive in the v1 JSON Schema for backwards compatibility with older v3.x evidence
+manifests. v3.4 and newer emitters MUST include it, and `conformance run` MUST fail when it is
+absent or incomplete.
 
 ## Adapter Inspection Contract
 
@@ -379,6 +468,7 @@ SkillOps Contract v1 does not define:
 
 - an agent runtime or workflow engine,
 - a hosted registry API,
+- cryptographic signing or provenance attestation,
 - a replacement for SARIF, CycloneDX, OPA, MCP, or AGENTS.md,
 - a public adopter list,
 - foundation governance or project maturity status.

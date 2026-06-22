@@ -4,7 +4,7 @@
 [![CI](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v3.3.1-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v3.4.0-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -13,9 +13,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v3.3.1` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v3.3.1` release tag | `BambooGap/skills-orchestrator@v3.3.1` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.3.1` |
+| OSS CLI | `v3.4.0` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v3.4.0` release tag | `BambooGap/skills-orchestrator@v3.4.0` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v3.4.0` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -34,13 +34,13 @@ skills-orchestrator check --config config/skills.yaml
 |------|--------------------------|----------|
 | Skill 越来越多 | 手动维护 AGENTS.md，容易遗漏或冲突 | `build` 一条命令自动生成 |
 | 不同项目用不同规范 | 到处复制粘贴，版本不同步 | Zone 机制，目录自动对应规范 |
-| CI 只能看退出码 | 终端输出无法被工具链消费 | `check --format json/sarif` 生成机器可读报告 |
+| CI 只能看退出码 | 终端输出无法被工具链消费 | `check --format json/sarif` 生成机器可读报告和 rule-level trace |
 | Instruction 没有清单 | 供应链工具看不到 agent 规则资产 | `manifest --format json/cyclonedx` 导出 instruction inventory |
 | Policy 团队无法审计 | Resolver 结果只在 CLI 里可见 | `policy export --format opa-input/rego-test` 导出 OPA/Rego proof |
 | 团队规则不可执行 | owner/source/version/license 只写在文档里 | `check --policy-pack builtin/team-standard` 强制团队治理元数据 |
 | 外部 Skill 来源不可信 | 只知道复制自 URL，不知道 commit、hash、抓取时间 | `import` 写入 provenance，`builtin/engineering-grade` 检查来源证据 |
-| 多仓 Skill 无法盘点 | 每个 repo 各查各的 | `registry build` / `registry diff` 导出组织级 skill registry |
-| 商用审计缺证据包 | 发布时到处找 CI、manifest、SARIF | `evidence export` 一次导出审计证据 |
+| 多仓 Skill 无法盘点 | 每个 repo 各查各的 | `registry build` / `registry diff` / `registry graph` 导出组织级 skill registry 和治理关系图 |
+| 商用审计缺证据包 | 发布时到处找 CI、manifest、SARIF | `evidence export` 一次导出审计证据和 hash ledger |
 | 上下文窗口有限 | 所有 Skill 全量注入，浪费 token | MCP Server 按需加载，500 个 Skill 和 5 个消耗相同 |
 | 两个 Skill 互相冲突 | 运行时才发现，模型行为不确定 | 编译时 `conflict_with` 强制报错 |
 | 多步骤工作流无保证 | AI 靠自觉推进，容易跳步或遗漏 | Pipeline 编排 + 质量门禁，每步必须产出 |
@@ -65,7 +65,7 @@ Use `python3.12`, `pipx --python python3.12`, `uvx --python 3.12`, or the Docker
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.3.1 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v3.4.0 --version
 ```
 
 ### 初始化项目
@@ -117,6 +117,9 @@ skills-orchestrator check --config config/skills.yaml --format sarif
 skills-orchestrator schema validate --kind check --input check.json
 ```
 
+JSON check output includes `policy_trace`: an explainable CI trace for rule evaluation. It traces
+SkillOps rules and policy packs, not agent reasoning or runtime model behavior.
+
 也可以直接在 GitHub Actions 中运行：
 
 ```yaml
@@ -130,7 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.3.1
+      - uses: BambooGap/skills-orchestrator@v3.4.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -184,6 +187,10 @@ skills-orchestrator registry build \
   --config-glob "config/skills.yaml" \
   --output skill-registry.json
 
+skills-orchestrator registry graph \
+  --config-glob "config/skills.yaml" \
+  --output registry-graph.json
+
 skills-orchestrator registry diff registry-before.json registry-after.json \
   --format markdown \
   --output registry-diff.md
@@ -194,6 +201,10 @@ skills-orchestrator registry comment-body registry-diff.md \
 skills-orchestrator schema validate \
   --kind registry \
   --input skill-registry.json
+
+skills-orchestrator schema validate \
+  --kind registry-graph \
+  --input registry-graph.json
 
 skills-orchestrator integrations list
 skills-orchestrator adapters inspect --format json
@@ -206,9 +217,11 @@ SkillOps CI workflow、lock 和 `AGENTS.md` 证据；`maintainer` profile 才额
 读取 evidence bundle 并验证核心 artifact schema，适合平台团队试点。`evidence export` 写出
 `check.json`、`check.sarif`、`instruction-manifest.json`、`policy-opa-input.json`、
 `policy-proof.rego`、`doctor.json`、`skill-registry.json`、`adapter-inspect.json` 和
-`package-sbom.cdx.json`，适合 CI artifact、审计归档或客户交付。
+`package-sbom.cdx.json`，并在 `evidence-manifest.json` 中记录 artifact SHA-256、
+`bundle_hash` 和可选 `previous_bundle_hash`，适合 CI artifact、审计归档或客户交付。
 `schema validate` 可单独验证 config、check、manifest、policy OPA input、doctor、
-registry、registry diff、adapter inspection、SBOM 和 commercial handoff 文件合同。
+registry、registry graph、registry diff、adapter inspection、SBOM 和 commercial handoff
+文件合同。
 `builtin/engineering-grade` 在 v3.2 起额外检查 `license`、外部 skill `provenance`
 和 review-window 元数据；外部导入应保留 observed `source_url`、`source_ref`、
 `source_commit`、`content_hash` 和 `fetched_at`，不要把未验证 frontmatter 当成可信来源。

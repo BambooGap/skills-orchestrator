@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.3.1
+      - uses: BambooGap/skills-orchestrator@v3.4.0
         with:
           config: config/skills.yaml
 ```
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.3.1
+      - uses: BambooGap/skills-orchestrator@v3.4.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v3.3.1
+      - uses: BambooGap/skills-orchestrator@v3.4.0
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -126,7 +126,7 @@ jobs:
 
 `action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
 repository can be used directly with a release tag, for example
-`BambooGap/skills-orchestrator@v3.3.1`, even before the Marketplace listing is public.
+`BambooGap/skills-orchestrator@v3.4.0`, even before the Marketplace listing is public.
 
 Recommended Marketplace positioning:
 

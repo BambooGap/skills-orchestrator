@@ -52,7 +52,10 @@ When a future contract version is introduced, the project should provide:
 
 ## Current Line
 
-`v3.1.x` keeps SkillOps Contract v1 stable and adds two additive surfaces:
+`v3.4.x` keeps SkillOps Contract v1 stable and adds additive traceability surfaces:
 
 - `skills-orchestrator.conformance.v1`
 - `skills-orchestrator.policy-pack.v1`
+- optional `policy_trace` in check reports, required for v3.4 conformance
+- optional `ledger` in evidence manifests, required for v3.4 conformance
+- `skills-orchestrator.registry-graph.v1`

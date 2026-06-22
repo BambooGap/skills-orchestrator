@@ -13,6 +13,7 @@ from skills_orchestrator import __version__
 from skills_orchestrator.adapters import inspect_adapters
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.evidence import export_evidence_bundle
+from skills_orchestrator.org_registry import build_registry_graph
 from skills_orchestrator.schema_validation import validate_document
 
 
@@ -74,6 +75,19 @@ def run_conformance(
             metadata={"summary": check_summary},
         )
     )
+    steps.append(
+        ConformanceStep(
+            id="policy-trace",
+            title="Policy trace contract",
+            status="pass" if check_report.policy_trace else "fail",
+            detail=(
+                f"{len(check_report.policy_trace)} trace entries"
+                if check_report.policy_trace
+                else "missing policy_trace entries"
+            ),
+            metadata={"trace_entries": len(check_report.policy_trace)},
+        )
+    )
 
     with TemporaryDirectory(prefix="skills-orchestrator-conformance-") as temp_dir:
         bundle = export_evidence_bundle(
@@ -92,6 +106,7 @@ def run_conformance(
                 artifact_label="evidence/evidence-manifest.json",
             )
         )
+        steps.append(_evidence_ledger_step(bundle))
         evidence_schemas = {
             "check_json": "check",
             "instruction_manifest": "manifest",
@@ -110,6 +125,25 @@ def run_conformance(
                     artifact_label=f"evidence/{Path(artifact).name}" if artifact else "",
                 )
             )
+
+        registry_artifact = bundle["files"].get("registry")
+        registry_graph_path = Path(temp_dir) / "registry-graph.json"
+        if registry_artifact:
+            registry_payload = json.loads(Path(registry_artifact).read_text(encoding="utf-8"))
+            registry_graph_path.write_text(
+                json.dumps(build_registry_graph(registry_payload), ensure_ascii=False, indent=2)
+                + "\n",
+                encoding="utf-8",
+            )
+        steps.append(
+            _schema_step(
+                "registry-graph",
+                "Registry graph contract",
+                "registry-graph",
+                registry_graph_path,
+                artifact_label="evidence/registry-graph.json",
+            )
+        )
 
         adapter_path = Path(temp_dir) / "adapter-inspect.json"
         adapter_path.write_text(
@@ -235,6 +269,50 @@ def conformance_should_fail(payload: dict[str, Any], fail_on: str) -> bool:
     if fail_on == "warning":
         return bool(summary["failed"] or summary["warnings"])
     return bool(summary["failed"])
+
+
+def _evidence_ledger_step(bundle: dict[str, Any]) -> ConformanceStep:
+    ledger = bundle.get("ledger") or {}
+    artifact_hashes = ledger.get("artifact_hashes") or {}
+    bundle_hash = str(ledger.get("bundle_hash", ""))
+    expected_labels = set(bundle.get("files", {}))
+    missing_labels = sorted(expected_labels - set(artifact_hashes))
+    invalid_hashes = [
+        label
+        for label, value in artifact_hashes.items()
+        if not isinstance(value, dict)
+        or value.get("alg") != "SHA-256"
+        or not _sha256_hex(str(value.get("value", "")))
+    ]
+    if not _sha256_hex(bundle_hash):
+        return ConformanceStep(
+            "evidence-ledger",
+            "Evidence ledger contract",
+            "fail",
+            detail="missing or invalid bundle_hash",
+        )
+    if missing_labels or invalid_hashes:
+        return ConformanceStep(
+            "evidence-ledger",
+            "Evidence ledger contract",
+            "fail",
+            detail="missing or invalid artifact hashes",
+            metadata={
+                "missing_labels": missing_labels,
+                "invalid_hashes": sorted(invalid_hashes),
+            },
+        )
+    return ConformanceStep(
+        "evidence-ledger",
+        "Evidence ledger contract",
+        "pass",
+        detail=f"{len(artifact_hashes)} artifact hashes",
+        metadata={"artifact_hashes": len(artifact_hashes)},
+    )
+
+
+def _sha256_hex(value: str) -> bool:
+    return len(value) == 64 and all(char in "0123456789abcdef" for char in value)
 
 
 def _now_iso() -> str:
