@@ -6,6 +6,11 @@ import yaml
 from click.testing import CliRunner
 
 from skills_orchestrator.checker import run_check
+from skills_orchestrator.dashboard import (
+    SCHEMA_VERSION as DASHBOARD_SNAPSHOT_SCHEMA_VERSION,
+    build_dashboard_snapshot,
+    format_dashboard_snapshot_json,
+)
 from skills_orchestrator.doctor import run_doctor
 from skills_orchestrator.evidence import export_evidence_bundle
 from skills_orchestrator.formatters import format_diagnostics_json
@@ -190,18 +195,85 @@ def test_reviewer_summary_cli_outputs_json(tmp_path):
     assert payload["evidence"]["status"] == "pass"
 
 
+def test_dashboard_snapshot_derives_platform_metrics_from_evidence(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    evidence_dir = tmp_path / "repo" / "evidence"
+    bundle = export_evidence_bundle(
+        str(config),
+        str(evidence_dir),
+        policy_packs=["builtin/team-standard"],
+    )
+    snapshot_file = tmp_path / "dashboard-snapshot.json"
+
+    snapshot = build_dashboard_snapshot(
+        evidence_dir,
+        repository="BambooGap/skills-orchestrator",
+        ref="refs/heads/main",
+        commit="abc123",
+        generated_at="2026-06-22T00:00:00Z",
+    )
+    snapshot_file.write_text(format_dashboard_snapshot_json(snapshot), encoding="utf-8")
+
+    assert snapshot["schema_version"] == DASHBOARD_SNAPSHOT_SCHEMA_VERSION
+    assert snapshot["repository"]["full_name"] == "BambooGap/skills-orchestrator"
+    assert snapshot["readiness"]["score"] > 0
+    assert snapshot["readiness"]["profile"] == "adopter"
+    assert snapshot["registry"]["skills"] == 1
+    assert snapshot["policy"]["errors"] == 0
+    assert snapshot["ledger"]["bundle_hash"] == bundle["ledger"]["bundle_hash"]
+    assert validate_document("enterprise-dashboard-snapshot", str(snapshot_file)).valid is True
+
+
+def test_dashboard_snapshot_cli_writes_schema_valid_json(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    evidence_dir = tmp_path / "repo" / "evidence"
+    export_evidence_bundle(str(config), str(evidence_dir), policy_packs=["builtin/team-standard"])
+    snapshot_file = tmp_path / "artifacts" / "dashboard-snapshot.json"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "dashboard",
+            "snapshot",
+            "--evidence-dir",
+            str(evidence_dir),
+            "--repository",
+            "example/repo",
+            "--ref",
+            "refs/pull/1/merge",
+            "--commit",
+            "abc123",
+            "--output",
+            str(snapshot_file),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(snapshot_file.read_text(encoding="utf-8"))
+    assert payload["repository"]["full_name"] == "example/repo"
+    assert payload["repository"]["ref"] == "refs/pull/1/merge"
+    assert payload["repository"]["commit"] == "abc123"
+    assert validate_document("enterprise-dashboard-snapshot", str(snapshot_file)).valid is True
+
+
 def test_action_exposes_reviewer_pack_outputs_and_delays_failure():
     action = yaml.safe_load(Path("action.yml").read_text(encoding="utf-8"))
 
     assert "reviewer-summary" in action["inputs"]
+    assert "dashboard-snapshot" in action["inputs"]
     assert "check-json-file" in action["outputs"]
     assert "policy-trace-file" in action["outputs"]
     assert "registry-graph-file" in action["outputs"]
     assert "evidence-bundle-hash" in action["outputs"]
     assert "reviewer-summary-file" in action["outputs"]
+    assert "dashboard-snapshot-file" in action["outputs"]
 
     step_names = [step["name"] for step in action["runs"]["steps"]]
     assert step_names.index("Build reviewer summary") < step_names.index(
+        "Fail after SkillOps artifacts"
+    )
+    assert step_names.index("Build dashboard snapshot") < step_names.index(
         "Fail after SkillOps artifacts"
     )
 

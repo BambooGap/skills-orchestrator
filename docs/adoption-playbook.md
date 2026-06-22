@@ -52,6 +52,10 @@ sources, lifecycle metadata, and review windows for each skill.
    skills-orchestrator evidence export \
      --config config/skills.yaml \
      --out evidence
+
+   skills-orchestrator dashboard snapshot \
+     --evidence-dir evidence \
+     --output evidence/dashboard-snapshot.json
    ```
 
 6. Add the GitHub Action in advisory mode:
@@ -76,12 +80,14 @@ sources, lifecycle metadata, and review windows for each skill.
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: BambooGap/skills-orchestrator@v3.5.0
+         - uses: BambooGap/skills-orchestrator@v3.6.0
            with:
              config: config/skills.yaml
              policy-pack: builtin/team-standard
              upload-sarif: true
              registry-diff: true
+             reviewer-summary: true
+             dashboard-snapshot: true
              comment-registry-diff: true
    ```
 
