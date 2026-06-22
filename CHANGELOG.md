@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-06-22
+
+### Added
+- Added `dashboard snapshot` to derive a schema-validated enterprise dashboard payload from an
+  existing evidence bundle without re-running policy decisions.
+- Added GitHub Action `dashboard-snapshot` inputs and output path so CI can publish dashboard-ready
+  JSON alongside check, reviewer summary, and evidence artifacts.
+
+### Changed
+- Expanded CI smoke coverage and docs to validate dashboard snapshots generated from demo evidence.
+
 ## [3.5.0] - 2026-06-22
 
 ### Added

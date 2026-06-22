@@ -30,6 +30,10 @@ mkdir -p evidence
 skills-orchestrator evidence export \
   --config config/skills.yaml \
   --out evidence
+
+skills-orchestrator dashboard snapshot \
+  --evidence-dir evidence \
+  --output evidence/dashboard-snapshot.json
 ```
 
 To test PR review output:

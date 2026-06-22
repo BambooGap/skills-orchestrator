@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.5.0
+      - uses: BambooGap/skills-orchestrator@v3.6.0
         with:
           config: config/skills.yaml
 ```
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.5.0
+      - uses: BambooGap/skills-orchestrator@v3.6.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v3.5.0
+      - uses: BambooGap/skills-orchestrator@v3.6.0
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -130,7 +130,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: skillops
-        uses: BambooGap/skills-orchestrator@v3.5.0
+        uses: BambooGap/skills-orchestrator@v3.6.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/engineering-grade
@@ -138,10 +138,34 @@ jobs:
           upload-sarif: true
           registry-diff: true
           reviewer-summary: true
+          dashboard-snapshot: true
           comment-registry-diff: true
 
       # Optional: upload the output paths above with your own artifact policy.
       # The composite action exposes paths via steps.skillops.outputs.*.
+```
+
+## Dashboard Snapshot
+
+`dashboard-snapshot: true` derives a schema-validated enterprise dashboard snapshot from the same
+evidence bundle used by reviewer summaries. It does not re-evaluate policy; the authoritative
+decision data remains in `check.json`, `doctor.json`, `skill-registry.json`, and
+`evidence-manifest.json`.
+
+```yaml
+- id: skillops
+  uses: BambooGap/skills-orchestrator@v3.6.0
+  with:
+    config: config/skills.yaml
+    policy-pack: builtin/engineering-grade
+    reviewer-summary: true
+    dashboard-snapshot: true
+
+- name: Upload SkillOps dashboard snapshot
+  uses: actions/upload-artifact@v4
+  with:
+    name: skillops-dashboard-snapshot
+    path: ${{ steps.skillops.outputs.dashboard-snapshot-file }}
 ```
 
 ## Hardened Pinning
@@ -174,7 +198,7 @@ jobs:
 
 `action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
 repository can be used directly with a release tag, for example
-`BambooGap/skills-orchestrator@v3.5.0`, even before the Marketplace listing is public.
+`BambooGap/skills-orchestrator@v3.6.0`, even before the Marketplace listing is public.
 
 Recommended Marketplace positioning:
 
@@ -212,6 +236,8 @@ Reference: [Publishing actions in GitHub Marketplace](https://docs.github.com/ac
 | `comment-registry-diff` | `false` | Update the pull request registry diff comment. Requires `pull-requests: write`. |
 | `reviewer-summary` | `false` | Generate reviewer-facing summary artifacts from check, registry, graph, and evidence outputs. |
 | `reviewer-summary-file` | `skillops-review-summary.md` | Relative filename for the generated reviewer summary Markdown artifact. |
+| `dashboard-snapshot` | `false` | Generate an enterprise dashboard snapshot JSON artifact from the evidence bundle. |
+| `dashboard-snapshot-file` | `dashboard-snapshot.json` | Relative filename for the generated dashboard snapshot JSON artifact. |
 | `export-evidence` | `false` | Export a full evidence bundle even when reviewer summary is disabled. |
 | `evidence-dir` | `evidence` | Relative evidence output directory under the runner temp directory. |
 | `registry-graph-file` | `registry-graph.json` | Relative filename for the generated registry graph JSON artifact. |
@@ -229,3 +255,4 @@ Reference: [Publishing actions in GitHub Marketplace](https://docs.github.com/ac
 | `evidence-manifest-file` | Absolute path to the generated evidence manifest. |
 | `evidence-bundle-hash` | SHA-256 bundle hash from `evidence-manifest.json`. |
 | `reviewer-summary-file` | Absolute path to the generated reviewer summary Markdown file. |
+| `dashboard-snapshot-file` | Absolute path to the generated enterprise dashboard snapshot JSON file. |

@@ -16,12 +16,27 @@ contradict CLI outputs.
 
 ## Snapshot Contract
 
+Generate a dashboard snapshot from an evidence bundle:
+
+```bash
+skills-orchestrator evidence export \
+  --config config/skills.yaml \
+  --out evidence
+
+skills-orchestrator dashboard snapshot \
+  --evidence-dir evidence \
+  --repository example-org/example-repo \
+  --ref refs/heads/main \
+  --commit "$(git rev-parse HEAD)" \
+  --output dashboard-snapshot.json
+```
+
 Validate a dashboard snapshot:
 
 ```bash
 skills-orchestrator schema validate \
   --kind enterprise-dashboard-snapshot \
-  --input examples/commercial-handoff/dashboard-snapshot.json
+  --input dashboard-snapshot.json
 ```
 
 The snapshot is intentionally derived. It is safe to cache and render because the authoritative data

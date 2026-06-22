@@ -1221,6 +1221,61 @@ def reviewer_summary(
         raise SystemExit(1)
 
 
+# ──────────────────────── Dashboard 子命令 ────────────────────────
+
+
+@cli.group()
+def dashboard():
+    """从 SkillOps evidence 生成平台 dashboard 数据"""
+    pass
+
+
+@dashboard.command("snapshot")
+@click.option("--evidence-dir", default="evidence", show_default=True, help="evidence bundle 目录")
+@click.option("--repository", default=None, help="仓库 full name；默认读取 GITHUB_REPOSITORY")
+@click.option("--ref", "ref_name", default=None, help="Git ref；默认读取 GITHUB_REF")
+@click.option("--commit", default=None, help="commit SHA；默认读取 GITHUB_SHA")
+@click.option("--output", "-o", default=None, help="写入 dashboard snapshot JSON；默认 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+def dashboard_snapshot(
+    evidence_dir: str,
+    repository: str | None,
+    ref_name: str | None,
+    commit: str | None,
+    output: str | None,
+    force: bool,
+):
+    """从 evidence-manifest.json 派生 enterprise dashboard snapshot。"""
+    from skills_orchestrator.dashboard import (
+        build_dashboard_snapshot,
+        format_dashboard_snapshot_json,
+    )
+
+    try:
+        rendered = format_dashboard_snapshot_json(
+            build_dashboard_snapshot(
+                evidence_dir,
+                repository=repository,
+                ref=ref_name,
+                commit=commit,
+            )
+        )
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"Dashboard snapshot written: {output_path}"))
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 # ──────────────────────── Usage 子命令 ────────────────────────
 
 

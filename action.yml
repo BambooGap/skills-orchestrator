@@ -70,8 +70,16 @@ inputs:
     description: Relative output filename for the reviewer summary Markdown artifact.
     default: skillops-review-summary.md
     required: false
+  dashboard-snapshot:
+    description: "Generate an enterprise dashboard snapshot JSON artifact from the evidence bundle."
+    default: "false"
+    required: false
+  dashboard-snapshot-file:
+    description: Relative output filename for the enterprise dashboard snapshot JSON artifact.
+    default: dashboard-snapshot.json
+    required: false
   export-evidence:
-    description: "Export a full evidence bundle artifact. reviewer-summary=true also exports evidence."
+    description: "Export a full evidence bundle artifact. reviewer-summary=true and dashboard-snapshot=true also export evidence."
     default: "false"
     required: false
   evidence-dir:
@@ -111,6 +119,9 @@ outputs:
   reviewer-summary-file:
     description: Absolute path to the generated reviewer summary Markdown file.
     value: ${{ steps.reviewer_summary.outputs.summary_file }}
+  dashboard-snapshot-file:
+    description: Absolute path to the generated enterprise dashboard snapshot JSON file.
+    value: ${{ steps.dashboard_snapshot.outputs.snapshot_file }}
 
 runs:
   using: composite
@@ -321,7 +332,7 @@ runs:
 
     - name: Export evidence bundle
       id: evidence
-      if: ${{ inputs.reviewer-summary == 'true' || inputs.export-evidence == 'true' }}
+      if: ${{ inputs.reviewer-summary == 'true' || inputs.dashboard-snapshot == 'true' || inputs.export-evidence == 'true' }}
       shell: bash
       env:
         CONFIG: ${{ inputs.config }}
@@ -361,6 +372,37 @@ runs:
         bundle_hash="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["ledger"]["bundle_hash"])' "$manifest")"
         echo "evidence_manifest=$manifest" >> "$GITHUB_OUTPUT"
         echo "bundle_hash=$bundle_hash" >> "$GITHUB_OUTPUT"
+
+    - name: Build dashboard snapshot
+      id: dashboard_snapshot
+      if: ${{ inputs.dashboard-snapshot == 'true' }}
+      shell: bash
+      env:
+        DASHBOARD_SNAPSHOT_FILE: ${{ inputs.dashboard-snapshot-file }}
+        EVIDENCE_MANIFEST: ${{ steps.evidence.outputs.evidence_manifest }}
+      run: |
+        set -euo pipefail
+
+        case "$DASHBOARD_SNAPSHOT_FILE" in
+          ""|/*|*..*|*$'\n'*|*$'\r'*)
+            echo "Invalid dashboard-snapshot-file input: must be a relative path without '..' or newlines" >&2
+            exit 2
+            ;;
+        esac
+
+        dashboard_root="${RUNNER_TEMP:-.}/skills-orchestrator/dashboard"
+        snapshot_file="$dashboard_root/$DASHBOARD_SNAPSHOT_FILE"
+        mkdir -p "$(dirname "$snapshot_file")"
+        evidence_dir="$(dirname "$EVIDENCE_MANIFEST")"
+
+        skills-orchestrator dashboard snapshot \
+          --evidence-dir "$evidence_dir" \
+          --repository "${GITHUB_REPOSITORY:-}" \
+          --ref "${GITHUB_REF:-}" \
+          --commit "${GITHUB_SHA:-}" \
+          --output "$snapshot_file" \
+          --force
+        echo "snapshot_file=$snapshot_file" >> "$GITHUB_OUTPUT"
 
     - name: Build reviewer summary
       id: reviewer_summary
