@@ -107,6 +107,16 @@ def run_conformance(
             )
         )
         steps.append(_evidence_ledger_step(bundle))
+        ci_explainability_artifact = bundle["files"].get("ci_explainability")
+        steps.append(
+            _schema_step(
+                "ci-explainability",
+                "CI explainability contract",
+                "ci-explainability",
+                ci_explainability_artifact or "",
+                artifact_label="evidence/ci-explainability.json",
+            )
+        )
         evidence_schemas = {
             "check_json": "check",
             "instruction_manifest": "manifest",
@@ -159,6 +169,8 @@ def run_conformance(
                 artifact_label="adapter-inspect.json",
             )
         )
+
+    steps.append(_negative_conformance_step())
 
     if profile == "enterprise":
         enterprise_blockers = [
@@ -269,6 +281,99 @@ def conformance_should_fail(payload: dict[str, Any], fail_on: str) -> bool:
     if fail_on == "warning":
         return bool(summary["failed"] or summary["warnings"])
     return bool(summary["failed"])
+
+
+def _negative_conformance_step() -> ConformanceStep:
+    """Verify representative invalid projects trigger the expected checks."""
+    cases = [
+        {
+            "id": "missing-governance-metadata",
+            "policy_packs": ["builtin/team-standard"],
+            "skills": [
+                "---\n"
+                "id: missing-governance\n"
+                "name: Missing Governance\n"
+                "summary: Missing owner/source/version\n"
+                "---\n"
+                "# Missing Governance\n"
+            ],
+            "expected_rules": {"SO008", "SO009", "SO010"},
+        },
+        {
+            "id": "external-provenance-and-license",
+            "policy_packs": ["builtin/engineering-grade"],
+            "skills": [
+                "---\n"
+                "id: external-skill\n"
+                "name: External Skill\n"
+                "summary: External skill without provenance\n"
+                "owner: platform-team\n"
+                "source: https://example.com/skills/external-skill.md\n"
+                "version: 1.0.0\n"
+                "lifecycle: active\n"
+                "license: GPL-3.0\n"
+                "---\n"
+                "# External Skill\n"
+            ],
+            "expected_rules": {"SO014", "SO019", "SO020"},
+        },
+        {
+            "id": "duplicate-skill-id",
+            "policy_packs": [],
+            "skills": [
+                "---\nid: duplicate\nname: Duplicate A\nsummary: A\n---\n# A\n",
+                "---\nid: duplicate\nname: Duplicate B\nsummary: B\n---\n# B\n",
+            ],
+            "expected_rules": {"SO002"},
+        },
+    ]
+    results = [_run_negative_case(case) for case in cases]
+    passed = sum(1 for result in results if result["status"] == "pass")
+    total = len(results)
+    status = "pass" if passed == total else "fail"
+    return ConformanceStep(
+        "negative-conformance-suite",
+        "Negative conformance suite",
+        status,
+        detail=f"{passed}/{total} negative cases passed",
+        metadata={"passed": passed, "total": total, "cases": results},
+    )
+
+
+def _run_negative_case(case: dict[str, Any]) -> dict[str, Any]:
+    with TemporaryDirectory(prefix="skills-orchestrator-negative-") as temp_dir:
+        root = Path(temp_dir)
+        skills_dir = root / "skills"
+        skills_dir.mkdir()
+        for index, body in enumerate(case["skills"], start=1):
+            (skills_dir / f"skill-{index}.md").write_text(body, encoding="utf-8")
+        config_dir = root / "config"
+        config_dir.mkdir()
+        config = config_dir / "skills.yaml"
+        config.write_text(
+            f"""
+version: "2.0"
+skill_dirs:
+  - {skills_dir}
+zones:
+  - id: default
+    name: Default
+    load_policy: free
+    rules: []
+""",
+            encoding="utf-8",
+        )
+        report = run_check(str(config), policy_packs=case["policy_packs"])
+        actual_rules = {diagnostic.rule_id for diagnostic in report.diagnostics}
+        expected_rules = set(case["expected_rules"])
+        missing_rules = sorted(expected_rules - actual_rules)
+        return {
+            "id": case["id"],
+            "status": "pass" if not missing_rules else "fail",
+            "expected_rules": sorted(expected_rules),
+            "actual_rules": sorted(actual_rules),
+            "missing_rules": missing_rules,
+        }
 
 
 def _evidence_ledger_step(bundle: dict[str, Any]) -> ConformanceStep:

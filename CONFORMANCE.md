@@ -33,6 +33,10 @@ skills-orchestrator schema validate \
   --input evidence/schema-audit.json
 ```
 
+The core suite includes positive contract checks and a negative conformance suite. The negative
+suite verifies that intentionally invalid skill projects trigger expected findings for missing
+governance metadata, duplicate ids, and external skill trust metadata.
+
 ### Level 1: Local SkillOps
 
 A project is Level 1 conformant when it has a valid Skills Orchestrator config and skill metadata:
@@ -76,14 +80,24 @@ skills-orchestrator check --config config/skills.yaml --format json \
   > evidence/check.json
 skills-orchestrator check --config config/skills.yaml --format sarif \
   > evidence/check.sarif
+skills-orchestrator explainability build \
+  --check-json evidence/check.json \
+  --config config/skills.yaml \
+  --output evidence/ci-explainability.json \
+  --force
 skills-orchestrator evidence export --config config/skills.yaml --out evidence
 
 skills-orchestrator schema validate --kind check --input evidence/check.json
+skills-orchestrator schema validate \
+  --kind ci-explainability \
+  --input evidence/ci-explainability.json
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 ```
 
 `evidence/check.json` MUST include `policy_trace` entries for CI rule evaluation. This is
 conformance evidence for deterministic policy checks, not proof of agent runtime behavior.
+`evidence/ci-explainability.json` MUST explain the CI decision, blocking status, failed rules,
+locations, and suggested fixes in a machine-readable form.
 `evidence/evidence-manifest.json` MUST include a ledger with artifact hashes and a bundle hash.
 
 SARIF should be uploaded to GitHub Code Scanning or an equivalent SARIF consumer when the CI system
@@ -181,7 +195,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.0.1
+      - uses: BambooGap/skills-orchestrator@v4.1.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

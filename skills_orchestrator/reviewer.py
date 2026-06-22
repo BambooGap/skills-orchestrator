@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from skills_orchestrator.explainability import build_ci_explainability_from_check_payload
+
 SCHEMA_VERSION = "skills-orchestrator.reviewer-summary.v1"
 
 
@@ -33,6 +35,7 @@ def build_reviewer_summary(
             "evidence_manifest": _path_text(evidence_manifest),
         },
         "check": _check_summary(check_payload),
+        "ci_explainability": _ci_explainability_summary(check_payload),
         "policy_trace": _policy_trace_summary(check_payload),
         "registry_diff": _registry_diff_summary(diff_payload),
         "registry_graph": _registry_graph_summary(graph_payload),
@@ -44,6 +47,7 @@ def build_reviewer_summary(
 def render_reviewer_summary_markdown(summary: dict[str, Any]) -> str:
     """Render reviewer summary JSON as a stable Markdown artifact."""
     check = summary["check"]
+    explainability = summary["ci_explainability"]
     trace = summary["policy_trace"]
     diff = summary["registry_diff"]
     graph = summary["registry_graph"]
@@ -57,6 +61,8 @@ def render_reviewer_summary_markdown(summary: dict[str, Any]) -> str:
         "| Area | Status | Detail |",
         "| --- | --- | --- |",
         f"| Check | {_status(check['status'])} | {_check_detail(check)} |",
+        f"| CI explainability | {_status(explainability['status'])} | "
+        f"{_ci_explainability_detail(explainability)} |",
         f"| Policy trace | {_status(trace['status'])} | {_trace_detail(trace)} |",
         f"| Registry diff | {_status(diff['status'])} | {_diff_detail(diff)} |",
         f"| Registry graph | {_status(graph['status'])} | {_graph_detail(graph)} |",
@@ -79,6 +85,30 @@ def render_reviewer_summary_markdown(summary: dict[str, Any]) -> str:
                 f"{_escape(item.get('severity') or '')} | "
                 f"{_code(location) if location else ''} | "
                 f"{_escape(item.get('message') or '')} |"
+            )
+        lines.append("")
+
+    failures = explainability.get("failures", [])
+    if failures:
+        lines.extend(["## CI Failure Explainability", ""])
+        lines.append("| Rule | Effect | Location | Reason | Suggested fix |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for item in failures:
+            location_data = item.get("location") or {}
+            location = location_data.get("file") or ""
+            if location_data.get("line"):
+                location = (
+                    f"{location}:{location_data['line']}"
+                    if location
+                    else str(location_data["line"])
+                )
+            lines.append(
+                "| "
+                f"{_code(item.get('rule_id') or 'unknown')} | "
+                f"{_escape(item.get('ci_effect') or '')} | "
+                f"{_code(location) if location else ''} | "
+                f"{_escape(item.get('message') or '')} | "
+                f"{_escape(item.get('suggested_fix') or '')} |"
             )
         lines.append("")
 
@@ -193,6 +223,26 @@ def _policy_trace_summary(payload: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
+def _ci_explainability_summary(payload: dict[str, Any] | None) -> dict[str, Any]:
+    if not payload:
+        return {
+            "status": "missing",
+            "outcome": "missing",
+            "blocking": False,
+            "reason": "No check JSON artifact.",
+            "failures": [],
+        }
+    explainability = build_ci_explainability_from_check_payload(payload)
+    decision = explainability["ci_decision"]
+    return {
+        "status": explainability["status"],
+        "outcome": decision["outcome"],
+        "blocking": bool(decision["blocking"]),
+        "reason": decision["reason"],
+        "failures": explainability["failure_explainability"][:10],
+    }
+
+
 def _registry_diff_summary(payload: dict[str, Any] | None) -> dict[str, Any]:
     if not payload:
         return {
@@ -276,6 +326,14 @@ def _trace_detail(trace: dict[str, Any]) -> str:
         return "No policy trace artifact."
     outcomes = ", ".join(f"{key}={value}" for key, value in sorted(trace["outcomes"].items()))
     return f"{trace['total']} trace entries ({outcomes or 'no outcomes'})."
+
+
+def _ci_explainability_detail(explainability: dict[str, Any]) -> str:
+    if explainability["status"] == "missing":
+        return "No CI explainability artifact."
+    blocking = "blocking" if explainability["blocking"] else "advisory"
+    failures = len(explainability.get("failures", []))
+    return f"{explainability['outcome']} decision, {blocking}, {failures} failure explanations."
 
 
 def _diff_detail(diff: dict[str, Any]) -> str:

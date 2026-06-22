@@ -22,6 +22,11 @@ skills-orchestrator check --config config/skills.yaml --format sarif \
   > skills-orchestrator.sarif
 skills-orchestrator check --config config/skills.yaml --format json \
   > skills-orchestrator-check.json
+skills-orchestrator explainability build \
+  --check-json skills-orchestrator-check.json \
+  --config config/skills.yaml \
+  --output ci-explainability.json \
+  --force
 skills-orchestrator manifest --config config/skills.yaml --format json \
   --include-diagnostics --output instruction-manifest.json
 skills-orchestrator manifest --config config/skills.yaml --format cyclonedx \
@@ -40,6 +45,7 @@ skills-orchestrator registry diff registry-before.json registry-after.json \
 skills-orchestrator adapters inspect --format json > adapter-inspect.json
 skills-orchestrator registry comment-body registry-diff.md --output registry-diff-comment.md
 skills-orchestrator schema validate --kind check --input skills-orchestrator-check.json
+skills-orchestrator schema validate --kind ci-explainability --input ci-explainability.json
 skills-orchestrator schema validate --kind registry-graph --input registry-graph.json
 skills-orchestrator schema validate --kind adapter-inspect --input adapter-inspect.json
 skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbom.cdx.json

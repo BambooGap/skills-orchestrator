@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/ci-explainability.schema.json",
+  "title": "SkillOps CI Explainability",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "tool",
+    "source",
+    "status",
+    "summary",
+    "ci_decision",
+    "decisions",
+    "failure_explainability"
+  ],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.ci-explainability.v1" },
+    "generated_at": { "type": "string" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "required": ["kind", "config"],
+      "properties": {
+        "kind": { "type": "string", "minLength": 1 },
+        "config": { "type": "string" },
+        "check_schema_version": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "status": { "enum": ["pass", "warn", "fail"] },
+    "summary": {
+      "type": "object",
+      "required": [
+        "total_decisions",
+        "passed",
+        "failed",
+        "skipped",
+        "diagnostics",
+        "errors",
+        "warnings",
+        "infos"
+      ],
+      "properties": {
+        "total_decisions": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 },
+        "diagnostics": { "type": "integer", "minimum": 0 },
+        "errors": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "integer", "minimum": 0 },
+        "infos": { "type": "integer", "minimum": 0 },
+        "skills": { "type": "integer", "minimum": 0 },
+        "zones": { "type": "integer", "minimum": 0 },
+        "combos": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "ci_decision": {
+      "type": "object",
+      "required": ["outcome", "blocking", "fail_on", "reason"],
+      "properties": {
+        "outcome": { "enum": ["pass", "warn", "fail"] },
+        "blocking": { "type": "boolean" },
+        "fail_on": { "enum": ["error", "warning", "never"] },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "decisions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/decision" }
+    },
+    "failure_explainability": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/failure_explanation" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "location": {
+      "type": "object",
+      "required": ["file", "line", "skill_id"],
+      "properties": {
+        "file": { "type": ["string", "null"] },
+        "line": { "type": ["integer", "null"], "minimum": 1 },
+        "skill_id": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["rule_id", "severity", "message"],
+      "properties": {
+        "rule_id": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["error", "warning", "info"] },
+        "message": { "type": "string" },
+        "file": { "type": ["string", "null"] },
+        "line": { "type": ["integer", "null"], "minimum": 1 },
+        "skill_id": { "type": ["string", "null"] },
+        "category": { "type": ["string", "null"] },
+        "suggested_fix": { "type": ["string", "null"] },
+        "metadata": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "decision": {
+      "type": "object",
+      "required": [
+        "rule_id",
+        "outcome",
+        "severity",
+        "scope",
+        "reason",
+        "location",
+        "input_facts",
+        "ci_effect"
+      ],
+      "properties": {
+        "rule_id": { "type": "string", "minLength": 1 },
+        "outcome": { "enum": ["pass", "fail", "skip"] },
+        "severity": { "type": ["string", "null"], "enum": ["error", "warning", "info", null] },
+        "scope": { "type": "string", "minLength": 1 },
+        "policy_pack": { "type": ["string", "null"] },
+        "reason": { "type": "string" },
+        "location": { "$ref": "#/$defs/location" },
+        "input_facts": { "type": "object" },
+        "suggested_fix": { "type": ["string", "null"] },
+        "ci_effect": {
+          "enum": ["passed", "blocking-by-default", "advisory-by-default", "informational"]
+        },
+        "diagnostic": {
+          "anyOf": [{ "$ref": "#/$defs/diagnostic" }, { "type": "null" }]
+        },
+        "metadata": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "failure_explanation": {
+      "type": "object",
+      "required": ["rule_id", "severity", "scope", "message", "location", "ci_effect"],
+      "properties": {
+        "rule_id": { "type": "string", "minLength": 1 },
+        "severity": { "type": ["string", "null"], "enum": ["error", "warning", "info", null] },
+        "scope": { "type": "string", "minLength": 1 },
+        "policy_pack": { "type": ["string", "null"] },
+        "message": { "type": "string" },
+        "location": { "$ref": "#/$defs/location" },
+        "suggested_fix": { "type": ["string", "null"] },
+        "ci_effect": {
+          "enum": ["passed", "blocking-by-default", "advisory-by-default", "informational"]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

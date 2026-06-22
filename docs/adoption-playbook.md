@@ -80,7 +80,7 @@ sources, lifecycle metadata, and review windows for each skill.
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: BambooGap/skills-orchestrator@v4.0.1
+         - uses: BambooGap/skills-orchestrator@v4.1.0
            with:
              config: config/skills.yaml
              policy-pack: builtin/team-standard
@@ -96,7 +96,7 @@ sources, lifecycle metadata, and review windows for each skill.
 Move from advisory to warning gate when all of these are true:
 
 - `doctor --profile adopter` reports `100/100`.
-- `conformance run --profile core` reports `12/12 pass`.
+- `conformance run --profile core` reports `14/14 pass`.
 - `check --policy-pack builtin/team-standard --fail-on warning` has no findings.
 - The repository has committed `skills.lock.json` and generated `AGENTS.md`.
 - PR reviewers understand the registry diff comment format.
