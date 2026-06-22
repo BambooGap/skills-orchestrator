@@ -58,6 +58,29 @@ Every catalog entry MUST include:
 `preview` entries are executable and tested, but downstream hosted-product workflows may still
 evolve additively before a future major version.
 
+## Schema Audit Contract
+
+The schema audit contract verifies that packaged schemas and schema catalog metadata are internally
+consistent. The registered schema kind is `schema-audit`, backed by `schema-audit.schema.json`.
+
+```bash
+skills-orchestrator schema audit --format json > schema-audit.json
+skills-orchestrator schema validate --kind schema-audit --input schema-audit.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `skills-orchestrator.schema-audit.v1`. |
+| `tool` | Tool metadata, including the emitting package version. |
+| `status` | `pass` or `fail`. |
+| `summary` | Counts for schemas, stable entries, preview entries, checks, passed, and failed. |
+| `checks` | Per-schema load and metadata checks. |
+
+The audit command MUST NOT read project skill files, execute agents, or re-evaluate policy. It is a
+package self-audit gate for contract distribution quality.
+
 ## Skill Metadata Contract
 
 Skill metadata is loaded from `config/skills.yaml` and Markdown frontmatter. The registered schema

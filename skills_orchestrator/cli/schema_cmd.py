@@ -8,6 +8,8 @@ import click
 
 from skills_orchestrator.schema_validation import (
     SCHEMAS,
+    audit_schema_catalog,
+    build_schema_catalog,
     list_schema_descriptors,
     validate_document,
 )
@@ -33,11 +35,7 @@ def schema_list(output_format: str) -> None:
     """List available schema kinds."""
     descriptors = list_schema_descriptors()
     if output_format == "json":
-        payload = {
-            "schema_version": "skills-orchestrator.schema-catalog.v1",
-            "schemas": [descriptor.to_catalog_entry() for descriptor in descriptors],
-        }
-        click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        click.echo(json.dumps(build_schema_catalog(), ensure_ascii=False, indent=2))
         return
 
     click.echo("Available schemas:")
@@ -46,6 +44,34 @@ def schema_list(output_format: str) -> None:
             f"  {descriptor.kind}: {descriptor.title} "
             f"[{descriptor.stability}] ({descriptor.filename})"
         )
+
+
+@schema.command("audit")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+)
+def schema_audit(output_format: str) -> None:
+    """Audit packaged schema contracts and catalog metadata."""
+    payload = audit_schema_catalog()
+    if output_format == "json":
+        click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        summary = payload["summary"]
+        click.echo(
+            f"Schema audit: {payload['status']}\n"
+            f"Summary: {summary['schemas']} schemas, {summary['stable']} stable, "
+            f"{summary['preview']} preview, {summary['failed']} failed"
+        )
+        for check in payload["checks"]:
+            marker = _ok(check["id"]) if check["status"] == "pass" else _err(check["id"])
+            click.echo(console_safe_text(f"  {marker}: {check['message']}"))
+
+    if payload["status"] != "pass":
+        raise SystemExit(1)
 
 
 @schema.command("validate")
