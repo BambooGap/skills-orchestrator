@@ -805,6 +805,46 @@ def registry_build(config_globs: tuple[str, ...], zone: str | None, output: str 
         raise SystemExit(1)
 
 
+@registry.command("graph")
+@click.option(
+    "--config-glob",
+    "config_globs",
+    multiple=True,
+    default=("config/skills.yaml",),
+    show_default=True,
+    help="skills.yaml 路径或 glob；可重复传入。",
+)
+@click.option("--zone", "-z", default=None, help="指定所有配置使用的 zone id")
+@click.option(
+    "--output", "-o", default=None, help="写入 registry graph JSON 文件；默认输出到 stdout"
+)
+def registry_graph(config_globs: tuple[str, ...], zone: str | None, output: str | None):
+    """从 registry 派生结构化治理图 JSON。"""
+    from skills_orchestrator.org_registry import (
+        build_registry,
+        build_registry_graph,
+        write_registry_graph,
+    )
+
+    try:
+        registry_payload = build_registry(config_globs, zone_id=zone)
+        graph_payload = build_registry_graph(registry_payload)
+        rendered = json.dumps(graph_payload, ensure_ascii=False, indent=2) + "\n"
+        if output:
+            write_registry_graph(graph_payload, output)
+            click.echo(_ok(f"Registry graph written: {output}"))
+            click.echo(
+                "  "
+                + f"nodes={graph_payload['summary']['nodes']} "
+                + f"edges={graph_payload['summary']['edges']}"
+            )
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 @registry.command("diff")
 @click.argument("base")
 @click.argument("head")
@@ -1074,6 +1114,11 @@ def evidence():
 )
 @click.option("--check-lock", default=None, help="检查指定 skills.lock.json 是否过期")
 @click.option("--agents-md", default="AGENTS.md", help="生成的 AGENTS.md 路径")
+@click.option(
+    "--previous-bundle-hash",
+    default=None,
+    help="上一份 evidence bundle hash，用于形成简单 hash chain。",
+)
 def evidence_export(
     config: str,
     zone: str | None,
@@ -1081,6 +1126,7 @@ def evidence_export(
     policy_packs: tuple[str, ...],
     check_lock: str | None,
     agents_md: str,
+    previous_bundle_hash: str | None,
 ):
     """导出 check、manifest、policy、doctor、registry 证据文件。"""
     from skills_orchestrator.evidence import export_evidence_bundle
@@ -1093,10 +1139,12 @@ def evidence_export(
             policy_packs=policy_packs,
             check_lock=check_lock,
             agents_md=agents_md,
+            previous_bundle_hash=previous_bundle_hash,
         )
         click.echo(_ok(f"Evidence bundle written: {out_dir}"))
         for label, path in bundle["files"].items():
             click.echo(f"  {label}: {path}")
+        click.echo(f"  bundle_hash: {bundle['ledger']['bundle_hash']}")
         click.echo(f"  evidence_manifest: {Path(out_dir) / 'evidence-manifest.json'}")
     except Exception as exc:
         click.echo(_err(str(exc)), err=True)

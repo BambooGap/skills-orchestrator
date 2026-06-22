@@ -17,6 +17,7 @@ def format_diagnostics_json(report: DiagnosticReport) -> str:
         "tool": {"name": "skills-orchestrator", "version": __version__},
         "summary": report.summary(),
         "diagnostics": [diagnostic.to_dict() for diagnostic in report.diagnostics],
+        "policy_trace": [item.to_dict() for item in report.policy_trace],
     }
     return json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
 

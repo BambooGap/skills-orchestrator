@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 from click.testing import CliRunner
@@ -10,6 +11,7 @@ from skills_orchestrator.github_pr import (
 )
 from skills_orchestrator.main import cli
 from skills_orchestrator.org_registry import (
+    build_registry_graph,
     build_registry,
     diff_registries,
     format_registry_diff_markdown,
@@ -79,6 +81,23 @@ def test_registry_build_summarizes_governed_skills(tmp_path):
     skill = registry["configs"][0]["skills"][0]
     assert skill["registry_key"]
     assert skill["governance"]["source"] == "internal://skills/team-skill"
+
+
+def test_registry_graph_exports_governance_relationships(tmp_path):
+    config = _workspace(tmp_path)
+    registry = build_registry([str(config)])
+    graph = build_registry_graph(registry)
+    graph_file = tmp_path / "registry-graph.json"
+    graph_file.write_text(json.dumps(graph), encoding="utf-8")
+
+    node_types = {node["type"] for node in graph["nodes"]}
+    edge_types = {edge["type"] for edge in graph["edges"]}
+
+    assert {"config", "zone", "skill", "owner", "source"}.issubset(node_types)
+    assert {"config_contains_skill", "skill_owned_by", "skill_sourced_from"}.issubset(edge_types)
+    assert graph["summary"]["nodes"] == len(graph["nodes"])
+    assert graph["summary"]["edges"] == len(graph["edges"])
+    assert validate_document("registry-graph", str(graph_file)).valid is True
 
 
 def test_registry_explicit_skill_paths_resolve_from_project_root(tmp_path):
@@ -296,6 +315,22 @@ def test_registry_cli_build_and_diff(tmp_path):
     assert head_result.exit_code == 0
     assert diff_result.exit_code == 0
     assert json.loads(diff_result.output)["summary"]["changed"] == 1
+
+
+def test_registry_cli_graph_writes_file(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    graph_file = tmp_path / "registry-graph.json"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        ["registry", "graph", "--config-glob", str(config), "--output", str(graph_file)],
+    )
+
+    assert result.exit_code == 0
+    assert "Registry graph written" in result.output
+    payload = json.loads(graph_file.read_text(encoding="utf-8"))
+    assert payload["schema_version"] == "skills-orchestrator.registry-graph.v1"
 
 
 def test_registry_cli_diff_markdown_output_file(tmp_path):
@@ -533,6 +568,25 @@ def test_evidence_export_writes_bundle(tmp_path, monkeypatch):
     assert json.loads((out_dir / "evidence-manifest.json").read_text())["files"] == bundle["files"]
     assert "adapter_inspect" in bundle["files"]
     assert "package_sbom" in bundle["files"]
+    assert bundle["ledger"]["previous_bundle_hash"] == ""
+    assert len(bundle["ledger"]["bundle_hash"]) == 64
+    check_hash = hashlib.sha256((out_dir / "check.json").read_bytes()).hexdigest()
+    assert bundle["ledger"]["artifact_hashes"]["check_json"]["value"] == check_hash
+    assert validate_document("evidence", str(out_dir / "evidence-manifest.json")).valid is True
+
+
+def test_evidence_export_records_previous_bundle_hash(tmp_path, monkeypatch):
+    config = _workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    out_dir = tmp_path / "evidence"
+
+    bundle = export_evidence_bundle(
+        str(config),
+        str(out_dir),
+        previous_bundle_hash="a" * 64,
+    )
+
+    assert bundle["ledger"]["previous_bundle_hash"] == "a" * 64
 
 
 def test_integrations_cli_json():

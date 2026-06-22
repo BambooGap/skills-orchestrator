@@ -80,8 +80,41 @@ def test_formatters_emit_json_and_sarif(tmp_path):
     json_payload = json.loads(format_diagnostics_json(report))
     assert json_payload["tool"]["name"] == "skills-orchestrator"
     assert json_payload["diagnostics"][0]["rule_id"] == "SO001"
+    assert json_payload["policy_trace"][0]["rule_id"] == "SO001"
+    assert json_payload["policy_trace"][0]["outcome"] == "fail"
 
     sarif_payload = json.loads(format_diagnostics_sarif(report))
     assert sarif_payload["version"] == "2.1.0"
     assert sarif_payload["runs"][0]["tool"]["driver"]["name"] == "skills-orchestrator"
     assert sarif_payload["runs"][0]["results"][0]["ruleId"] == "SO001"
+
+
+def test_policy_trace_records_passed_policy_rules(tmp_path):
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    (skills_dir / "team.md").write_text(
+        "---\n"
+        "id: team\n"
+        "name: Team\n"
+        "summary: Team skill\n"
+        "owner: platform-team\n"
+        "source: internal://team\n"
+        "version: 1.0.0\n"
+        "lifecycle: active\n"
+        "---\n"
+        "# Team\n",
+        encoding="utf-8",
+    )
+    config = _write_config(tmp_path, skills_dir)
+
+    report = run_check(str(config), policy_packs=["builtin/team-standard"])
+    payload = json.loads(format_diagnostics_json(report))
+    passed = {
+        item["rule_id"]: item
+        for item in payload["policy_trace"]
+        if item["outcome"] == "pass" and item["policy_pack"] == "builtin/team-standard"
+    }
+
+    assert not report.diagnostics
+    assert {"SO008", "SO009", "SO010", "SO011", "SO012"}.issubset(passed)
+    assert passed["SO008"]["scope"] == "policy_pack"

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/registry-graph.schema.json",
+  "title": "Skills Orchestrator Registry Graph",
+  "type": "object",
+  "required": ["schema_version", "tool", "summary", "nodes", "edges"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.registry-graph.v1" },
+    "generated_at": { "type": "string" },
+    "tool": { "type": "object" },
+    "summary": {
+      "type": "object",
+      "required": ["nodes", "edges", "configs", "skill_refs"],
+      "additionalProperties": { "type": "integer" }
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "node": {
+      "type": "object",
+      "required": ["id", "type", "label", "properties"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "type": {
+          "enum": ["config", "zone", "skill", "owner", "source", "combo", "policy", "evidence"]
+        },
+        "label": { "type": "string" },
+        "properties": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "source", "target", "type", "label", "properties"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "type": {
+          "enum": [
+            "config_uses_zone",
+            "config_contains_skill",
+            "skill_owned_by",
+            "skill_sourced_from",
+            "config_defines_combo",
+            "skill_member_of_combo",
+            "skill_conflicts_with",
+            "policy_applies_to_skill",
+            "evidence_covers_artifact"
+          ]
+        },
+        "label": { "type": "string" },
+        "properties": { "type": "object" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

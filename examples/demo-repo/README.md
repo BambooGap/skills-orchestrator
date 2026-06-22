@@ -8,9 +8,9 @@ It demonstrates:
 - skill metadata validation,
 - team policy checks,
 - SARIF output,
-- registry build and diff,
+- registry build, graph, and diff,
 - PR comment body generation,
-- evidence bundle export,
+- evidence bundle export with hash ledger,
 - adapter inspection for AGENTS.md, Claude Skills, MCP config, and OpenAI Agents SDK.
 
 ## Run Locally
@@ -43,6 +43,10 @@ skills-orchestrator check --config config/skills.yaml --format sarif \
 skills-orchestrator registry build \
   --config-glob config/skills.yaml \
   --output evidence/registry-before.json
+
+skills-orchestrator registry graph \
+  --config-glob config/skills.yaml \
+  --output evidence/registry-graph.json
 
 cp evidence/registry-before.json evidence/registry-after.json
 
@@ -107,6 +111,7 @@ skills-orchestrator adapters inspect --path . --format json \
   > evidence/adapter-inspect.json
 
 skills-orchestrator schema validate --kind registry --input evidence/registry-before.json
+skills-orchestrator schema validate --kind registry-graph --input evidence/registry-graph.json
 skills-orchestrator schema validate --kind registry-diff --input evidence/registry-diff.json
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 skills-orchestrator schema validate --kind adapter-inspect --input evidence/adapter-inspect.json

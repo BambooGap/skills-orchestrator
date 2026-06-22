@@ -226,11 +226,44 @@ class Diagnostic:
 
 
 @dataclass
+class PolicyTraceItem:
+    """Machine-readable trace for a CI policy rule evaluation."""
+
+    rule_id: str
+    outcome: str
+    scope: str
+    reason: str
+    input_facts: dict[str, Any] = field(default_factory=dict)
+    file: str | None = None
+    line: int | None = None
+    skill_id: str | None = None
+    policy_pack: str | None = None
+    diagnostic: dict[str, Any] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "rule_id": self.rule_id,
+            "outcome": self.outcome,
+            "scope": self.scope,
+            "reason": self.reason,
+            "input_facts": self.input_facts,
+            "file": self.file,
+            "line": self.line,
+            "skill_id": self.skill_id,
+            "policy_pack": self.policy_pack,
+            "diagnostic": self.diagnostic,
+            "metadata": self.metadata,
+        }
+
+
+@dataclass
 class DiagnosticReport:
     diagnostics: list[Diagnostic]
     total_skills: int
     zones: int
     combos: int
+    policy_trace: list[PolicyTraceItem] = field(default_factory=list)
 
     def summary(self) -> dict[str, int]:
         errors = sum(1 for d in self.diagnostics if d.severity == DiagnosticSeverity.ERROR)

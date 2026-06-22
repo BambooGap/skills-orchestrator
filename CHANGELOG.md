@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-06-22
+
+### Added
+- Added CI policy trace to JSON check reports via `policy_trace`, covering diagnostic failures and
+  passed built-in rule groups without representing agent reasoning as runtime trace.
+- Added `registry graph` and `registry-graph.schema.json` for derived ownership, source, combo, and
+  conflict relationships across organization registry facts.
+- Added an evidence ledger to `evidence export` manifests with per-artifact SHA-256 hashes,
+  `bundle_hash`, and optional `previous_bundle_hash` for simple audit continuity.
+
+### Changed
+- Expanded the SkillOps Contract, conformance, registry/evidence, release verification, and demo
+  docs to include policy trace, registry graph, and evidence ledger validation paths.
+
 ## [3.3.1] - 2026-06-22
 
 ### Fixed

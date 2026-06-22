@@ -10,9 +10,14 @@ import yaml
 
 from skills_orchestrator.compiler import Parser, Resolver, SkillsLock
 from skills_orchestrator.compiler.parser import SkillDiagnosticError
-from skills_orchestrator.diagnostic import Diagnostic, DiagnosticReport
+from skills_orchestrator.diagnostic import Diagnostic, DiagnosticReport, PolicyTraceItem
 from skills_orchestrator.models import Config, ResolvedConfig, SkillMeta, Zone
-from skills_orchestrator.policy.packs import policy_pack_diagnostics
+from skills_orchestrator.policy.packs import (
+    ENGINEERING_GRADE_PACK,
+    TEAM_STANDARD_PACK,
+    normalize_policy_packs,
+    policy_pack_diagnostics,
+)
 from skills_orchestrator.security import validate_skill_id
 
 
@@ -39,20 +44,20 @@ def run_check(
     try:
         cfg = parser.parse()
     except SkillDiagnosticError as exc:
+        diagnostic = Diagnostic.from_rule(
+            exc.rule_id,
+            str(exc),
+            file=exc.file,
+            line=exc.line,
+            skill_id=exc.skill_id,
+            suggested_fix=exc.suggested_fix,
+        )
         return DiagnosticReport(
-            diagnostics=[
-                Diagnostic.from_rule(
-                    exc.rule_id,
-                    str(exc),
-                    file=exc.file,
-                    line=exc.line,
-                    skill_id=exc.skill_id,
-                    suggested_fix=exc.suggested_fix,
-                )
-            ],
+            diagnostics=[diagnostic],
             total_skills=0,
             zones=0,
             combos=0,
+            policy_trace=[_trace_from_diagnostic(diagnostic, scope="parser")],
         )
 
     diagnostics: list[Diagnostic] = []
@@ -86,6 +91,15 @@ def run_check(
         total_skills=len(cfg.skills),
         zones=len(cfg.zones),
         combos=len(cfg.combos),
+        policy_trace=_policy_trace(
+            cfg,
+            diagnostics,
+            policy_packs=policy_packs or [],
+            zone_id=zone_id,
+            check_lock=check_lock,
+            max_skill_bytes=max_skill_bytes,
+            resolver_ran=resolved is not None,
+        ),
     )
 
 
@@ -102,7 +116,136 @@ def fatal_error_report(message: str, *, config_path: str | None = None) -> Diagn
             suggested_fix="Fix the configuration or input path, then run the check again.",
         )
     ]
-    return DiagnosticReport(diagnostics=diagnostics, total_skills=0, zones=0, combos=0)
+    return DiagnosticReport(
+        diagnostics=diagnostics,
+        total_skills=0,
+        zones=0,
+        combos=0,
+        policy_trace=[_trace_from_diagnostic(diagnostics[0], scope="fatal")],
+    )
+
+
+def _policy_trace(
+    cfg: Config,
+    diagnostics: list[Diagnostic],
+    *,
+    policy_packs: list[str] | tuple[str, ...],
+    zone_id: str | None,
+    check_lock: str | None,
+    max_skill_bytes: int,
+    resolver_ran: bool,
+) -> list[PolicyTraceItem]:
+    traces = [_trace_from_diagnostic(diagnostic) for diagnostic in diagnostics]
+    failed_rules = {diagnostic.rule_id for diagnostic in diagnostics}
+    normalized_packs = normalize_policy_packs(policy_packs)
+    facts = {
+        "skills": len(cfg.skills),
+        "zones": len(cfg.zones),
+        "combos": len(cfg.combos),
+        "zone": zone_id or "",
+    }
+
+    base_rules = [
+        ("SO001", "metadata", "All skills include summary or description metadata."),
+        ("SO002", "structure", "No duplicate skill ids were detected."),
+        (
+            "SO004",
+            "conflict",
+            "Conflict declarations are symmetric or intentionally one-way without findings.",
+        ),
+        (
+            "SO005",
+            "metadata",
+            f"No skill exceeded the {max_skill_bytes} byte review threshold.",
+        ),
+    ]
+    for rule_id, scope, reason in base_rules:
+        if rule_id not in failed_rules:
+            traces.append(_pass_trace(rule_id, scope, reason, facts))
+
+    if resolver_ran and "SO003" not in failed_rules:
+        traces.append(
+            _pass_trace(
+                "SO003", "resolver", "Resolver completed without unresolved conflicts.", facts
+            )
+        )
+
+    if check_lock and "SO007" not in failed_rules:
+        traces.append(_pass_trace("SO007", "lock", "Lock file matches resolved skills.", facts))
+
+    if TEAM_STANDARD_PACK in normalized_packs or ENGINEERING_GRADE_PACK in normalized_packs:
+        for rule_id, reason in (
+            ("SO008", "All skills include owner metadata."),
+            ("SO009", "All skills include source metadata."),
+            ("SO010", "All skills include version metadata."),
+            ("SO011", "All skill lifecycle values are allowed."),
+            ("SO012", "Required skills include approver metadata."),
+        ):
+            if rule_id not in failed_rules:
+                traces.append(
+                    _pass_trace(
+                        rule_id,
+                        "policy_pack",
+                        reason,
+                        facts,
+                        policy_pack=TEAM_STANDARD_PACK,
+                    )
+                )
+
+    if ENGINEERING_GRADE_PACK in normalized_packs:
+        for rule_id, reason in (
+            ("SO014", "All skills include review-window metadata."),
+            ("SO015", "All review-window dates are valid."),
+            ("SO016", "No skill review window has expired."),
+            ("SO018", "All skills include license metadata."),
+            ("SO019", "All skill licenses are allowed."),
+            ("SO020", "Externally sourced skills include import provenance metadata."),
+        ):
+            if rule_id not in failed_rules:
+                traces.append(
+                    _pass_trace(
+                        rule_id,
+                        "policy_pack",
+                        reason,
+                        facts,
+                        policy_pack=ENGINEERING_GRADE_PACK,
+                    )
+                )
+
+    return traces
+
+
+def _trace_from_diagnostic(diagnostic: Diagnostic, *, scope: str | None = None) -> PolicyTraceItem:
+    return PolicyTraceItem(
+        rule_id=diagnostic.rule_id,
+        outcome="fail",
+        scope=scope or (diagnostic.category.value if diagnostic.category else "diagnostic"),
+        reason=diagnostic.message,
+        input_facts=diagnostic.metadata,
+        file=diagnostic.file,
+        line=diagnostic.line,
+        skill_id=diagnostic.skill_id,
+        policy_pack=diagnostic.metadata.get("policy_pack"),
+        diagnostic=diagnostic.to_dict(),
+    )
+
+
+def _pass_trace(
+    rule_id: str,
+    scope: str,
+    reason: str,
+    input_facts: dict[str, object],
+    *,
+    policy_pack: str | None = None,
+) -> PolicyTraceItem:
+    return PolicyTraceItem(
+        rule_id=rule_id,
+        outcome="pass",
+        scope=scope,
+        reason=reason,
+        input_facts=dict(input_facts),
+        policy_pack=policy_pack,
+    )
 
 
 def _select_zone(cfg: Config, zone_id: str | None) -> Zone | None:
