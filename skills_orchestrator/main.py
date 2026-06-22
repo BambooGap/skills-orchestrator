@@ -1276,6 +1276,52 @@ def dashboard_snapshot(
         raise SystemExit(1)
 
 
+@dashboard.command("rollup")
+@click.option("--snapshot", "snapshots", multiple=True, help="dashboard snapshot JSON 路径")
+@click.option(
+    "--snapshot-glob",
+    "snapshot_globs",
+    multiple=True,
+    help="dashboard snapshot glob；支持 ** 递归",
+)
+@click.option("--organization", default=None, help="组织名；默认读取 GITHUB_REPOSITORY_OWNER")
+@click.option("--output", "-o", default=None, help="写入 dashboard rollup JSON；默认 stdout")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+def dashboard_rollup(
+    snapshots: tuple[str, ...],
+    snapshot_globs: tuple[str, ...],
+    organization: str | None,
+    output: str | None,
+    force: bool,
+):
+    """聚合多个 dashboard snapshot，生成组织级 dashboard rollup。"""
+    from skills_orchestrator.dashboard import (
+        build_dashboard_rollup,
+        expand_snapshot_inputs,
+        format_dashboard_rollup_json,
+    )
+
+    try:
+        snapshot_paths = expand_snapshot_inputs(snapshots, snapshot_globs)
+        rendered = format_dashboard_rollup_json(
+            build_dashboard_rollup(snapshot_paths, organization=organization)
+        )
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"Dashboard rollup written: {output_path}"))
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 # ──────────────────────── Usage 子命令 ────────────────────────
 
 

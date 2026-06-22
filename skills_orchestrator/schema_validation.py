@@ -108,6 +108,12 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         title="Enterprise Dashboard Snapshot",
         description="Read-only dashboard contract derived from SkillOps evidence.",
     ),
+    "enterprise-dashboard-rollup": SchemaDescriptor(
+        kind="enterprise-dashboard-rollup",
+        filename="enterprise-dashboard-rollup.schema.json",
+        title="Enterprise Dashboard Rollup",
+        description="Organization-level rollup derived from dashboard snapshots.",
+    ),
     "github-app-installation": SchemaDescriptor(
         kind="github-app-installation",
         filename="github-app-installation.schema.json",

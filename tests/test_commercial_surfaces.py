@@ -7,8 +7,11 @@ from click.testing import CliRunner
 
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.dashboard import (
+    ROLLUP_SCHEMA_VERSION as DASHBOARD_ROLLUP_SCHEMA_VERSION,
     SCHEMA_VERSION as DASHBOARD_SNAPSHOT_SCHEMA_VERSION,
+    build_dashboard_rollup,
     build_dashboard_snapshot,
+    format_dashboard_rollup_json,
     format_dashboard_snapshot_json,
 )
 from skills_orchestrator.doctor import run_doctor
@@ -255,6 +258,84 @@ def test_dashboard_snapshot_cli_writes_schema_valid_json(tmp_path):
     assert payload["repository"]["ref"] == "refs/pull/1/merge"
     assert payload["repository"]["commit"] == "abc123"
     assert validate_document("enterprise-dashboard-snapshot", str(snapshot_file)).valid is True
+
+
+def test_dashboard_rollup_summarizes_multiple_snapshots(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    evidence_dir = tmp_path / "repo" / "evidence"
+    export_evidence_bundle(str(config), str(evidence_dir), policy_packs=["builtin/team-standard"])
+    snapshot_a = build_dashboard_snapshot(
+        evidence_dir,
+        repository="org/repo-a",
+        ref="refs/heads/main",
+        commit="aaa",
+        generated_at="2026-06-22T00:00:00Z",
+    )
+    snapshot_b = build_dashboard_snapshot(
+        evidence_dir,
+        repository="org/repo-b",
+        ref="refs/heads/main",
+        commit="bbb",
+        generated_at="2026-06-22T00:00:00Z",
+    )
+    snapshot_b["readiness"]["score"] = 80
+    snapshot_b["policy"]["warnings"] = 2
+    snapshot_a_file = tmp_path / "repo-a-dashboard.json"
+    snapshot_b_file = tmp_path / "repo-b-dashboard.json"
+    rollup_file = tmp_path / "dashboard-rollup.json"
+    snapshot_a_file.write_text(format_dashboard_snapshot_json(snapshot_a), encoding="utf-8")
+    snapshot_b_file.write_text(format_dashboard_snapshot_json(snapshot_b), encoding="utf-8")
+
+    rollup = build_dashboard_rollup(
+        [snapshot_b_file, snapshot_a_file],
+        organization="org",
+        generated_at="2026-06-22T00:00:01Z",
+    )
+    rollup_file.write_text(format_dashboard_rollup_json(rollup), encoding="utf-8")
+
+    assert rollup["schema_version"] == DASHBOARD_ROLLUP_SCHEMA_VERSION
+    assert rollup["organization"] == "org"
+    assert rollup["summary"]["repositories"] == 2
+    assert rollup["summary"]["average_readiness_score"] == 85
+    assert rollup["summary"]["policy_warnings"] == 2
+    assert [repo["full_name"] for repo in rollup["repositories"]] == ["org/repo-a", "org/repo-b"]
+    assert validate_document("enterprise-dashboard-rollup", str(rollup_file)).valid is True
+
+
+def test_dashboard_rollup_cli_accepts_globs(tmp_path):
+    config = _workspace(tmp_path / "repo", body="# Skill\n")
+    evidence_dir = tmp_path / "repo" / "evidence"
+    export_evidence_bundle(str(config), str(evidence_dir), policy_packs=["builtin/team-standard"])
+    snapshots_dir = tmp_path / "snapshots"
+    snapshots_dir.mkdir()
+    for repo in ("org/repo-a", "org/repo-b"):
+        snapshot = build_dashboard_snapshot(evidence_dir, repository=repo)
+        (snapshots_dir / f"{repo.split('/')[-1]}.json").write_text(
+            format_dashboard_snapshot_json(snapshot),
+            encoding="utf-8",
+        )
+    rollup_file = tmp_path / "rollup.json"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "dashboard",
+            "rollup",
+            "--snapshot-glob",
+            str(snapshots_dir / "*.json"),
+            "--organization",
+            "org",
+            "--output",
+            str(rollup_file),
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(rollup_file.read_text(encoding="utf-8"))
+    assert payload["summary"]["repositories"] == 2
+    assert payload["repositories"][0]["full_name"] == "org/repo-a"
+    assert validate_document("enterprise-dashboard-rollup", str(rollup_file)).valid is True
 
 
 def test_action_exposes_reviewer_pack_outputs_and_delays_failure():

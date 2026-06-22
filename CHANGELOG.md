@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-06-22
+
+### Added
+- Added `dashboard rollup` to aggregate multiple enterprise dashboard snapshots into a
+  schema-validated organization-level dashboard payload.
+- Added `enterprise-dashboard-rollup.schema.json` and a commercial handoff example for hosted
+  dashboard consumers.
+
+### Changed
+- Expanded CI smoke and docs to validate dashboard snapshot and dashboard rollup contracts.
+- Updated current install, Action, container, and pilot workflow examples to `v3.8.0`.
+
 ## [3.7.0] - 2026-06-22
 
 ### Changed

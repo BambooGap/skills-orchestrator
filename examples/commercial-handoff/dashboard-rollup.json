@@ -1,0 +1,73 @@
+{
+  "schema_version": "skills-orchestrator.enterprise-dashboard-rollup.v1",
+  "generated_at": "2026-06-22T00:00:00Z",
+  "organization": "example-org",
+  "summary": {
+    "repositories": 2,
+    "average_readiness_score": 91,
+    "min_readiness_score": 88,
+    "max_readiness_score": 94,
+    "policy_errors": 0,
+    "policy_warnings": 3,
+    "policy_infos": 5,
+    "registry_skills": 42,
+    "registry_owners": 9,
+    "duplicate_skill_ids": 0
+  },
+  "repositories": [
+    {
+      "source": "snapshots/example-repo-a.json",
+      "full_name": "example-org/example-repo-a",
+      "ref": "refs/heads/main",
+      "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "readiness": {
+        "score": 94,
+        "grade": "strong",
+        "issues": 1
+      },
+      "policy": {
+        "errors": 0,
+        "warnings": 1,
+        "infos": 2,
+        "trace_entries": 18
+      },
+      "registry": {
+        "skills": 21,
+        "skill_refs": 21,
+        "owners": 5,
+        "duplicate_skill_ids": 0
+      },
+      "ledger": {
+        "bundle_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "previous_bundle_hash": ""
+      }
+    },
+    {
+      "source": "snapshots/example-repo-b.json",
+      "full_name": "example-org/example-repo-b",
+      "ref": "refs/heads/main",
+      "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "readiness": {
+        "score": 88,
+        "grade": "strong",
+        "issues": 2
+      },
+      "policy": {
+        "errors": 0,
+        "warnings": 2,
+        "infos": 3,
+        "trace_entries": 15
+      },
+      "registry": {
+        "skills": 21,
+        "skill_refs": 21,
+        "owners": 4,
+        "duplicate_skill_ids": 0
+      },
+      "ledger": {
+        "bundle_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "previous_bundle_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ]
+}
