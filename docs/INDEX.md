@@ -7,11 +7,12 @@ Use this page as the team entry point for Skills Orchestrator.
 | Role | Start Here | Goal |
 | --- | --- | --- |
 | Repository maintainer | [Install](install.md), [GitHub Action](github-action.md) | Add a working skill check to one repo. |
-| Platform owner | [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
+| Platform owner | [Adoption Playbook](adoption-playbook.md), [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
 | Security reviewer | [Manifest And Policy Exports](manifest-policy-exports.md), [Policy Packs](policy-packs.md), [Compatibility](../COMPATIBILITY.md) | Review instruction assets with machine-readable evidence. |
 | Release owner | [Release Verification](release-verification.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence. |
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Route runtime context and preserve workflow state. |
 | External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
+| Pilot team | [Adoption Playbook](adoption-playbook.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo. |
 | Commercial product owner | [Open-core Boundary](open-core-boundary.md), [GitHub App Blueprint](github-app.md), [Hosted Registry](hosted-registry.md), [Enterprise Dashboard](enterprise-dashboard.md) | Build hosted products around OSS artifact contracts. |
 
 ## Core Concepts
@@ -28,6 +29,8 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Compatibility Policy](../COMPATIBILITY.md): stable contract surfaces, additive changes, and migration rules.
 - [Security Policy](../SECURITY.md): vulnerability reporting, MCP trust model, HMAC audit, and import provenance boundaries.
 - [Demo Repo](../examples/demo-repo/README.md): runnable end-to-end demo for PR review and evidence generation.
+- [Adoption Playbook](adoption-playbook.md): 15-minute pilot path and promotion criteria from advisory to blocking gates.
+- [Pilot Repository Examples](../examples/pilot-repos/README.md): copyable starter packs for Healthchecks, Umami, and Woodpecker-style repositories.
 - [Open-core Boundary](open-core-boundary.md): what stays open-source and what belongs in hosted/enterprise layers.
 - [Commercial Handoff Examples](../examples/commercial-handoff/README.md): schema-valid example payloads for future hosted consumers.
 

@@ -1,6 +1,8 @@
 # GitHub Action
 
-Use this action to run `skills-orchestrator check` in CI.
+Use this action to run `skills-orchestrator check` in CI. For first-time adoption, start with
+[Adoption Playbook](adoption-playbook.md) and keep the first workflow advisory until reviewers
+understand SARIF and registry diff output.
 
 The action installs Skills Orchestrator from the checked-out action source, so pinning the action
 version also pins the CLI implementation:
@@ -18,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.2.1
+      - uses: BambooGap/skills-orchestrator@v3.3.0
         with:
           config: config/skills.yaml
 ```
@@ -45,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.2.1
+      - uses: BambooGap/skills-orchestrator@v3.3.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -82,7 +84,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v3.2.1
+      - uses: BambooGap/skills-orchestrator@v3.3.0
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -124,7 +126,15 @@ jobs:
 
 `action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
 repository can be used directly with a release tag, for example
-`BambooGap/skills-orchestrator@v3.2.1`, even before the Marketplace listing is public.
+`BambooGap/skills-orchestrator@v3.3.0`, even before the Marketplace listing is public.
+
+Recommended Marketplace positioning:
+
+- Name: `Skills Orchestrator Check`
+- Primary category: code quality
+- Secondary category: security
+- Short description: `Enforce SkillOps policy packs, SARIF, registry diff, and evidence checks for AI-agent skills.`
+- First example: the advisory workflow above, not the strict engineering gate.
 
 GitHub Marketplace listing is a separate release UI step, not something `gh release create`
 publishes automatically. GitHub's documented flow is to open the repository `action.yml`, draft a

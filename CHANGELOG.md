@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-06-22
+
+### Added
+- Added an Adoption Playbook for advisory, warning, and engineering-grade rollout modes.
+- Added copyable pilot repository starter packs for Healthchecks, Umami, and Woodpecker-style
+  repositories.
+- Added a release hygiene regression test that fails when generated `AGENTS.md` is stale relative
+  to the package version.
+
+### Changed
+- Refined the GitHub Action and Marketplace-facing positioning around SkillOps policy packs,
+  SARIF, registry diff, and evidence checks.
+- Linked the README, documentation index, and examples index to the new adoption path.
+
 ## [3.2.1] - 2026-06-22
 
 ### Fixed
