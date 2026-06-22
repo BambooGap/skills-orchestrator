@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-06-22
+
+### Changed
+- Upgraded pinned GitHub Actions workflow dependencies to Node 24-compatible releases:
+  `actions/checkout@v7.0.0` and `actions/setup-python@v6.2.0`.
+- Updated current install, Action, container, and pilot workflow examples to `v3.7.0`.
+
 ## [3.6.0] - 2026-06-22
 
 ### Added
