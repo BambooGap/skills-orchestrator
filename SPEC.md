@@ -10,9 +10,10 @@ Normative terms use RFC 2119 meanings: MUST, MUST NOT, SHOULD, MAY.
 
 ## Scope
 
-SkillOps Contract v1 covers seven artifact families:
+SkillOps Contract v1 covers eight artifact families:
 
 - skill metadata in `skills.yaml` and skill frontmatter,
+- schema catalog metadata for public contract discovery,
 - check reports with CI policy trace,
 - organization registry JSON,
 - registry graph JSON,
@@ -31,6 +32,31 @@ only specifies how Skills Orchestrator emits or references them.
 - Additive fields MAY be added to v1 artifacts. Consumers MUST ignore unknown fields unless they
   intentionally opt into strict validation.
 - JSON Schema files under `skills_orchestrator/schemas/` are the executable contract source.
+
+## Schema Catalog Contract
+
+The schema catalog is the machine-readable entry point for public contract discovery. The
+registered schema kind is `schema-catalog`, backed by `schema-catalog.schema.json`.
+
+```bash
+skills-orchestrator schema list --format json > schema-catalog.json
+skills-orchestrator schema validate --kind schema-catalog --input schema-catalog.json
+```
+
+Every catalog entry MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `kind` | CLI schema kind used by `schema validate --kind`. |
+| `file` | Packaged JSON Schema filename. |
+| `contract_id` | Public contract identifier or upstream standard id. |
+| `stability` | One of `stable` or `preview`. |
+| `since` | First release exposing the contract surface. |
+| `consumers` | Intended integration surfaces such as `ci`, `audit`, or `hosted-service`. |
+
+`stable` catalog entries follow the compatibility policy for v3.x and later compatible lines.
+`preview` entries are executable and tested, but downstream hosted-product workflows may still
+evolve additively before a future major version.
 
 ## Skill Metadata Contract
 
