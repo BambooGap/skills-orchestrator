@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-06-22
+
+### Added
+- Added `reviewer summary` to generate a PR reviewer-facing Markdown or JSON summary from
+  check JSON, policy trace, registry diff, registry graph, and evidence ledger artifacts.
+- Expanded the composite GitHub Action outputs with stable paths for check JSON, policy trace,
+  registry diff JSON, registry graph, evidence manifest, evidence bundle hash, and reviewer
+  summary artifacts.
+
+### Changed
+- The GitHub Action now delays failing on `check` diagnostics until reviewer artifacts have been
+  generated, so failing pull requests still retain inspectable SkillOps evidence.
+
 ## [3.4.0] - 2026-06-22
 
 ### Added

@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.4.0
+      - uses: BambooGap/skills-orchestrator@v3.5.0
         with:
           config: config/skills.yaml
 ```
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.4.0
+      - uses: BambooGap/skills-orchestrator@v3.5.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v3.4.0
+      - uses: BambooGap/skills-orchestrator@v3.5.0
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -95,6 +95,54 @@ jobs:
 marker `<!-- skills-orchestrator:registry-diff-comment:v1 -->`, so repeat runs update the previous
 comment instead of posting duplicates. Do not use `pull_request_target` unless you have separately
 reviewed the security implications for untrusted fork code.
+
+## Reviewer Summary Pack
+
+`reviewer-summary: true` generates stable CI artifacts for platform reviewers:
+
+- `check.json`
+- `policy-trace.json`
+- `registry-graph.json`
+- `evidence/evidence-manifest.json`
+- `skillops-review-summary.md`
+
+If `comment-registry-diff: true` is also enabled, the PR comment body is built from the reviewer
+summary instead of the raw registry diff. The action still fails at the end when `check` crosses the
+configured `fail-on` threshold, but it delays that failure until after reviewer artifacts exist.
+
+```yaml
+name: SkillOps reviewer summary
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: skillops
+        uses: BambooGap/skills-orchestrator@v3.5.0
+        with:
+          config: config/skills.yaml
+          policy-pack: builtin/engineering-grade
+          fail-on: warning
+          upload-sarif: true
+          registry-diff: true
+          reviewer-summary: true
+          comment-registry-diff: true
+
+      # Optional: upload the output paths above with your own artifact policy.
+      # The composite action exposes paths via steps.skillops.outputs.*.
+```
 
 ## Hardened Pinning
 
@@ -126,7 +174,7 @@ jobs:
 
 `action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
 repository can be used directly with a release tag, for example
-`BambooGap/skills-orchestrator@v3.4.0`, even before the Marketplace listing is public.
+`BambooGap/skills-orchestrator@v3.5.0`, even before the Marketplace listing is public.
 
 Recommended Marketplace positioning:
 
@@ -162,10 +210,22 @@ Reference: [Publishing actions in GitHub Marketplace](https://docs.github.com/ac
 | `registry-base-ref` | empty | Optional git ref for the base registry snapshot. |
 | `registry-diff-file` | `registry-diff.md` | Relative filename for the generated Markdown artifact. |
 | `comment-registry-diff` | `false` | Update the pull request registry diff comment. Requires `pull-requests: write`. |
+| `reviewer-summary` | `false` | Generate reviewer-facing summary artifacts from check, registry, graph, and evidence outputs. |
+| `reviewer-summary-file` | `skillops-review-summary.md` | Relative filename for the generated reviewer summary Markdown artifact. |
+| `export-evidence` | `false` | Export a full evidence bundle even when reviewer summary is disabled. |
+| `evidence-dir` | `evidence` | Relative evidence output directory under the runner temp directory. |
+| `registry-graph-file` | `registry-graph.json` | Relative filename for the generated registry graph JSON artifact. |
 
 ## Outputs
 
 | Output | Description |
 | --- | --- |
+| `check-json-file` | Absolute path to `check --format json` output. |
+| `policy-trace-file` | Absolute path to extracted policy trace JSON. |
 | `registry-diff-file` | Absolute path to the generated registry diff Markdown file. |
+| `registry-diff-json-file` | Absolute path to the generated registry diff JSON file. |
 | `registry-comment-body` | Absolute path to the generated PR comment body Markdown file. |
+| `registry-graph-file` | Absolute path to the generated registry graph JSON file. |
+| `evidence-manifest-file` | Absolute path to the generated evidence manifest. |
+| `evidence-bundle-hash` | SHA-256 bundle hash from `evidence-manifest.json`. |
+| `reviewer-summary-file` | Absolute path to the generated reviewer summary Markdown file. |
