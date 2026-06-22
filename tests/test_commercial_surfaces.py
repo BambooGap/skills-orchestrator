@@ -189,6 +189,10 @@ def test_doctor_enterprise_profile_validates_evidence_bundle(tmp_path):
     assert payload["evidence"]["evidence_manifest"]["detail"] == "schema valid"
     assert payload["evidence"]["evidence_check_json"]["detail"] == "schema valid"
     assert payload["evidence"]["evidence_registry"]["detail"] == "schema valid"
+    assert payload["evidence"]["adapter_inspect"]["detail"] == "schema valid"
+    assert payload["evidence"]["package_sbom"]["detail"] == "schema valid"
+    assert "DOCTOR_ADAPTER_INSPECT" not in {issue["id"] for issue in payload["issues"]}
+    assert "DOCTOR_PACKAGE_SBOM" not in {issue["id"] for issue in payload["issues"]}
     assert not [issue for issue in payload["issues"] if issue["severity"] == "error"]
 
 
@@ -524,7 +528,11 @@ def test_evidence_export_writes_bundle(tmp_path, monkeypatch):
     assert (out_dir / "instruction-manifest.json").exists()
     assert (out_dir / "policy-opa-input.json").exists()
     assert (out_dir / "doctor.json").exists()
+    assert (out_dir / "adapter-inspect.json").exists()
+    assert (out_dir / "package-sbom.cdx.json").exists()
     assert json.loads((out_dir / "evidence-manifest.json").read_text())["files"] == bundle["files"]
+    assert "adapter_inspect" in bundle["files"]
+    assert "package_sbom" in bundle["files"]
 
 
 def test_integrations_cli_json():

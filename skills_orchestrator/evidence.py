@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from skills_orchestrator.adapters.inspect import inspect_adapters
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.compiler import Parser, Resolver
 from skills_orchestrator.compiler.instruction_manifest import build_instruction_manifest
@@ -14,6 +15,7 @@ from skills_orchestrator.formatters import format_diagnostics_json, format_diagn
 from skills_orchestrator.formatters.manifest import format_instruction_manifest_json
 from skills_orchestrator.org_registry import build_registry
 from skills_orchestrator.policy.exporter import build_opa_input, build_rego_test
+from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
 
 
 def export_evidence_bundle(
@@ -28,6 +30,7 @@ def export_evidence_bundle(
     """Write a local evidence bundle and return its manifest."""
     output = Path(out_dir)
     output.mkdir(parents=True, exist_ok=True)
+    root = _workspace_root(config_path)
 
     parser = Parser(config_path)
     cfg = parser.parse()
@@ -54,6 +57,8 @@ def export_evidence_bundle(
         agents_md=agents_md,
     )
     registry = build_registry([config_path], zone_id=zone_id)
+    adapter_inspect = inspect_adapters(root)
+    package_sbom = build_python_package_sbom()
 
     files = {
         "check_json": _write(output / "check.json", format_diagnostics_json(check_report)),
@@ -74,6 +79,11 @@ def export_evidence_bundle(
             output / "skill-registry.json",
             json.dumps(registry, ensure_ascii=False, indent=2) + "\n",
         ),
+        "adapter_inspect": _write(
+            output / "adapter-inspect.json",
+            json.dumps(adapter_inspect, ensure_ascii=False, indent=2) + "\n",
+        ),
+        "package_sbom": _write(output / "package-sbom.cdx.json", format_sbom_json(package_sbom)),
     }
     bundle = {
         "schema_version": "skills-orchestrator.evidence-bundle.v1",
@@ -87,6 +97,15 @@ def export_evidence_bundle(
         json.dumps(bundle, ensure_ascii=False, indent=2) + "\n",
     )
     return bundle
+
+
+def _workspace_root(config_path: str) -> Path:
+    config = Path(config_path).expanduser()
+    if not config.is_absolute():
+        config = (Path.cwd() / config).resolve()
+    else:
+        config = config.resolve()
+    return config.parent.parent if config.parent.name == "config" else config.parent
 
 
 def _write(path: Path, content: str) -> str:

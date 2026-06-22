@@ -75,6 +75,20 @@ skills-orchestrator registry diff \
   --format json
 ```
 
+Use JSON diff for machine validation:
+
+```bash
+skills-orchestrator registry diff \
+  registry-before.json \
+  registry-after.json \
+  --format json \
+  --output registry-diff.json
+
+skills-orchestrator schema validate \
+  --kind registry-diff \
+  --input registry-diff.json
+```
+
 For PR review, generate Markdown instead of wiring the CLI to GitHub APIs:
 
 ```bash
@@ -143,6 +157,8 @@ The bundle writes:
 - `policy-proof.rego`
 - `doctor.json`
 - `skill-registry.json`
+- `adapter-inspect.json`
+- `package-sbom.cdx.json`
 - `evidence-manifest.json`
 
 Use the folder as a CI artifact or release attachment. It contains metadata and hashes, not raw
