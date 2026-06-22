@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-06-22
+
+### Fixed
+- `evidence export` now writes `adapter-inspect.json` and `package-sbom.cdx.json` so
+  `doctor --profile enterprise` can reach 100 after a complete evidence export.
+- Documented upgrade remediation for stale generated `AGENTS.md` artifacts.
+- Clarified that registry diff JSON is the schema-validation output, while Markdown is for PR
+  review comments.
+
 ## [3.3.0] - 2026-06-22
 
 ### Added
