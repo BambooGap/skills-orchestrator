@@ -154,6 +154,10 @@ skills-orchestrator schema validate \
 skills-orchestrator schema validate \
   --kind enterprise-dashboard-snapshot \
   --input examples/commercial-handoff/dashboard-snapshot.json
+
+skills-orchestrator schema validate \
+  --kind enterprise-dashboard-rollup \
+  --input examples/commercial-handoff/dashboard-rollup.json
 ```
 
 ## Evidence Bundle

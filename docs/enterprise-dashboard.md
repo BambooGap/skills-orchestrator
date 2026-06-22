@@ -39,8 +39,21 @@ skills-orchestrator schema validate \
   --input dashboard-snapshot.json
 ```
 
-The snapshot is intentionally derived. It is safe to cache and render because the authoritative data
-remains in registry, evidence, and diagnostic artifacts.
+Generate and validate an organization rollup from multiple snapshots:
+
+```bash
+skills-orchestrator dashboard rollup \
+  --snapshot-glob "snapshots/*.json" \
+  --organization example-org \
+  --output dashboard-rollup.json
+
+skills-orchestrator schema validate \
+  --kind enterprise-dashboard-rollup \
+  --input dashboard-rollup.json
+```
+
+Snapshots and rollups are intentionally derived. They are safe to cache and render because the
+authoritative data remains in registry, evidence, and diagnostic artifacts.
 
 ## Access Model
 

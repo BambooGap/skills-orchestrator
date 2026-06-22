@@ -229,7 +229,7 @@ Delivered:
 
 - Open-core boundary documentation.
 - GitHub App, hosted registry, and enterprise dashboard blueprints.
-- JSON Schema contracts for installation, ingest, and dashboard snapshots.
+- JSON Schema contracts for installation, ingest, dashboard snapshots, and dashboard rollups.
 - `examples/commercial-handoff/` sample payloads.
 
 ## Phase 5: Community Narrative

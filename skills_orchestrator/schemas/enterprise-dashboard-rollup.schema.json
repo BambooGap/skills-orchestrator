@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/enterprise-dashboard-rollup.schema.json",
+  "title": "Skills Orchestrator Enterprise Dashboard Rollup",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "summary", "repositories"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.enterprise-dashboard-rollup.v1" },
+    "generated_at": { "type": "string" },
+    "organization": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": [
+        "repositories",
+        "average_readiness_score",
+        "min_readiness_score",
+        "max_readiness_score",
+        "policy_errors",
+        "policy_warnings",
+        "policy_infos",
+        "registry_skills",
+        "registry_owners",
+        "duplicate_skill_ids"
+      ],
+      "properties": {
+        "repositories": { "type": "integer", "minimum": 1 },
+        "average_readiness_score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "min_readiness_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "max_readiness_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "policy_errors": { "type": "integer", "minimum": 0 },
+        "policy_warnings": { "type": "integer", "minimum": 0 },
+        "policy_infos": { "type": "integer", "minimum": 0 },
+        "registry_skills": { "type": "integer", "minimum": 0 },
+        "registry_owners": { "type": "integer", "minimum": 0 },
+        "duplicate_skill_ids": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["source", "full_name", "ref", "readiness", "policy", "registry"],
+        "properties": {
+          "source": { "type": "string" },
+          "full_name": { "type": "string" },
+          "ref": { "type": "string" },
+          "commit": { "type": "string" },
+          "readiness": {
+            "type": "object",
+            "required": ["score", "grade", "issues"],
+            "properties": {
+              "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+              "grade": { "type": "string" },
+              "issues": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": true
+          },
+          "policy": {
+            "type": "object",
+            "required": ["errors", "warnings", "infos"],
+            "properties": {
+              "errors": { "type": "integer", "minimum": 0 },
+              "warnings": { "type": "integer", "minimum": 0 },
+              "infos": { "type": "integer", "minimum": 0 },
+              "trace_entries": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": true
+          },
+          "registry": {
+            "type": "object",
+            "required": ["skills", "owners", "duplicate_skill_ids"],
+            "properties": {
+              "skills": { "type": "integer", "minimum": 0 },
+              "skill_refs": { "type": "integer", "minimum": 0 },
+              "owners": { "type": "integer", "minimum": 0 },
+              "duplicate_skill_ids": { "type": "integer", "minimum": 0 }
+            },
+            "additionalProperties": true
+          },
+          "ledger": {
+            "type": "object",
+            "properties": {
+              "bundle_hash": { "type": "string" },
+              "previous_bundle_hash": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

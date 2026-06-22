@@ -81,6 +81,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "conformance",
         "doctor",
         "evidence",
+        "enterprise-dashboard-rollup",
         "enterprise-dashboard-snapshot",
         "github-app-installation",
         "hosted-registry-ingest",
@@ -123,6 +124,10 @@ def test_schema_resources_are_packaged_and_loadable():
         (
             "enterprise-dashboard-snapshot",
             "examples/commercial-handoff/dashboard-snapshot.json",
+        ),
+        (
+            "enterprise-dashboard-rollup",
+            "examples/commercial-handoff/dashboard-rollup.json",
         ),
     ],
 )
@@ -350,7 +355,12 @@ rules:
     handoff = root / "examples" / "commercial-handoff"
     handoff.mkdir(parents=True)
     repo_examples = Path(__file__).resolve().parents[1] / "examples" / "commercial-handoff"
-    for name in ("installation.json", "registry-ingest.json", "dashboard-snapshot.json"):
+    for name in (
+        "installation.json",
+        "registry-ingest.json",
+        "dashboard-snapshot.json",
+        "dashboard-rollup.json",
+    ):
         (handoff / name).write_text(
             (repo_examples / name).read_text(encoding="utf-8"),
             encoding="utf-8",

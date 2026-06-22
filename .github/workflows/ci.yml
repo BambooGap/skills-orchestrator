@@ -72,6 +72,7 @@ jobs:
           skills-orchestrator schema validate --kind github-app-installation --input examples/commercial-handoff/installation.json
           skills-orchestrator schema validate --kind hosted-registry-ingest --input examples/commercial-handoff/registry-ingest.json
           skills-orchestrator schema validate --kind enterprise-dashboard-snapshot --input examples/commercial-handoff/dashboard-snapshot.json
+          skills-orchestrator schema validate --kind enterprise-dashboard-rollup --input examples/commercial-handoff/dashboard-rollup.json
           skills-orchestrator --version
 
       - name: SkillOps demo repo conformance smoke
@@ -113,6 +114,10 @@ jobs:
             --ref "${GITHUB_REF:-refs/heads/main}" \
             --commit "${GITHUB_SHA:-local}" \
             --output /tmp/skillops-demo-evidence/dashboard-snapshot.json
+          skills-orchestrator dashboard rollup \
+            --snapshot /tmp/skillops-demo-evidence/dashboard-snapshot.json \
+            --organization BambooGap \
+            --output /tmp/skillops-demo-evidence/dashboard-rollup.json
           skills-orchestrator adapters inspect \
             --path examples/demo-repo \
             --format json \
@@ -121,6 +126,7 @@ jobs:
           skills-orchestrator schema validate --kind registry-diff --input /tmp/skillops-demo-evidence/registry-diff.json
           skills-orchestrator schema validate --kind evidence --input /tmp/skillops-demo-evidence/evidence-manifest.json
           skills-orchestrator schema validate --kind enterprise-dashboard-snapshot --input /tmp/skillops-demo-evidence/dashboard-snapshot.json
+          skills-orchestrator schema validate --kind enterprise-dashboard-rollup --input /tmp/skillops-demo-evidence/dashboard-rollup.json
           skills-orchestrator schema validate --kind adapter-inspect --input /tmp/skillops-demo-evidence/adapter-inspect.json
           python - <<'PY'
           import json
