@@ -67,7 +67,8 @@ hosted-product workflow may still evolve additively before a future major versio
 
 ## Current Line
 
-`v3.9.x` keeps SkillOps Contract v1 stable and adds a machine-readable contract catalog:
+`v4.x` keeps existing SkillOps Contract v1 identifiers stable and adds a package self-audit gate for
+contract distribution quality:
 
 - `skills-orchestrator.conformance.v1`
 - `skills-orchestrator.policy-pack.v1`
@@ -75,6 +76,9 @@ hosted-product workflow may still evolve additively before a future major versio
 - optional `ledger` in evidence manifests, required for v3.4 conformance
 - `skills-orchestrator.registry-graph.v1`
 - `skills-orchestrator.schema-catalog.v1`
+- `skills-orchestrator.schema-audit.v1`
 
+The v4.0 release does not rename or remove v1 contracts. It marks the core package as stable and
+adds `schema audit` so CI can verify packaged schema quality without reading project skill files.
 Commercial handoff contracts for GitHub App installation, hosted registry ingest, and enterprise
-dashboard snapshots/rollups remain `preview` catalog entries in v3.9.x.
+dashboard snapshots/rollups remain `preview` catalog entries in v4.x.

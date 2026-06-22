@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-06-22
+
+### Added
+- Added `schema audit` to self-audit packaged schema contracts and schema catalog metadata.
+- Added `schema-audit.schema.json` so the schema audit report is itself machine-validatable.
+
+### Changed
+- Marked the package as `Production/Stable` for the v4 line while keeping existing v1 SkillOps
+  contract identifiers compatible.
+- Updated current install, Action, container, and pilot workflow examples to `v4.0.0`.
+
 ## [3.9.0] - 2026-06-22
 
 ### Added

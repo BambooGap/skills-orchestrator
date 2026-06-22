@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
@@ -10,6 +11,8 @@ from typing import Any
 
 import yaml
 from jsonschema import Draft202012Validator
+
+from . import __version__
 
 MAX_SCHEMA_INPUT_BYTES = 5_000_000
 MAX_VALIDATION_ERRORS = 50
@@ -252,6 +255,16 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v3.9.0",
         consumers=("ci", "platform-review", "contract-audit"),
     ),
+    "schema-audit": SchemaDescriptor(
+        kind="schema-audit",
+        filename="schema-audit.schema.json",
+        title="Schema Audit Report",
+        description="Self-audit report for packaged schema contracts and catalog metadata.",
+        contract_id="skills-orchestrator.schema-audit.v1",
+        stability="stable",
+        since="v4.0.0",
+        consumers=("ci", "platform-review", "contract-audit"),
+    ),
     "supply-chain-sbom": SchemaDescriptor(
         kind="supply-chain-sbom",
         filename="supply-chain-sbom.schema.json",
@@ -268,6 +281,60 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
 def list_schema_descriptors() -> list[SchemaDescriptor]:
     """Return registered schemas in stable display order."""
     return [SCHEMAS[key] for key in sorted(SCHEMAS)]
+
+
+def build_schema_catalog() -> dict[str, Any]:
+    """Return the machine-readable catalog for registered schemas."""
+    return {
+        "schema_version": "skills-orchestrator.schema-catalog.v1",
+        "schemas": [descriptor.to_catalog_entry() for descriptor in list_schema_descriptors()],
+    }
+
+
+def audit_schema_catalog() -> dict[str, Any]:
+    """Audit packaged schemas and catalog metadata without reading project files."""
+    checks: list[dict[str, Any]] = []
+    descriptors = list_schema_descriptors()
+    for descriptor in descriptors:
+        _add_schema_load_check(checks, descriptor)
+        _add_descriptor_metadata_check(checks, descriptor)
+
+    catalog = build_schema_catalog()
+    try:
+        Draft202012Validator(load_schema("schema-catalog")).validate(catalog)
+        checks.append(
+            {
+                "id": "schema-catalog:self-validation",
+                "kind": "schema-catalog",
+                "status": "pass",
+                "message": "schema catalog validates against schema-catalog.schema.json",
+            }
+        )
+    except Exception as exc:
+        checks.append(
+            {
+                "id": "schema-catalog:self-validation",
+                "kind": "schema-catalog",
+                "status": "fail",
+                "message": str(exc),
+            }
+        )
+
+    failed = sum(1 for check in checks if check["status"] == "fail")
+    return {
+        "schema_version": "skills-orchestrator.schema-audit.v1",
+        "tool": {"name": "skills-orchestrator", "version": __version__},
+        "status": "pass" if failed == 0 else "fail",
+        "summary": {
+            "schemas": len(descriptors),
+            "stable": sum(1 for item in descriptors if item.stability == "stable"),
+            "preview": sum(1 for item in descriptors if item.stability == "preview"),
+            "checks": len(checks),
+            "passed": len(checks) - failed,
+            "failed": failed,
+        },
+        "checks": checks,
+    }
 
 
 def load_schema(kind: str) -> dict[str, Any]:
@@ -327,6 +394,53 @@ def _descriptor(kind: str) -> SchemaDescriptor:
     except KeyError as exc:
         known = ", ".join(sorted(SCHEMAS))
         raise ValueError(f"Unknown schema kind '{kind}'. Known kinds: {known}") from exc
+
+
+def _add_schema_load_check(checks: list[dict[str, Any]], descriptor: SchemaDescriptor) -> None:
+    try:
+        load_schema(descriptor.kind)
+        checks.append(
+            {
+                "id": f"schema-load:{descriptor.kind}",
+                "kind": descriptor.kind,
+                "status": "pass",
+                "message": f"{descriptor.filename} is packaged and valid Draft 2020-12 JSON Schema",
+            }
+        )
+    except Exception as exc:
+        checks.append(
+            {
+                "id": f"schema-load:{descriptor.kind}",
+                "kind": descriptor.kind,
+                "status": "fail",
+                "message": str(exc),
+            }
+        )
+
+
+def _add_descriptor_metadata_check(
+    checks: list[dict[str, Any]], descriptor: SchemaDescriptor
+) -> None:
+    errors: list[str] = []
+    if descriptor.stability not in {"stable", "preview"}:
+        errors.append("stability must be stable or preview")
+    if not re.fullmatch(r"v\d+\.\d+\.\d+", descriptor.since):
+        errors.append("since must use vMAJOR.MINOR.PATCH")
+    if descriptor.contract_id.startswith(
+        "skills-orchestrator."
+    ) and not descriptor.contract_id.endswith(".v1"):
+        errors.append("skills-orchestrator contract ids must end in .v1")
+    if not descriptor.consumers:
+        errors.append("consumers must not be empty")
+
+    checks.append(
+        {
+            "id": f"schema-metadata:{descriptor.kind}",
+            "kind": descriptor.kind,
+            "status": "fail" if errors else "pass",
+            "message": "; ".join(errors) if errors else "catalog metadata is valid",
+        }
+    )
 
 
 def _format_error_path(parts: Any) -> str:

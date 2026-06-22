@@ -95,6 +95,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "registry",
         "registry-diff",
         "registry-graph",
+        "schema-audit",
         "schema-catalog",
         "supply-chain-sbom",
     }.issubset(kinds)
@@ -237,6 +238,30 @@ def test_schema_list_json(tmp_path):
     catalog_file = tmp_path / "schema-catalog.json"
     catalog_file.write_text(result.output, encoding="utf-8")
     assert validate_document("schema-catalog", str(catalog_file)).valid is True
+
+
+def test_schema_audit_json_validates(tmp_path):
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["schema", "audit", "--format", "json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "skills-orchestrator.schema-audit.v1"
+    assert payload["status"] == "pass"
+    assert payload["summary"]["failed"] == 0
+    audit_file = tmp_path / "schema-audit.json"
+    audit_file.write_text(result.output, encoding="utf-8")
+    assert validate_document("schema-audit", str(audit_file)).valid is True
+
+
+def test_schema_audit_text_passes():
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["schema", "audit"])
+
+    assert result.exit_code == 0
+    assert "Schema audit: pass" in result.output
 
 
 def test_hosted_registry_ingest_rejects_unsafe_artifact_paths(tmp_path):

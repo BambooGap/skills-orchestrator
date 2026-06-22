@@ -26,6 +26,11 @@ skills-orchestrator schema list --format json > evidence/schema-catalog.json
 skills-orchestrator schema validate \
   --kind schema-catalog \
   --input evidence/schema-catalog.json
+
+skills-orchestrator schema audit --format json > evidence/schema-audit.json
+skills-orchestrator schema validate \
+  --kind schema-audit \
+  --input evidence/schema-audit.json
 ```
 
 ### Level 1: Local SkillOps
@@ -176,7 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v3.9.0
+      - uses: BambooGap/skills-orchestrator@v4.0.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

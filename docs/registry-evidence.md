@@ -9,6 +9,7 @@
 - `evidence export`: release evidence bundle with artifact hashes and bundle hash ledger.
 - `schema validate`: machine-checkable JSON Schema contracts for generated files.
 - `schema list --format json`: machine-checkable catalog of stable and preview contract surfaces.
+- `schema audit`: package self-audit for schema loadability and catalog metadata.
 - `integrations list`: adjacent ecosystem catalog for agent runtimes, memory layers, and visualization tools.
 - `adapters inspect`: detected AGENTS.md, Claude Skills, MCP, and Agents SDK surfaces.
 - `supply-chain sbom`: Python package SBOM for the software distribution surface.
@@ -139,13 +140,16 @@ skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbo
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 skills-orchestrator schema list --format json > evidence/schema-catalog.json
 skills-orchestrator schema validate --kind schema-catalog --input evidence/schema-catalog.json
+skills-orchestrator schema audit --format json > evidence/schema-audit.json
+skills-orchestrator schema validate --kind schema-audit --input evidence/schema-audit.json
 ```
 
 SARIF and CycloneDX keep using their upstream schemas; Skills Orchestrator only owns its native
 config and artifact contracts. The schema catalog declares each native contract's `contract_id`,
 `stability`, `since`, and intended consumers so platform teams can audit compatibility without
-scraping docs. The commercial handoff schemas are additive preview contracts for future GitHub App,
-hosted registry, and enterprise dashboard consumers:
+scraping docs. The schema audit report verifies packaged schema loadability and catalog metadata
+without reading project skill files. The commercial handoff schemas are additive preview contracts
+for future GitHub App, hosted registry, and enterprise dashboard consumers:
 
 ```bash
 skills-orchestrator schema validate \

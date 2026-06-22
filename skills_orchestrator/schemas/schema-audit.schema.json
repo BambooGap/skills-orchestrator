@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/schema-audit.schema.json",
+  "title": "Skills Orchestrator Schema Audit Report",
+  "type": "object",
+  "required": ["schema_version", "tool", "status", "summary", "checks"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.schema-audit.v1" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "status": { "enum": ["pass", "fail"] },
+    "summary": {
+      "type": "object",
+      "required": ["schemas", "stable", "preview", "checks", "passed", "failed"],
+      "properties": {
+        "schemas": { "type": "integer", "minimum": 1 },
+        "stable": { "type": "integer", "minimum": 0 },
+        "preview": { "type": "integer", "minimum": 0 },
+        "checks": { "type": "integer", "minimum": 1 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "status", "message"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*:[A-Za-z0-9_.-]+$"
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "status": { "enum": ["pass", "fail"] },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
