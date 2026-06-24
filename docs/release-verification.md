@@ -19,6 +19,16 @@ skills-orchestrator supply-chain container-release \
   --provenance-output container-provenance.json \
   --no-dependencies
 skills-orchestrator schema validate --kind container-provenance --input container-provenance.json
+skills-orchestrator supply-chain verify-container-release \
+  --provenance container-provenance.json \
+  --sbom container-sbom.cdx.json \
+  --image ghcr.io/bamboogap/skills-orchestrator \
+  --tag local \
+  --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --format json > container-release-verification.json
+skills-orchestrator schema validate \
+  --kind container-release-verification \
+  --input container-release-verification.json
 python -m build
 python -m twine check dist/*
 ```
@@ -58,6 +68,9 @@ skills-orchestrator schema validate --kind registry-graph --input registry-graph
 skills-orchestrator schema validate --kind adapter-inspect --input adapter-inspect.json
 skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbom.cdx.json
 skills-orchestrator schema validate --kind container-provenance --input container-provenance.json
+skills-orchestrator schema validate \
+  --kind container-release-verification \
+  --input container-release-verification.json
 skills-orchestrator evidence export --config config/skills.yaml --out evidence
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 skills-orchestrator schema validate \
@@ -89,9 +102,13 @@ Verify:
 - CodeQL workflow completed or is intentionally skipped for the tag.
 - GHCR workflow published the release image when container publishing is enabled.
 - GHCR image provenance and SBOM attestations are attached to the resolved image digest.
+- Local container provenance, SBOM subject, and SBOM hash binding pass
+  `supply-chain verify-container-release`.
 
 ## Current Gaps
 
 The release workflow attests Python distribution artifacts and the GHCR workflow publishes release
 images with digest-bound provenance and SBOM attestations. Image signing, full operating-system
 layer SBOMs, SLSA level claims, and hash-locked Python installs remain future hardening items.
+`verify-container-release` validates local SkillOps release artifacts; it is not a replacement for
+GitHub Artifact Attestation verification against a real GHCR digest.

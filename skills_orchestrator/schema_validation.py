@@ -125,6 +125,16 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v4.2.0",
         consumers=("supply-chain", "ghcr", "release-gate"),
     ),
+    "container-release-verification": SchemaDescriptor(
+        kind="container-release-verification",
+        filename="container-release-verification.schema.json",
+        title="Container Release Verification",
+        description="Local release verification report for container provenance and SBOM binding.",
+        contract_id="skills-orchestrator.container-release-verification.v1",
+        stability="stable",
+        since="v4.4.0",
+        consumers=("supply-chain", "ci", "release-gate"),
+    ),
     "check": SchemaDescriptor(
         kind="check",
         filename="check-report.schema.json",

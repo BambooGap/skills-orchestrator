@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/container-release-verification.schema.json",
+  "title": "Skills Orchestrator Container Release Verification",
+  "type": "object",
+  "required": ["schema_version", "tool", "status", "summary", "provenance", "checks"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.container-release-verification.v1" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "status": { "enum": ["pass", "fail"] },
+    "summary": {
+      "type": "object",
+      "required": ["passed", "failed"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "provenance": { "type": "string", "minLength": 1 },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "expected", "actual"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["pass", "fail"] },
+          "expected": {},
+          "actual": {},
+          "path": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

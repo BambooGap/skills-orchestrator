@@ -4,7 +4,7 @@ from click.testing import CliRunner
 
 from skills_orchestrator.main import cli
 from skills_orchestrator.schema_validation import validate_document
-from skills_orchestrator.supply_chain import build_container_image_sbom
+from skills_orchestrator.supply_chain import build_container_image_sbom, verify_container_release
 
 
 def test_container_image_sbom_binds_to_digest():
@@ -84,3 +84,168 @@ def test_container_release_cli_rejects_non_digest_subject(tmp_path):
 
     assert result.exit_code == 1
     assert "sha256" in result.output
+
+
+def test_verify_container_release_passes_matching_provenance(tmp_path):
+    digest = "sha256:" + ("d" * 64)
+    sbom_path = tmp_path / "container-sbom.cdx.json"
+    provenance_path = tmp_path / "container-provenance.json"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "container-release",
+            "--image",
+            "ghcr.io/bamboogap/skills-orchestrator",
+            "--tag",
+            "v4.4.0",
+            "--digest",
+            digest,
+            "--repository",
+            "BambooGap/skills-orchestrator",
+            "--commit",
+            "def456",
+            "--workflow-run-url",
+            "https://github.com/BambooGap/skills-orchestrator/actions/runs/2",
+            "--sbom-output",
+            str(sbom_path),
+            "--provenance-output",
+            str(provenance_path),
+            "--no-dependencies",
+        ],
+    )
+    assert result.exit_code == 0
+
+    report = verify_container_release(
+        provenance_path=provenance_path,
+        sbom_path=sbom_path,
+        expected_image="ghcr.io/bamboogap/skills-orchestrator",
+        expected_tag="v4.4.0",
+        expected_digest=digest,
+    )
+
+    assert report["status"] == "pass"
+    assert report["summary"]["failed"] == 0
+
+
+def test_verify_container_release_reports_digest_and_sbom_mismatches(tmp_path):
+    digest = "sha256:" + ("e" * 64)
+    sbom_path = tmp_path / "container-sbom.cdx.json"
+    provenance_path = tmp_path / "container-provenance.json"
+    runner = CliRunner()
+    runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "container-release",
+            "--image",
+            "ghcr.io/bamboogap/skills-orchestrator",
+            "--tag",
+            "v4.4.0",
+            "--digest",
+            digest,
+            "--sbom-output",
+            str(sbom_path),
+            "--provenance-output",
+            str(provenance_path),
+            "--no-dependencies",
+        ],
+    )
+    sbom_path.write_text("tampered\n", encoding="utf-8")
+
+    report = verify_container_release(
+        provenance_path=provenance_path,
+        sbom_path=sbom_path,
+        expected_digest="sha256:" + ("f" * 64),
+    )
+
+    failed = {check["id"] for check in report["checks"] if check["status"] == "fail"}
+    assert report["status"] == "fail"
+    assert {"expected-digest", "sbom-sha256"} <= failed
+
+
+def test_verify_container_release_rejects_malformed_provenance_digest(tmp_path):
+    digest = "sha256:" + ("0" * 64)
+    sbom_path = tmp_path / "container-sbom.cdx.json"
+    provenance_path = tmp_path / "container-provenance.json"
+    runner = CliRunner()
+    runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "container-release",
+            "--image",
+            "ghcr.io/bamboogap/skills-orchestrator",
+            "--tag",
+            "v4.4.0",
+            "--digest",
+            digest,
+            "--sbom-output",
+            str(sbom_path),
+            "--provenance-output",
+            str(provenance_path),
+            "--no-dependencies",
+        ],
+    )
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    provenance["image"]["digest"] = "latest"
+    provenance["image"]["reference"] = "ghcr.io/bamboogap/skills-orchestrator@latest"
+    provenance["attestations"]["provenance_subject"]["subject_digest"] = "latest"
+    provenance["attestations"]["sbom_subject"]["subject_digest"] = "latest"
+    provenance_path.write_text(json.dumps(provenance), encoding="utf-8")
+
+    report = verify_container_release(provenance_path=provenance_path, sbom_path=sbom_path)
+
+    failed = {check["id"] for check in report["checks"] if check["status"] == "fail"}
+    assert report["status"] == "fail"
+    assert {"image-digest-format", "provenance-subject", "sbom-subject"} <= failed
+
+
+def test_verify_container_release_cli_outputs_json(tmp_path):
+    digest = "sha256:" + ("1" * 64)
+    sbom_path = tmp_path / "container-sbom.cdx.json"
+    provenance_path = tmp_path / "container-provenance.json"
+    runner = CliRunner()
+    runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "container-release",
+            "--image",
+            "ghcr.io/bamboogap/skills-orchestrator",
+            "--tag",
+            "v4.4.0",
+            "--digest",
+            digest,
+            "--sbom-output",
+            str(sbom_path),
+            "--provenance-output",
+            str(provenance_path),
+            "--no-dependencies",
+        ],
+    )
+
+    result = runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "verify-container-release",
+            "--provenance",
+            str(provenance_path),
+            "--sbom",
+            str(sbom_path),
+            "--digest",
+            digest,
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["status"] == "pass"
+    report_path = tmp_path / "container-release-verification.json"
+    report_path.write_text(result.output, encoding="utf-8")
+    assert validate_document("container-release-verification", str(report_path)).valid is True

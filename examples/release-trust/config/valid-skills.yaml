@@ -1,0 +1,11 @@
+version: "1.0"
+
+skill_dirs:
+  - ../skills/valid
+
+zones:
+  - id: default
+    name: Release trust zone
+    load_policy: free
+    priority: 0
+    rules: []

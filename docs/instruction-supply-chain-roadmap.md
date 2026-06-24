@@ -135,9 +135,9 @@ system; OPA should be a proof and integration surface, not a second source of tr
 
 ## Phase 4: Distribution Hardening
 
-Status: implemented across v2.4.0-v4.2.0 for Docker smoke, package SBOM, CodeQL, GHCR release
-push, pinned third-party Actions, PyPI artifact attestation, and digest-bound container
-SBOM/provenance attestation.
+Status: implemented across v2.4.0-v4.4.0 for Docker smoke, package SBOM, CodeQL, GHCR release
+push, pinned third-party Actions, PyPI artifact attestation, digest-bound container
+SBOM/provenance attestation, and local release artifact verification.
 
 Goal: remove adoption friction for enterprise and CI users.
 
@@ -150,6 +150,7 @@ Deliver:
 - GitHub artifact attestation for wheel and sdist during publishing.
 - Python package SBOM through `supply-chain sbom`.
 - Container image SBOM/provenance through `supply-chain container-release`.
+- Local container release artifact verification through `supply-chain verify-container-release`.
 - CodeQL workflow.
 - GHCR release publishing workflow.
 - Release checklist that verifies GitHub Release, PyPI, wheel, sdist, CLI version, and package
@@ -201,7 +202,7 @@ Delivered:
 
 ## Phase 8: Ecosystem Adapters
 
-Status: implemented across v3.0.0-v4.3.0 as inspection, scaffold generation, Claude Skills export,
+Status: implemented across v3.0.0-v4.4.0 as inspection, scaffold generation, Claude Skills export,
 and adapter evidence fixtures.
 
 Goal: connect to AGENTS.md, Claude Skills, MCP clients, and OpenAI Agents SDK without claiming to

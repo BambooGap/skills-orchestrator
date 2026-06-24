@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-06-24
+
+### Added
+- Added `supply-chain verify-container-release` to validate local container provenance, expected
+  image/tag/digest facts, attestation subjects, and SBOM hash binding before trusting release
+  artifacts.
+- Added the stable `container-release-verification` schema for machine-validating release
+  verification reports.
+- Added `examples/release-trust/`, a runnable fixture for external skill license allowlisting,
+  review-window metadata, import provenance, and container release verification.
+- Added tests covering release trust fixtures and container release verification schema output.
+
+### Changed
+- Updated release verification and examples docs to make release trust checks copy-pasteable for
+  release owners and security reviewers.
+
 ## [4.3.0] - 2026-06-24
 
 ### Added
