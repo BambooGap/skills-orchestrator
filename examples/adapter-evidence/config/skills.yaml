@@ -1,0 +1,18 @@
+version: "1.0"
+
+skill_dirs:
+  - ../skills
+
+zones:
+  - id: default
+    name: Adapter evidence zone
+    load_policy: free
+    priority: 0
+    rules: []
+
+combos:
+  - id: governed-agent-handshake
+    name: Governed agent handoff
+    description: Prepare adapter evidence before handing SkillOps context to an agent runtime.
+    skills: [adapter-handshake, release-trust]
+

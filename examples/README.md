@@ -59,6 +59,20 @@
 
 ---
 
+### [Adapter Evidence Example](adapter-evidence/)
+
+**适合**：agent runtime owner、平台团队、生态适配评估
+
+**展示内容**：
+- 如何从同一份 SkillOps config 生成 Claude Skills bundle
+- 如何生成 MCP client config 和 OpenAI Agents SDK scaffold
+- 如何编译 scaffold 并生成 adapter inspection evidence
+- 如何证明 adapter surface 是 artifact contract，而不是运行时模型调用
+
+**时间**：10 分钟
+
+---
+
 ### [Pilot Repository Examples](pilot-repos/)
 
 **适合**：平台团队、开源采用评估、真实仓库试点
@@ -93,9 +107,10 @@
 
 **外部评估者**：
 1. [SkillOps Demo Repo](demo-repo/) → 直接跑 conformance 和证据导出
-2. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
-3. [SPEC.md](../SPEC.md) → 检查合同字段
-4. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
+2. [Adapter Evidence Example](adapter-evidence/) → 验证 Claude Skills / MCP / OpenAI Agents SDK adapter evidence
+3. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
+4. [SPEC.md](../SPEC.md) → 检查合同字段
+5. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 
 ## 💡 提示
 

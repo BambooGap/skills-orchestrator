@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-06-24
+
+### Added
+- Added `examples/adapter-evidence/`, a runnable Level 4 adapter evidence fixture that generates
+  Claude Skills bundles, an MCP client config, and an OpenAI Agents SDK scaffold from one SkillOps
+  config.
+- Added example-level test coverage proving the adapter evidence fixture detects `agents-md`,
+  `claude-skills`, `mcp-client-config`, and `openai-agents-sdk` surfaces.
+
+### Changed
+- Updated adapter, conformance, examples, and roadmap docs to make adapter evidence a reproducible
+  artifact flow rather than a static description.
+- Updated current install, Action, and container examples to `v4.3.0`.
+
 ## [4.2.0] - 2026-06-24
 
 ### Added
