@@ -1,0 +1,11 @@
+version: "1.0"
+
+skill_dirs:
+  - ../skills/invalid
+
+zones:
+  - id: default
+    name: Invalid external skill zone
+    load_policy: free
+    priority: 0
+    rules: []

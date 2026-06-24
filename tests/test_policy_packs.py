@@ -1,10 +1,14 @@
 import json
+from pathlib import Path
 
 from click.testing import CliRunner
 
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.diagnostic import DiagnosticSeverity
 from skills_orchestrator.main import cli
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _workspace(tmp_path, frontmatter_extra: str = ""):
@@ -277,6 +281,23 @@ def test_team_standard_policy_pack_treats_null_governance_as_missing(tmp_path):
     by_rule = {diagnostic.rule_id: diagnostic for diagnostic in report.diagnostics}
     assert {"SO008", "SO009", "SO010", "SO011"}.issubset(by_rule)
     assert by_rule["SO011"].severity == DiagnosticSeverity.ERROR
+
+
+def test_release_trust_example_valid_external_skill_passes():
+    config = ROOT / "examples" / "release-trust" / "config" / "valid-skills.yaml"
+
+    report = run_check(str(config), policy_packs=["builtin/engineering-grade"])
+
+    assert report.diagnostics == []
+
+
+def test_release_trust_example_invalid_external_skill_reports_trust_rules():
+    config = ROOT / "examples" / "release-trust" / "config" / "invalid-external-skills.yaml"
+
+    report = run_check(str(config), policy_packs=["builtin/engineering-grade"])
+
+    rule_ids = {diagnostic.rule_id for diagnostic in report.diagnostics}
+    assert {"SO014", "SO018", "SO020"} <= rule_ids
 
 
 def test_check_cli_policy_pack_json(tmp_path):

@@ -73,6 +73,19 @@
 
 ---
 
+### [Release Trust Example](release-trust/)
+
+**适合**：release owner、安全团队、平台团队
+
+**展示内容**：
+- 如何验证外部 skill 的 license、review-window 和 import provenance
+- 如何用 `engineering-grade` 区分可接受外部 skill 和缺信任元数据的外部 skill
+- 如何生成并本地验证 digest-bound container SBOM / provenance
+
+**时间**：10 分钟
+
+---
+
 ### [Pilot Repository Examples](pilot-repos/)
 
 **适合**：平台团队、开源采用评估、真实仓库试点
@@ -108,9 +121,10 @@
 **外部评估者**：
 1. [SkillOps Demo Repo](demo-repo/) → 直接跑 conformance 和证据导出
 2. [Adapter Evidence Example](adapter-evidence/) → 验证 Claude Skills / MCP / OpenAI Agents SDK adapter evidence
-3. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
-4. [SPEC.md](../SPEC.md) → 检查合同字段
-5. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
+3. [Release Trust Example](release-trust/) → 验证外部 skill provenance 和 release artifact 绑定
+4. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
+5. [SPEC.md](../SPEC.md) → 检查合同字段
+6. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 
 ## 💡 提示
 
