@@ -135,9 +135,9 @@ system; OPA should be a proof and integration surface, not a second source of tr
 
 ## Phase 4: Distribution Hardening
 
-Status: implemented across v2.4.0-v3.0.0 for Docker smoke, package SBOM, CodeQL, GHCR release
-push, pinned third-party Actions, and PyPI artifact attestation. Container provenance remains a
-future hardening item after GHCR release flow is exercised.
+Status: implemented across v2.4.0-v4.2.0 for Docker smoke, package SBOM, CodeQL, GHCR release
+push, pinned third-party Actions, PyPI artifact attestation, and digest-bound container
+SBOM/provenance attestation.
 
 Goal: remove adoption friction for enterprise and CI users.
 
@@ -149,11 +149,12 @@ Deliver:
 - `constraints.txt` for the action/CI/publish runtime dependency set.
 - GitHub artifact attestation for wheel and sdist during publishing.
 - Python package SBOM through `supply-chain sbom`.
+- Container image SBOM/provenance through `supply-chain container-release`.
 - CodeQL workflow.
 - GHCR release publishing workflow.
 - Release checklist that verifies GitHub Release, PyPI, wheel, sdist, CLI version, and package
   metadata.
-- Optional signed provenance only after the release flow is stable.
+- GitHub Artifact Attestations for GHCR image provenance and SBOM, bound to the pushed digest.
 
 Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the next bottleneck;
 distribution and CI integration are.
@@ -180,8 +181,8 @@ Delivered:
 
 Next:
 
-- Container image provenance tied to pushed GHCR digest.
 - Hash-locked dependency install after the constraints workflow is stable.
+- Image signing after digest-bound attestation has been exercised across releases.
 - SPDX mapping only after a real downstream consumer is tested.
 
 ## Phase 7: PR Review Automation

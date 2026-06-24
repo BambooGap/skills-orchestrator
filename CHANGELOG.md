@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-06-24
+
+### Added
+- Added `supply-chain container-release` to generate digest-bound container SBOM and
+  `container-provenance.json` release metadata for GHCR images.
+- Added a stable `container-provenance` schema covering image digest, source workflow, SBOM hash,
+  and attestation subjects.
+- Added Claude Skills bundle export with round-trip fixture coverage for SkillOps governance
+  metadata.
+
+### Changed
+- GHCR release publishing now resolves the pushed image digest and creates GitHub Artifact
+  Attestations for container build provenance and SBOM subjects.
+- Updated release verification, Docker, adapter, and roadmap docs for the v4.2 release trust path.
+
 ## [4.1.0] - 2026-06-23
 
 ### Added

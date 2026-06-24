@@ -88,6 +88,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "ci-explainability",
         "config",
         "conformance",
+        "container-provenance",
         "doctor",
         "evidence",
         "enterprise-dashboard-rollup",
@@ -115,6 +116,7 @@ def test_schema_resources_are_packaged_and_loadable():
         ("check", "check.json"),
         ("ci-explainability", "ci-explainability.json"),
         ("conformance", "conformance.json"),
+        ("container-provenance", "container-provenance.json"),
         ("doctor", "doctor.json"),
         ("evidence", "evidence/evidence-manifest.json"),
         ("manifest", "instruction-manifest.json"),
@@ -401,6 +403,31 @@ rules:
         format_sbom_json(build_python_package_sbom(include_dependencies=False)),
         encoding="utf-8",
     )
+    runner = CliRunner()
+    digest = "sha256:" + ("a" * 64)
+    container_result = runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "container-release",
+            "--image",
+            "ghcr.io/bamboogap/skills-orchestrator",
+            "--tag",
+            "v0.0.0",
+            "--digest",
+            digest,
+            "--repository",
+            "BambooGap/skills-orchestrator",
+            "--commit",
+            "abc123",
+            "--sbom-output",
+            str(root / "container-sbom.cdx.json"),
+            "--provenance-output",
+            str(root / "container-provenance.json"),
+            "--no-dependencies",
+        ],
+    )
+    assert container_result.exit_code == 0
     handoff = root / "examples" / "commercial-handoff"
     handoff.mkdir(parents=True)
     repo_examples = Path(__file__).resolve().parents[1] / "examples" / "commercial-handoff"

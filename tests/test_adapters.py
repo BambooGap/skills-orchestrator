@@ -4,10 +4,12 @@ import py_compile
 from click.testing import CliRunner
 
 from skills_orchestrator.adapters import (
+    export_claude_skill_bundles,
     generate_mcp_client_config,
     generate_openai_agents_sdk_scaffold,
     inspect_adapters,
 )
+from skills_orchestrator.compiler import Parser
 from skills_orchestrator.main import cli
 
 
@@ -94,6 +96,71 @@ def test_openai_agents_sdk_scaffold_compiles(tmp_path):
     assert "mcp_servers=[server]" in content
 
 
+def test_claude_skills_export_round_trips_skillops_metadata(tmp_path):
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    (skills_dir / "release.md").write_text(
+        "---\n"
+        "id: release-check\n"
+        "name: Release Check\n"
+        "summary: Review release evidence\n"
+        "tags: [release, evidence]\n"
+        "load_policy: require\n"
+        "priority: 90\n"
+        "zones: [default]\n"
+        "owner: release-team\n"
+        "source: repo://skills/release.md\n"
+        "version: 1.2.3\n"
+        "lifecycle: active\n"
+        "approvers: [release-team]\n"
+        "reviewed_at: 2026-06-20\n"
+        "expires_at: 2026-12-20\n"
+        "license: MIT\n"
+        "provenance:\n"
+        "  source_url: https://github.com/example/skills/blob/main/release.md\n"
+        "  source_commit: abc123\n"
+        "  content_hash: sha256:abc\n"
+        "---\n"
+        "# Release Check\n\nCheck release evidence.\n",
+        encoding="utf-8",
+    )
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    config = config_dir / "skills.yaml"
+    config.write_text(
+        "skill_dirs:\n"
+        "  - ../skills\n"
+        "zones:\n"
+        "  - id: default\n"
+        "    name: Default\n"
+        "    load_policy: free\n"
+        "    rules: []\n",
+        encoding="utf-8",
+    )
+
+    manifest = export_claude_skill_bundles(str(config), tmp_path / ".claude" / "skills")
+    exported_config = tmp_path / "exported.yaml"
+    exported_config.write_text(
+        "skill_dirs:\n"
+        "  - .claude/skills\n"
+        "zones:\n"
+        "  - id: default\n"
+        "    name: Default\n"
+        "    load_policy: free\n"
+        "    rules: []\n",
+        encoding="utf-8",
+    )
+    exported = Parser(str(exported_config)).parse().skills[0]
+
+    assert manifest["summary"]["exported"] == 1
+    assert exported.id == "release-check"
+    assert exported.owner == "release-team"
+    assert exported.source == "repo://skills/release.md"
+    assert exported.version == "1.2.3"
+    assert exported.license == "MIT"
+    assert exported.provenance["source_commit"] == "abc123"
+
+
 def test_adapters_cli_json_and_export(tmp_path):
     config = tmp_path / "config" / "skills.yaml"
     config.parent.mkdir()
@@ -118,3 +185,45 @@ def test_adapters_cli_json_and_export(tmp_path):
     assert json.loads(inspect_result.output)["schema_version"] == "skills-orchestrator.adapters.v1"
     assert export_result.exit_code == 0
     assert json.loads(export_result.output)["mcpServers"]["skills-orchestrator"]["command"]
+
+
+def test_adapters_cli_exports_claude_skills(tmp_path):
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    (skills_dir / "review.md").write_text(
+        "---\nid: review\nname: Review\nsummary: Review code\nowner: platform\n---\n# Review\n",
+        encoding="utf-8",
+    )
+    config = tmp_path / "config" / "skills.yaml"
+    config.parent.mkdir()
+    config.write_text(
+        "skill_dirs:\n"
+        "  - ../skills\n"
+        "zones:\n"
+        "  - id: default\n"
+        "    name: Default\n"
+        "    load_policy: free\n"
+        "    rules: []\n",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "claude-export.json"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "adapters",
+            "export",
+            "claude-skills",
+            "--config",
+            str(config),
+            "--output-dir",
+            str(tmp_path / ".claude" / "skills"),
+            "--manifest-output",
+            str(manifest),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert (tmp_path / ".claude" / "skills" / "review" / "SKILL.md").exists()
+    assert json.loads(manifest.read_text(encoding="utf-8"))["summary"]["exported"] == 1

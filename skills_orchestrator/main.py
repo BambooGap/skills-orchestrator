@@ -1568,6 +1568,45 @@ def adapters_export_openai_agents_sdk(
         raise SystemExit(1)
 
 
+@adapters_export.command("claude-skills")
+@click.option("--config", "-c", default="config/skills.yaml", show_default=True)
+@click.option(
+    "--output-dir",
+    "-o",
+    default=".claude/skills",
+    show_default=True,
+    help="写入 Claude Skills bundle 的目录。",
+)
+@click.option("--manifest-output", default=None, help="可选：写入 export manifest JSON。")
+@click.option("--force", is_flag=True, help="覆盖已存在的 SKILL.md")
+def adapters_export_claude_skills(
+    config: str,
+    output_dir: str,
+    manifest_output: str | None,
+    force: bool,
+):
+    """导出 Claude Skills */SKILL.md bundles，并保留 SkillOps 治理元数据。"""
+    from skills_orchestrator.adapters.scaffolds import (
+        export_claude_skill_bundles,
+        format_claude_skills_export_manifest,
+    )
+
+    try:
+        payload = export_claude_skill_bundles(config, output_dir, force=force)
+        rendered = format_claude_skills_export_manifest(payload)
+        if manifest_output:
+            _write_optional_output(
+                rendered,
+                output=manifest_output,
+                force=force,
+                label="Claude Skills export manifest",
+            )
+        click.echo(_ok(f"Claude Skills exported: {payload['summary']['exported']}"))
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 def _write_optional_output(rendered: str, *, output: str | None, force: bool, label: str) -> None:
     if output:
         output_path = Path(output)
@@ -1624,6 +1663,91 @@ def supply_chain_sbom(
             click.echo(_ok(f"Package SBOM written: {output_path}"))
             return
         click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
+@supply_chain.command("container-release")
+@click.option("--image", required=True, help="Fully qualified container image name, without tag.")
+@click.option("--tag", default="", show_default=True, help="Release tag associated with the image.")
+@click.option("--digest", required=True, help="Immutable image digest, for example sha256:<hex>.")
+@click.option(
+    "--repository", default="", show_default=True, help="Source repository, for example org/repo."
+)
+@click.option("--commit", default="", show_default=True, help="Source commit SHA.")
+@click.option(
+    "--workflow-run-url",
+    default="",
+    show_default=True,
+    help="GitHub Actions run URL that produced the image.",
+)
+@click.option(
+    "--sbom-output",
+    default="container-sbom.cdx.json",
+    show_default=True,
+    help="Write container-bound CycloneDX SBOM to this path.",
+)
+@click.option(
+    "--provenance-output",
+    default="container-provenance.json",
+    show_default=True,
+    help="Write SkillOps container provenance to this path.",
+)
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+@click.option(
+    "--no-dependencies",
+    is_flag=True,
+    help="只输出当前包组件，不枚举已安装依赖。",
+)
+def supply_chain_container_release(
+    image: str,
+    tag: str,
+    digest: str,
+    repository: str,
+    commit: str,
+    workflow_run_url: str,
+    sbom_output: str,
+    provenance_output: str,
+    force: bool,
+    no_dependencies: bool,
+):
+    """生成绑定到 container digest 的 SBOM 与 release provenance。"""
+    from skills_orchestrator.supply_chain import (
+        build_container_image_sbom,
+        build_container_release_provenance,
+        format_provenance_json,
+        format_sbom_json,
+    )
+
+    try:
+        sbom_path = Path(sbom_output)
+        provenance_path = Path(provenance_output)
+        for output_path in (sbom_path, provenance_path):
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+
+        sbom = build_container_image_sbom(
+            image=image,
+            tag=tag,
+            digest=digest,
+            include_dependencies=not no_dependencies,
+        )
+        sbom_path.write_text(format_sbom_json(sbom), encoding="utf-8")
+        provenance = build_container_release_provenance(
+            image=image,
+            tag=tag,
+            digest=digest,
+            repository=repository,
+            commit=commit,
+            workflow_run_url=workflow_run_url,
+            sbom_path=sbom_path,
+        )
+        provenance_path.write_text(format_provenance_json(provenance), encoding="utf-8")
+        click.echo(_ok(f"Container SBOM written: {sbom_path}"))
+        click.echo(_ok(f"Container provenance written: {provenance_path}"))
     except Exception as exc:
         click.echo(_err(str(exc)), err=True)
         raise SystemExit(1)
