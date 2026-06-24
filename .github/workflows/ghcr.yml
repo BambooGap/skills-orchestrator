@@ -13,12 +13,19 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write
+  attestations: write
 
 jobs:
   publish-ghcr:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
 
       - name: Resolve image tags
         id: meta
@@ -70,3 +77,54 @@ jobs:
           image="${{ steps.meta.outputs.image }}"
           docker pull "$image:${{ steps.meta.outputs.version }}"
           docker run --rm "$image:${{ steps.meta.outputs.version }}" --version
+
+      - name: Resolve published image digest
+        id: image_digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="${{ steps.meta.outputs.image }}"
+          ref="$(docker inspect --format='{{index .RepoDigests 0}}' "$image:${{ steps.meta.outputs.version }}")"
+          digest="${ref#*@}"
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "unexpected image digest: $digest" >&2
+            exit 1
+          fi
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Generate container SBOM and provenance metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip install -c constraints.txt -e .
+          skills-orchestrator supply-chain container-release \
+            --image "${{ steps.meta.outputs.image }}" \
+            --tag "${{ steps.meta.outputs.version }}" \
+            --digest "${{ steps.image_digest.outputs.digest }}" \
+            --repository "${GITHUB_REPOSITORY}" \
+            --commit "${GITHUB_SHA}" \
+            --workflow-run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --sbom-output container-sbom.cdx.json \
+            --provenance-output container-provenance.json \
+            --force
+          skills-orchestrator schema validate \
+            --kind supply-chain-sbom \
+            --input container-sbom.cdx.json
+          skills-orchestrator schema validate \
+            --kind container-provenance \
+            --input container-provenance.json
+
+      - name: Attest container build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        with:
+          subject-name: ${{ steps.meta.outputs.image }}
+          subject-digest: ${{ steps.image_digest.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest container SBOM
+        uses: actions/attest-sbom@bd218ad0dbcb3e146bd073d1d9c6d78e08aa8a0b # v2
+        with:
+          subject-name: ${{ steps.meta.outputs.image }}
+          subject-digest: ${{ steps.image_digest.outputs.digest }}
+          sbom-path: container-sbom.cdx.json
+          push-to-registry: true

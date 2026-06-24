@@ -13,7 +13,7 @@ docker run --rm skills-orchestrator:local --version
 Use the published release image when a CI host should not build the project first:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.1.0 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.2.0 --version
 ```
 
 ## Run Against A Repository
@@ -24,7 +24,7 @@ Mount the repository at `/workspace` and run commands from that directory:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.1.0 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.2.0 \
   check --config config/skills.yaml
 ```
 
@@ -34,7 +34,7 @@ Generate audit artifacts:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.1.0 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.2.0 \
   manifest --config config/skills.yaml --format cyclonedx \
   --output instruction-manifest.cdx.json
 ```
@@ -56,5 +56,15 @@ ghcr.io/bamboogap/skills-orchestrator
 Release builds are tagged with the release ref and a short commit SHA tag. Pull request workflows do
 not push images.
 
-Future hardening should add image SBOM/provenance tied to the pushed digest and move Docker/CI to a
-hash-locked constraints workflow.
+The release workflow resolves the pushed image digest, generates:
+
+- `container-sbom.cdx.json`: a CycloneDX SBOM bound to the immutable OCI digest,
+- `container-provenance.json`: a SkillOps provenance contract that records the image subject,
+  source commit, workflow run, and SBOM hash.
+
+Both the build provenance and SBOM are attested with GitHub Artifact Attestations using
+`subject-name: ghcr.io/bamboogap/skills-orchestrator` and the resolved `sha256:` digest. The SBOM
+describes the SkillOps package dependency surface inside the image; it is not a full operating-system
+layer scan.
+
+Future hardening should add image signing and move Docker/CI to a hash-locked constraints workflow.

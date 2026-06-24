@@ -21,6 +21,22 @@ Detected surfaces:
 Claude Skills detection only treats `SKILL.md` as a skill entrypoint. Supporting files such as
 references, examples, and scripts remain assets inside that skill bundle.
 
+## Export Claude Skills Bundles
+
+```bash
+skills-orchestrator adapters export claude-skills \
+  --config config/skills.yaml \
+  --output-dir .claude/skills \
+  --manifest-output claude-skills-export.json
+```
+
+The exporter writes one `*/SKILL.md` bundle per SkillOps skill and preserves governance metadata
+such as `owner`, `source`, `version`, `license`, review windows, and import `provenance` in
+frontmatter. Those bundles can be read back through `skill_dirs` for round-trip fixture tests.
+
+This is a file-format bridge only. It does not call Claude, install Claude Code, or assume runtime
+reload semantics.
+
 ## Export MCP Client Config
 
 ```bash

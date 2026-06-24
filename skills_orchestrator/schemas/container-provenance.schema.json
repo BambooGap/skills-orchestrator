@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/container-provenance.schema.json",
+  "title": "Skills Orchestrator Container Release Provenance",
+  "type": "object",
+  "required": ["schema_version", "tool", "generated_at", "image", "source", "attestations"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.container-provenance.v1" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "generated_at": { "type": "string", "minLength": 1 },
+    "image": {
+      "type": "object",
+      "required": ["name", "tag", "digest", "reference"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string" },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "reference": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "required": ["repository", "commit", "workflow_run_url"],
+      "properties": {
+        "repository": { "type": "string" },
+        "commit": { "type": "string" },
+        "workflow_run_url": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "attestations": {
+      "type": "object",
+      "required": ["provenance_subject", "sbom_subject"],
+      "properties": {
+        "provenance_subject": { "$ref": "#/$defs/subject" },
+        "sbom_subject": { "$ref": "#/$defs/subject" }
+      },
+      "additionalProperties": true
+    },
+    "sbom": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["path", "sha256"],
+          "properties": {
+            "path": { "type": "string", "minLength": 1 },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "subject": {
+      "type": "object",
+      "required": ["subject_name", "subject_digest"],
+      "properties": {
+        "subject_name": { "type": "string", "minLength": 1 },
+        "subject_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

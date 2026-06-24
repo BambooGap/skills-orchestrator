@@ -11,6 +11,14 @@ python -m pytest
 python scripts/check_action_pins.py
 skills-orchestrator supply-chain sbom --output package-sbom.cdx.json
 python -m json.tool package-sbom.cdx.json >/dev/null
+skills-orchestrator supply-chain container-release \
+  --image ghcr.io/bamboogap/skills-orchestrator \
+  --tag local \
+  --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --sbom-output container-sbom.cdx.json \
+  --provenance-output container-provenance.json \
+  --no-dependencies
+skills-orchestrator schema validate --kind container-provenance --input container-provenance.json
 python -m build
 python -m twine check dist/*
 ```
@@ -49,6 +57,7 @@ skills-orchestrator schema validate --kind ci-explainability --input ci-explaina
 skills-orchestrator schema validate --kind registry-graph --input registry-graph.json
 skills-orchestrator schema validate --kind adapter-inspect --input adapter-inspect.json
 skills-orchestrator schema validate --kind supply-chain-sbom --input package-sbom.cdx.json
+skills-orchestrator schema validate --kind container-provenance --input container-provenance.json
 skills-orchestrator evidence export --config config/skills.yaml --out evidence
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 skills-orchestrator schema validate \
@@ -79,9 +88,10 @@ Verify:
 - PyPI provenance / attestations are visible for both artifacts.
 - CodeQL workflow completed or is intentionally skipped for the tag.
 - GHCR workflow published the release image when container publishing is enabled.
+- GHCR image provenance and SBOM attestations are attached to the resolved image digest.
 
 ## Current Gaps
 
 The release workflow attests Python distribution artifacts and the GHCR workflow publishes release
-images. Image SBOM, image signing, SLSA image provenance, and hash-locked Python installs remain
-future hardening items.
+images with digest-bound provenance and SBOM attestations. Image signing, full operating-system
+layer SBOMs, SLSA level claims, and hash-locked Python installs remain future hardening items.

@@ -66,6 +66,14 @@ jobs:
           skills-orchestrator adapters export openai-agents-sdk --config config/skills.yaml > /tmp/openai_skillops_agent.py
           python -m py_compile /tmp/openai_skillops_agent.py
           skills-orchestrator supply-chain sbom --no-dependencies | python -m json.tool >/dev/null
+          skills-orchestrator supply-chain container-release \
+            --image ghcr.io/bamboogap/skills-orchestrator \
+            --tag smoke \
+            --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --sbom-output /tmp/container-sbom.cdx.json \
+            --provenance-output /tmp/container-provenance.json \
+            --no-dependencies
+          skills-orchestrator schema validate --kind container-provenance --input /tmp/container-provenance.json
           mkdir -p .skills-audit
           skills-orchestrator mcp-test prepare_context '{"task":"release evidence","include_content":false}' --audit-dir .skills-audit >/dev/null
           skills-orchestrator usage report --audit-dir .skills-audit --json | python -m json.tool >/dev/null

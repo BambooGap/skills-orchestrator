@@ -115,6 +115,16 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v3.2.0",
         consumers=("ci", "platform-review", "release-gate"),
     ),
+    "container-provenance": SchemaDescriptor(
+        kind="container-provenance",
+        filename="container-provenance.schema.json",
+        title="Container Release Provenance",
+        description="GHCR image digest, SBOM hash, and attestation subject contract.",
+        contract_id="skills-orchestrator.container-provenance.v1",
+        stability="stable",
+        since="v4.2.0",
+        consumers=("supply-chain", "ghcr", "release-gate"),
+    ),
     "check": SchemaDescriptor(
         kind="check",
         filename="check-report.schema.json",
