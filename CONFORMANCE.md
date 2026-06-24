@@ -170,6 +170,16 @@ skills-orchestrator adapters export mcp-client-config \
   --output evidence/mcp-client.json
 ```
 
+Projects using Claude Skills SHOULD prove export compatibility with a generated bundle manifest:
+
+```bash
+skills-orchestrator adapters export claude-skills \
+  --config config/skills.yaml \
+  --output-dir .claude/skills \
+  --manifest-output evidence/claude-skills-export.json \
+  --force
+```
+
 Projects using OpenAI Agents SDK MAY generate a scaffold and compile it:
 
 ```bash
@@ -195,7 +205,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.1.0
+      - uses: BambooGap/skills-orchestrator@v4.3.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -211,6 +221,10 @@ are generated on pull request events.
 `examples/demo-repo/` is the executable conformance fixture in this repository. The main CI runs it
 as a smoke test. A downstream project can copy that directory into a standalone repository and run
 the same commands in `examples/demo-repo/README.md`.
+
+`examples/adapter-evidence/` is the Level 4 adapter evidence fixture. It generates Claude Skills
+bundles, an MCP client config, and an OpenAI Agents SDK scaffold from one SkillOps config, then
+validates adapter inspection evidence.
 
 ## Claims
 

@@ -37,6 +37,11 @@ frontmatter. Those bundles can be read back through `skill_dirs` for round-trip 
 This is a file-format bridge only. It does not call Claude, install Claude Code, or assume runtime
 reload semantics.
 
+For a copyable round-trip fixture, see
+[`examples/adapter-evidence/`](../examples/adapter-evidence/README.md). It exports Claude Skills
+bundles, generates MCP and OpenAI Agents SDK scaffolds, compiles the OpenAI scaffold, and then
+produces adapter inspection evidence from the generated files.
+
 ## Export MCP Client Config
 
 ```bash
@@ -59,3 +64,36 @@ skills-orchestrator adapters export openai-agents-sdk \
 The scaffold shows how to attach the existing Skills Orchestrator MCP server through
 `MCPServerStdio`. It does not call a model, create an agent workflow, or claim a project-level
 auto-discovery standard.
+
+## Adapter Evidence Fixture
+
+Use the dedicated fixture when you need a reproducible Level 4 conformance example:
+
+```bash
+cd examples/adapter-evidence
+mkdir -p evidence
+
+skills-orchestrator adapters export claude-skills \
+  --config config/skills.yaml \
+  --output-dir .claude/skills \
+  --manifest-output evidence/claude-skills-export.json \
+  --force
+
+skills-orchestrator adapters export mcp-client-config \
+  --config config/skills.yaml \
+  --output .mcp.json \
+  --force
+
+skills-orchestrator adapters export openai-agents-sdk \
+  --config config/skills.yaml \
+  --output evidence/openai_skillops_agent.py \
+  --force
+
+python -m py_compile evidence/openai_skillops_agent.py
+
+skills-orchestrator adapters inspect --path . --format json \
+  > evidence/adapter-inspect.json
+```
+
+The fixture proves adapter artifact generation and inspection. It deliberately avoids runtime model
+calls and API keys.

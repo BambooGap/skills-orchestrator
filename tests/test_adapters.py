@@ -1,5 +1,7 @@
 import json
 import py_compile
+import shutil
+from pathlib import Path
 
 from click.testing import CliRunner
 
@@ -11,6 +13,9 @@ from skills_orchestrator.adapters import (
 )
 from skills_orchestrator.compiler import Parser
 from skills_orchestrator.main import cli
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_adapter_inspect_detects_claude_skill_entrypoints_only(tmp_path):
@@ -227,3 +232,101 @@ def test_adapters_cli_exports_claude_skills(tmp_path):
     assert result.exit_code == 0
     assert (tmp_path / ".claude" / "skills" / "review" / "SKILL.md").exists()
     assert json.loads(manifest.read_text(encoding="utf-8"))["summary"]["exported"] == 1
+
+
+def test_adapter_evidence_example_generates_all_surfaces(tmp_path):
+    example = tmp_path / "adapter-evidence"
+    shutil.copytree(ROOT / "examples" / "adapter-evidence", example)
+    evidence = example / "evidence"
+    evidence.mkdir()
+    config = example / "config" / "skills.yaml"
+    runner = CliRunner()
+
+    check_result = runner.invoke(
+        cli,
+        [
+            "check",
+            "--config",
+            str(config),
+            "--policy-pack",
+            "builtin/engineering-grade",
+            "--fail-on",
+            "warning",
+        ],
+    )
+    build_result = runner.invoke(
+        cli,
+        [
+            "build",
+            "--config",
+            str(config),
+            "--output",
+            str(example / "AGENTS.md"),
+        ],
+    )
+    claude_result = runner.invoke(
+        cli,
+        [
+            "adapters",
+            "export",
+            "claude-skills",
+            "--config",
+            str(config),
+            "--output-dir",
+            str(example / ".claude" / "skills"),
+            "--manifest-output",
+            str(evidence / "claude-skills-export.json"),
+            "--force",
+        ],
+    )
+    mcp_result = runner.invoke(
+        cli,
+        [
+            "adapters",
+            "export",
+            "mcp-client-config",
+            "--config",
+            str(config),
+            "--output",
+            str(example / ".mcp.json"),
+            "--force",
+        ],
+    )
+    openai_result = runner.invoke(
+        cli,
+        [
+            "adapters",
+            "export",
+            "openai-agents-sdk",
+            "--config",
+            str(config),
+            "--output",
+            str(evidence / "openai_skillops_agent.py"),
+            "--force",
+        ],
+    )
+    inspect_result = runner.invoke(
+        cli, ["adapters", "inspect", "--path", str(example), "--format", "json"]
+    )
+
+    assert check_result.exit_code == 0, check_result.output
+    assert build_result.exit_code == 0, build_result.output
+    assert claude_result.exit_code == 0, claude_result.output
+    assert mcp_result.exit_code == 0, mcp_result.output
+    assert openai_result.exit_code == 0, openai_result.output
+    py_compile.compile(str(evidence / "openai_skillops_agent.py"), doraise=True)
+    assert inspect_result.exit_code == 0, inspect_result.output
+
+    manifest = json.loads((evidence / "claude-skills-export.json").read_text(encoding="utf-8"))
+    assert manifest["summary"]["exported"] == 2
+    exported_skill = example / ".claude" / "skills" / "release-trust" / "SKILL.md"
+    assert "owner: release-team" in exported_skill.read_text(encoding="utf-8")
+
+    inspect_payload = json.loads(inspect_result.output)
+    detected = {surface["id"] for surface in inspect_payload["surfaces"] if surface["detected"]}
+    assert {
+        "agents-md",
+        "claude-skills",
+        "mcp-client-config",
+        "openai-agents-sdk",
+    } <= detected

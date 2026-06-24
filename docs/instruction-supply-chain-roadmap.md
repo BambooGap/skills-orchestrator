@@ -201,7 +201,8 @@ Delivered:
 
 ## Phase 8: Ecosystem Adapters
 
-Status: implemented in v3.0.0 as inspection and scaffold generation.
+Status: implemented across v3.0.0-v4.3.0 as inspection, scaffold generation, Claude Skills export,
+and adapter evidence fixtures.
 
 Goal: connect to AGENTS.md, Claude Skills, MCP clients, and OpenAI Agents SDK without claiming to
 own their standards.
@@ -212,11 +213,16 @@ Delivered:
   dependency detection.
 - `adapters export mcp-client-config`.
 - `adapters export openai-agents-sdk`.
+- `adapters export claude-skills` with governance metadata preserved in generated `*/SKILL.md`
+  bundles.
 - Adapter inspection JSON Schema.
+- Claude Skills export unit coverage.
+- `examples/adapter-evidence/` as an executable fixture for Claude Skills export, MCP client
+  config, OpenAI Agents SDK scaffold, and adapter inspection evidence.
 
 Next:
 
-- Claude Skills import/export round-trip fixtures.
+- More real ecosystem adapter examples once downstream projects need them.
 - Optional construction test when OpenAI Agents SDK is installed.
 
 ## Phase 9: Open-core Commercial Contracts
