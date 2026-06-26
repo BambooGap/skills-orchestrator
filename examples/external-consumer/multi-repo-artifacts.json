@@ -1,0 +1,166 @@
+{
+  "schema_version": "skills-orchestrator.multi-repo-artifacts.v1",
+  "tool": {
+    "name": "skills-orchestrator",
+    "version": "4.6.0"
+  },
+  "generated_at": "2026-06-26T00:00:00Z",
+  "scope": {
+    "kind": "multi-repo",
+    "name": "example-org"
+  },
+  "summary": {
+    "repositories": 2,
+    "artifacts": 4,
+    "missing": 0,
+    "invalid": 0,
+    "bundle_hashes": 2,
+    "policy_errors": 0,
+    "policy_warnings": 1,
+    "registry_skills": 17
+  },
+  "repositories": [
+    {
+      "id": "api",
+      "path": "repos/api",
+      "evidence_manifest": "repos/api/evidence/evidence-manifest.json",
+      "config": "config/skills.yaml",
+      "zone": "default",
+      "policy_packs": ["builtin/engineering-grade"],
+      "artifacts": ["evidence_manifest", "check_json"],
+      "policy": {
+        "errors": 0,
+        "warnings": 0,
+        "infos": 0
+      },
+      "registry": {
+        "skills": 9,
+        "skill_refs": 9,
+        "duplicate_skill_ids": 0
+      },
+      "readiness": {
+        "score": 100,
+        "status": "strong",
+        "issues": 0
+      },
+      "ledger": {
+        "bundle_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "previous_bundle_hash": "",
+        "artifact_hashes": 10
+      }
+    },
+    {
+      "id": "web",
+      "path": "repos/web",
+      "evidence_manifest": "repos/web/evidence/evidence-manifest.json",
+      "config": "config/skills.yaml",
+      "zone": "default",
+      "policy_packs": ["builtin/engineering-grade"],
+      "artifacts": ["evidence_manifest", "check_json"],
+      "policy": {
+        "errors": 0,
+        "warnings": 1,
+        "infos": 0
+      },
+      "registry": {
+        "skills": 8,
+        "skill_refs": 8,
+        "duplicate_skill_ids": 0
+      },
+      "readiness": {
+        "score": 96,
+        "status": "strong",
+        "issues": 1
+      },
+      "ledger": {
+        "bundle_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "previous_bundle_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "artifact_hashes": 10
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "repository_id": "api",
+      "label": "evidence_manifest",
+      "kind": "evidence-manifest",
+      "path": "repos/api/evidence/evidence-manifest.json",
+      "hash": {
+        "alg": "SHA-256",
+        "value": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "actual_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "schema_kind": "evidence",
+      "required": true,
+      "status": "ok"
+    },
+    {
+      "repository_id": "api",
+      "label": "check_json",
+      "kind": "evidence-artifact",
+      "path": "repos/api/evidence/check.json",
+      "hash": {
+        "alg": "SHA-256",
+        "value": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "actual_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "schema_kind": "check",
+      "required": true,
+      "status": "ok"
+    },
+    {
+      "repository_id": "web",
+      "label": "evidence_manifest",
+      "kind": "evidence-manifest",
+      "path": "repos/web/evidence/evidence-manifest.json",
+      "hash": {
+        "alg": "SHA-256",
+        "value": "3333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "actual_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+      "schema_kind": "evidence",
+      "required": true,
+      "status": "ok"
+    },
+    {
+      "repository_id": "web",
+      "label": "check_json",
+      "kind": "evidence-artifact",
+      "path": "repos/web/evidence/check.json",
+      "hash": {
+        "alg": "SHA-256",
+        "value": "4444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "actual_hash": "4444444444444444444444444444444444444444444444444444444444444444",
+      "schema_kind": "check",
+      "required": true,
+      "status": "ok"
+    }
+  ],
+  "ledger": {
+    "artifact_hashes": {
+      "api:evidence_manifest": {
+        "alg": "SHA-256",
+        "value": "1111111111111111111111111111111111111111111111111111111111111111",
+        "path": "repos/api/evidence/evidence-manifest.json"
+      },
+      "api:check_json": {
+        "alg": "SHA-256",
+        "value": "2222222222222222222222222222222222222222222222222222222222222222",
+        "path": "repos/api/evidence/check.json"
+      },
+      "web:evidence_manifest": {
+        "alg": "SHA-256",
+        "value": "3333333333333333333333333333333333333333333333333333333333333333",
+        "path": "repos/web/evidence/evidence-manifest.json"
+      },
+      "web:check_json": {
+        "alg": "SHA-256",
+        "value": "4444444444444444444444444444444444444444444444444444444444444444",
+        "path": "repos/web/evidence/check.json"
+      }
+    },
+    "previous_index_hash": "",
+    "index_hash": "5555555555555555555555555555555555555555555555555555555555555555"
+  }
+}

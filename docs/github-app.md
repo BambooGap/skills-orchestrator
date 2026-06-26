@@ -24,6 +24,7 @@ Initial webhook events:
 - `pull_request`: render registry diff comments and checks.
 - `push`: ingest default-branch registry/evidence snapshots.
 - `check_suite`: link SkillOps evidence to CI state.
+- `workflow_run`: ingest published evidence artifacts after trusted workflows complete.
 
 ## Artifact Flow
 
@@ -33,9 +34,11 @@ flowchart LR
   B --> C["skill-registry.json"]
   B --> D["registry-diff.md"]
   B --> E["evidence-manifest.json"]
+  B --> I["multi-repo-artifacts.json"]
   C --> F["Hosted registry ingest"]
   D --> G["PR comment / Check run"]
   E --> H["Enterprise dashboard snapshot"]
+  I --> F
 ```
 
 The app should call the CLI or consume workflow artifacts. It should not reimplement parser,
@@ -68,4 +71,12 @@ Validate installation payloads with:
 skills-orchestrator schema validate \
   --kind github-app-installation \
   --input examples/commercial-handoff/installation.json
+```
+
+The adoption fixture for external consumers is:
+
+```bash
+skills-orchestrator schema validate \
+  --kind github-app-installation \
+  --input examples/external-consumer/github-app-installation.json
 ```

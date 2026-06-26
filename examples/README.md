@@ -99,6 +99,20 @@
 
 ---
 
+### [External Consumer Example](external-consumer/)
+
+**适合**：平台团队、GitHub App / hosted registry / dashboard 产品边界设计
+
+**展示内容**：
+- 如何验证 hosted registry ingest payload
+- 如何验证 GitHub App installation payload
+- 如何把 `multi-repo-artifacts.json` 作为外部消费者输入
+- 如何保持外部产品只消费 OSS artifact contracts，而不是重新实现 CLI 语义
+
+**时间**：10 分钟
+
+---
+
 ### [Pilot Repository Examples](pilot-repos/)
 
 **适合**：平台团队、开源采用评估、真实仓库试点
@@ -136,9 +150,10 @@
 2. [Adapter Evidence Example](adapter-evidence/) → 验证 Claude Skills / MCP / OpenAI Agents SDK adapter evidence
 3. [Release Trust Example](release-trust/) → 验证外部 skill provenance 和 release artifact 绑定
 4. [Multi-repo Artifacts Example](multi-repo-artifacts/) → 聚合多个仓库的 evidence manifest
-5. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
-6. [SPEC.md](../SPEC.md) → 检查合同字段
-7. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
+5. [External Consumer Example](external-consumer/) → 验证 hosted/GitHub App consumer 输入
+6. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
+7. [SPEC.md](../SPEC.md) → 检查合同字段
+8. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 
 ## 💡 提示
 

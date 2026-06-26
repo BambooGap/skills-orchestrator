@@ -12,6 +12,7 @@ The minimum ingest payload points to artifacts produced by the CLI:
 - `evidence-manifest.json`
 - optional `doctor.json`
 - optional `adapter-inspect.json`
+- optional `multi-repo-artifacts.json` for organization-level rollout views
 
 Validate the contract:
 
@@ -19,6 +20,18 @@ Validate the contract:
 skills-orchestrator schema validate \
   --kind hosted-registry-ingest \
   --input examples/commercial-handoff/registry-ingest.json
+```
+
+For an adoption-focused static fixture, validate:
+
+```bash
+skills-orchestrator schema validate \
+  --kind hosted-registry-ingest \
+  --input examples/external-consumer/hosted-registry-ingest.json
+
+skills-orchestrator schema validate \
+  --kind multi-repo-artifacts \
+  --input examples/external-consumer/multi-repo-artifacts.json
 ```
 
 ## Identity

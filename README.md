@@ -4,7 +4,7 @@
 [![CI](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.5.0-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.6.0-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -13,9 +13,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.5.0` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.5.0` release tag | `BambooGap/skills-orchestrator@v4.5.0` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.5.0` |
+| OSS CLI | `v4.6.0` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.6.0` release tag | `BambooGap/skills-orchestrator@v4.6.0` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.6.0` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -40,6 +40,7 @@ skills-orchestrator check --config config/skills.yaml
 | 团队规则不可执行 | owner/source/version/license 只写在文档里 | `check --policy-pack builtin/team-standard` 强制团队治理元数据 |
 | 外部 Skill 来源不可信 | 只知道复制自 URL，不知道 commit、hash、抓取时间 | `import` 写入 provenance，`builtin/engineering-grade` 检查来源证据 |
 | 多仓 Skill 无法盘点 | 每个 repo 各查各的 | `registry build` / `registry diff` / `registry graph` 导出组织级 skill registry 和治理关系图 |
+| 外部平台难以接入 | Hosted/GitHub App 重写 CLI 语义 | `examples/external-consumer` 固化 hosted registry、GitHub App、multi-repo artifact 输入边界 |
 | 商用审计缺证据包 | 发布时到处找 CI、manifest、SARIF | `evidence export` 一次导出审计证据和 hash ledger |
 | 上下文窗口有限 | 所有 Skill 全量注入，浪费 token | MCP Server 按需加载，500 个 Skill 和 5 个消耗相同 |
 | 两个 Skill 互相冲突 | 运行时才发现，模型行为不确定 | 编译时 `conflict_with` 强制报错 |
@@ -65,7 +66,7 @@ Use `python3.12`, `pipx --python python3.12`, `uvx --python 3.12`, or the Docker
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.5.0 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.6.0 --version
 ```
 
 ### 初始化项目
@@ -141,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.5.0
+      - uses: BambooGap/skills-orchestrator@v4.6.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -182,6 +183,7 @@ enterprise gate：
 - [Demo Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
 - [Adoption Playbook](docs/adoption-playbook.md): 从 advisory CI 到 blocking gate 的试点路径。
 - [Pilot Repository Examples](examples/pilot-repos/README.md): Healthchecks、Umami、Woodpecker 风格仓库的最小接入包。
+- [External Consumer Example](examples/external-consumer/): hosted registry、GitHub App 和 multi-repo artifact 输入边界。
 
 ### SkillOps Readiness 与证据包
 
@@ -758,13 +760,13 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - v2.5.x：补齐 `builtin/team-standard` policy pack、治理元数据、`doctor` readiness、组织级 `registry`、`evidence export`、integration catalog、MCP 内容上限、audit HMAC 和 pipeline 状态脱敏。
 - v2.6.x：补齐稳定 JSON Schema、`schema validate`、`init --template team-standard` 和 `registry diff --format markdown`，降低团队 bootstrap 与 PR review 摩擦。
 - v3.0.x：补齐 PR registry diff comment automation、package SBOM、CodeQL/GHCR workflows、生态 adapter inspect/scaffold、open-core commercial handoff schemas 和 GitHub App / hosted registry / dashboard 蓝图。
-- v4.x：补齐 CI explainability、schema audit、digest-bound container SBOM/provenance、GHCR attestation、Claude Skills round-trip export、release evidence polish 和 multi-repo artifact index。
+- v4.x：补齐 CI explainability、schema audit、digest-bound container SBOM/provenance、GHCR attestation、Claude Skills round-trip export、release evidence polish、multi-repo artifact index 和 external consumer adoption fixtures。
 
 ### 下一阶段
 
 - 增加更多真实生态 adapter examples，包括跨仓 MCP client config、OpenAI Agents SDK scaffold 和 Claude Skills bundle 的负例 fixtures。
 - 继续推进 hash-locked dependency install、image signing、真实 GHCR attestation verification docs 和 release rollback playbook。
-- 在外部仓库实现 GitHub App / hosted registry / dashboard，继续消费 OSS artifact contracts，而不是把 SaaS 后端塞进核心 CLI。
+- 在外部仓库实现 GitHub App / hosted registry / dashboard，继续消费 OSS artifact contracts；核心 CLI 只维护 artifact contracts、schema 和验证命令。
 
 ---
 
