@@ -96,6 +96,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "github-app-installation",
         "hosted-registry-ingest",
         "manifest",
+        "multi-repo-artifacts",
         "policy-opa-input",
         "policy-pack",
         "registry",
@@ -120,6 +121,7 @@ def test_schema_resources_are_packaged_and_loadable():
         ("doctor", "doctor.json"),
         ("evidence", "evidence/evidence-manifest.json"),
         ("manifest", "instruction-manifest.json"),
+        ("multi-repo-artifacts", "multi-repo-artifacts.json"),
         ("policy-opa-input", "policy-opa-input.json"),
         ("policy-pack", "policy-pack.yaml"),
         ("registry", "skill-registry.json"),
@@ -395,6 +397,20 @@ rules:
         str(root / "evidence"),
         policy_packs=["builtin/team-standard"],
     )
+    index_result = CliRunner().invoke(
+        cli,
+        [
+            "evidence",
+            "index",
+            "--manifest",
+            f"schema-repo={root / 'evidence' / 'evidence-manifest.json'}",
+            "--scope-name",
+            "schema-fixture",
+            "--output",
+            str(root / "multi-repo-artifacts.json"),
+        ],
+    )
+    assert index_result.exit_code == 0
     (root / "adapter-inspect.json").write_text(
         json.dumps(inspect_adapters(root), ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",

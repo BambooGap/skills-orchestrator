@@ -135,7 +135,7 @@ system; OPA should be a proof and integration surface, not a second source of tr
 
 ## Phase 4: Distribution Hardening
 
-Status: implemented across v2.4.0-v4.4.0 for Docker smoke, package SBOM, CodeQL, GHCR release
+Status: implemented across v2.4.0-v4.5.0 for Docker smoke, package SBOM, CodeQL, GHCR release
 push, pinned third-party Actions, PyPI artifact attestation, digest-bound container
 SBOM/provenance attestation, and local release artifact verification.
 
@@ -202,7 +202,7 @@ Delivered:
 
 ## Phase 8: Ecosystem Adapters
 
-Status: implemented across v3.0.0-v4.4.0 as inspection, scaffold generation, Claude Skills export,
+Status: implemented across v3.0.0-v4.5.0 as inspection, scaffold generation, Claude Skills export,
 and adapter evidence fixtures.
 
 Goal: connect to AGENTS.md, Claude Skills, MCP clients, and OpenAI Agents SDK without claiming to
@@ -239,6 +239,30 @@ Delivered:
 - GitHub App, hosted registry, and enterprise dashboard blueprints.
 - JSON Schema contracts for installation, ingest, dashboard snapshots, and dashboard rollups.
 - `examples/commercial-handoff/` sample payloads.
+
+## Phase 10: Multi-repo Artifact Contracts
+
+Status: implemented in v4.5.0.
+
+Goal: let platform teams aggregate repository-level SkillOps evidence without introducing a hosted
+backend into the OSS CLI.
+
+Delivered:
+
+- `evidence index` for building `multi-repo-artifacts.json` from multiple
+  `evidence/evidence-manifest.json` files.
+- Stable `multi-repo-artifacts` JSON Schema and schema catalog registration.
+- Duplicate repository id rejection, missing artifact detection, and tampered artifact detection.
+- `examples/multi-repo-artifacts/` as a copy-pasteable organization-level evidence fixture.
+- SPEC, conformance, registry/evidence, and docs index coverage for Level 5 multi-repo artifact
+  conformance.
+
+Next:
+
+- Use the artifact index as the OSS contract consumed by hosted registry, GitHub App, or dashboard
+  products.
+- Keep graph viewers and hosted dashboards outside the core CLI unless they remain static artifact
+  renderers.
 
 ## Phase 5: Community Narrative
 

@@ -10,7 +10,7 @@ Normative terms use RFC 2119 meanings: MUST, MUST NOT, SHOULD, MAY.
 
 ## Scope
 
-SkillOps Contract v1 covers eight artifact families:
+SkillOps Contract v1 covers nine artifact families:
 
 - skill metadata in `skills.yaml` and skill frontmatter,
 - schema catalog metadata for public contract discovery,
@@ -19,6 +19,7 @@ SkillOps Contract v1 covers eight artifact families:
 - registry graph JSON,
 - registry diff JSON and Markdown,
 - evidence bundle manifests,
+- multi-repository artifact indexes,
 - adapter inspection reports.
 
 SARIF, CycloneDX, OPA/Rego, MCP, and AGENTS.md remain upstream or adjacent standards. This contract
@@ -402,6 +403,45 @@ signing, attestation, or SLSA compliance by themselves.
 `ledger` is additive in the v1 JSON Schema for backwards compatibility with older v3.x evidence
 manifests. v3.4 and newer emitters MUST include it, and `conformance run` MUST fail when it is
 absent or incomplete.
+
+## Multi-repo Artifacts Contract
+
+The multi-repo artifacts contract is an organization-level index over repository evidence bundles.
+The registered schema kind is `multi-repo-artifacts`, backed by
+`multi-repo-artifacts.schema.json`.
+
+```bash
+skills-orchestrator evidence index \
+  --manifest "api=../api/evidence/evidence-manifest.json" \
+  --manifest "web=../web/evidence/evidence-manifest.json" \
+  --scope-name example-org \
+  --output multi-repo-artifacts.json
+
+skills-orchestrator schema validate \
+  --kind multi-repo-artifacts \
+  --input multi-repo-artifacts.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `skills-orchestrator.multi-repo-artifacts.v1`. |
+| `tool` | Tool metadata, including the emitting package version. |
+| `generated_at` | UTC timestamp for the index generation. |
+| `scope` | Multi-repository scope metadata, including `kind` and `name`. |
+| `summary` | Counts for repositories, artifacts, missing artifacts, invalid artifacts, bundle hashes, policy findings, and registry skills. |
+| `repositories` | Per-repository evidence summaries keyed by stable repository id. |
+| `artifacts` | Flattened artifact records from all indexed evidence bundles. |
+| `ledger` | Index-level hash ledger with artifact hashes, previous index hash, and index hash. |
+
+Each artifact record MUST include `repository_id`, `label`, `kind`, `path`, `hash`, `required`,
+and `status`. `status` MUST be one of `ok`, `missing`, or `invalid`.
+
+The multi-repo index is derived from evidence manifests and referenced artifacts. It MUST NOT be the
+source of truth for skill definitions, CI decisions, hosted registry state, dashboard state, agent
+runs, or runtime orchestration. Consumers that need per-repository detail SHOULD dereference the
+underlying `evidence-manifest.json` path and validate the referenced artifact contracts directly.
 
 ## Adapter Inspection Contract
 

@@ -7,6 +7,7 @@
 - `registry graph`: derived ownership, source, combo, and conflict graph from registry facts.
 - `registry diff`: PR/release review between two registry snapshots, including Markdown output.
 - `evidence export`: release evidence bundle with artifact hashes and bundle hash ledger.
+- `evidence index`: multi-repository artifact index from existing evidence manifests.
 - `schema validate`: machine-checkable JSON Schema contracts for generated files.
 - `schema list --format json`: machine-checkable catalog of stable and preview contract surfaces.
 - `schema audit`: package self-audit for schema loadability and catalog metadata.
@@ -121,6 +122,27 @@ skills-orchestrator schema validate \
 
 The graph is derived from registry JSON facts. It is not a hosted graph database or runtime
 orchestration graph.
+
+## Multi-repo Artifact Index
+
+Use `evidence index` after each repository has already produced its own evidence bundle:
+
+```bash
+skills-orchestrator evidence index \
+  --manifest "api=../api/evidence/evidence-manifest.json" \
+  --manifest "web=../web/evidence/evidence-manifest.json" \
+  --scope-name example-org \
+  --output evidence/multi-repo-artifacts.json \
+  --force
+
+skills-orchestrator schema validate \
+  --kind multi-repo-artifacts \
+  --input evidence/multi-repo-artifacts.json
+```
+
+The index is intentionally derived from existing evidence manifests. It records repository ids,
+bundle hashes, artifact paths, artifact hashes, policy summaries, readiness summaries, and registry
+summaries. It does not replace `evidence export` and does not become a dashboard source of truth.
 
 ## Schema Validation
 

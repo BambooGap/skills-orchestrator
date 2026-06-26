@@ -225,6 +225,16 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v2.3.0",
         consumers=("cli", "ci", "agent-adapters"),
     ),
+    "multi-repo-artifacts": SchemaDescriptor(
+        kind="multi-repo-artifacts",
+        filename="multi-repo-artifacts.schema.json",
+        title="Multi-repository Artifacts",
+        description="Organization-level index over multiple repository evidence bundles.",
+        contract_id="skills-orchestrator.multi-repo-artifacts.v1",
+        stability="stable",
+        since="v4.5.0",
+        consumers=("ci", "audit", "platform-review", "hosted-registry"),
+    ),
     "policy-opa-input": SchemaDescriptor(
         kind="policy-opa-input",
         filename="policy-opa-input.schema.json",
