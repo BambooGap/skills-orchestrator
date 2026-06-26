@@ -86,6 +86,19 @@
 
 ---
 
+### [Multi-repo Artifacts Example](multi-repo-artifacts/)
+
+**适合**：平台团队、组织级试点、安全/审计负责人
+
+**展示内容**：
+- 如何把多个仓库的 `evidence-manifest.json` 聚合成一个 `multi-repo-artifacts.json`
+- 如何验证组织级 artifact index 的 schema
+- 如何保持多仓治理仍然是 artifact-first，而不是 dashboard 或 runtime 系统
+
+**时间**：10 分钟
+
+---
+
 ### [Pilot Repository Examples](pilot-repos/)
 
 **适合**：平台团队、开源采用评估、真实仓库试点
@@ -122,9 +135,10 @@
 1. [SkillOps Demo Repo](demo-repo/) → 直接跑 conformance 和证据导出
 2. [Adapter Evidence Example](adapter-evidence/) → 验证 Claude Skills / MCP / OpenAI Agents SDK adapter evidence
 3. [Release Trust Example](release-trust/) → 验证外部 skill provenance 和 release artifact 绑定
-4. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
-5. [SPEC.md](../SPEC.md) → 检查合同字段
-6. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
+4. [Multi-repo Artifacts Example](multi-repo-artifacts/) → 聚合多个仓库的 evidence manifest
+5. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
+6. [SPEC.md](../SPEC.md) → 检查合同字段
+7. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 
 ## 💡 提示
 

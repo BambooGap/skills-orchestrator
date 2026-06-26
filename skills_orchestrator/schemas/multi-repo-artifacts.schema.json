@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/multi-repo-artifacts.schema.json",
+  "title": "Skills Orchestrator Multi-repository Artifacts",
+  "type": "object",
+  "required": ["schema_version", "tool", "generated_at", "scope", "summary", "repositories", "artifacts", "ledger"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.multi-repo-artifacts.v1" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "generated_at": { "type": "string", "minLength": 1 },
+    "scope": {
+      "type": "object",
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": { "const": "multi-repo" },
+        "name": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "required": ["repositories", "artifacts", "missing", "invalid"],
+      "properties": {
+        "repositories": { "type": "integer", "minimum": 1 },
+        "artifacts": { "type": "integer", "minimum": 1 },
+        "missing": { "type": "integer", "minimum": 0 },
+        "invalid": { "type": "integer", "minimum": 0 },
+        "bundle_hashes": { "type": "integer", "minimum": 0 },
+        "policy_errors": { "type": "integer", "minimum": 0 },
+        "policy_warnings": { "type": "integer", "minimum": 0 },
+        "registry_skills": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "repositories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "evidence_manifest", "artifacts", "ledger"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "evidence_manifest": { "type": "string", "minLength": 1 },
+          "config": { "type": "string" },
+          "zone": { "type": "string" },
+          "policy_packs": { "type": "array", "items": { "type": "string" } },
+          "artifacts": { "type": "array", "items": { "type": "string" } },
+          "policy": { "$ref": "#/$defs/policy" },
+          "registry": { "$ref": "#/$defs/registry" },
+          "readiness": { "$ref": "#/$defs/readiness" },
+          "ledger": { "$ref": "#/$defs/repository_ledger" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["repository_id", "label", "kind", "path", "hash", "required", "status"],
+        "properties": {
+          "repository_id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "hash": { "$ref": "#/$defs/hash" },
+          "actual_hash": { "type": "string" },
+          "schema_kind": { "type": "string" },
+          "required": { "type": "boolean" },
+          "status": { "enum": ["ok", "missing", "invalid"] }
+        },
+        "additionalProperties": true
+      }
+    },
+    "ledger": {
+      "type": "object",
+      "required": ["artifact_hashes", "previous_index_hash", "index_hash"],
+      "properties": {
+        "artifact_hashes": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/hash_with_path" }
+        },
+        "previous_index_hash": { "type": "string" },
+        "index_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "object",
+      "required": ["alg", "value"],
+      "properties": {
+        "alg": { "const": "SHA-256" },
+        "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": true
+    },
+    "hash_with_path": {
+      "type": "object",
+      "required": ["alg", "value", "path"],
+      "properties": {
+        "alg": { "const": "SHA-256" },
+        "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "path": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "policy": {
+      "type": "object",
+      "required": ["errors", "warnings", "infos"],
+      "properties": {
+        "errors": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "integer", "minimum": 0 },
+        "infos": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "registry": {
+      "type": "object",
+      "required": ["skills", "skill_refs", "duplicate_skill_ids"],
+      "properties": {
+        "skills": { "type": "integer", "minimum": 0 },
+        "skill_refs": { "type": "integer", "minimum": 0 },
+        "duplicate_skill_ids": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "readiness": {
+      "type": "object",
+      "required": ["score", "status", "issues"],
+      "properties": {
+        "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "status": { "type": "string" },
+        "issues": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "repository_ledger": {
+      "type": "object",
+      "required": ["bundle_hash", "previous_bundle_hash", "artifact_hashes"],
+      "properties": {
+        "bundle_hash": { "type": "string" },
+        "previous_bundle_hash": { "type": "string" },
+        "artifact_hashes": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

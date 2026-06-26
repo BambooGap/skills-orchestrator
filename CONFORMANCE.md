@@ -190,6 +190,28 @@ skills-orchestrator adapters export openai-agents-sdk \
 python -m py_compile evidence/openai_skillops_agent.py
 ```
 
+### Level 5: Multi-repo Artifact Index
+
+An organization-level rollout is Level 5 conformant when each repository produces a Level 2 evidence
+bundle and the platform team can build a single machine-readable index over those bundles:
+
+```bash
+skills-orchestrator evidence index \
+  --manifest "api=../api/evidence/evidence-manifest.json" \
+  --manifest "web=../web/evidence/evidence-manifest.json" \
+  --scope-name example-org \
+  --output evidence/multi-repo-artifacts.json
+
+skills-orchestrator schema validate \
+  --kind multi-repo-artifacts \
+  --input evidence/multi-repo-artifacts.json
+```
+
+The index SHOULD be generated from CI evidence artifacts, not manually curated. A Level 5 claim MUST
+NOT depend on screenshots, hosted dashboards, or runtime agent traces. Those systems may consume the
+index, but the conformance evidence remains the generated `multi-repo-artifacts.json` file and the
+repository evidence manifests it references.
+
 ## GitHub Action Conformance
 
 The shortest CI path is:
@@ -205,7 +227,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.3.0
+      - uses: BambooGap/skills-orchestrator@v4.5.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

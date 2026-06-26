@@ -26,6 +26,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Adapters](adapters.md): AGENTS.md, Claude Skills, MCP client, and OpenAI Agents SDK bridge surfaces.
 - [Adapter Evidence Example](../examples/adapter-evidence/README.md): executable adapter fixture for Claude Skills export, MCP client config, and OpenAI Agents SDK scaffold.
 - [Release Trust Example](../examples/release-trust/README.md): external skill trust metadata and container release verification fixture.
+- [Multi-repo Artifacts Example](../examples/multi-repo-artifacts/README.md): organization-level evidence index over multiple repositories.
 - [Policy Packs](policy-packs.md): team-standard, engineering-grade, license allowlists, and import provenance checks.
 - [SkillOps Contract](../SPEC.md): executable v1 artifact contract for metadata, registry, diff, evidence, and adapters.
 - [Conformance](../CONFORMANCE.md): reproducible checks for local, CI, registry, and adapter conformance.
@@ -49,4 +50,5 @@ Use this page as the team entry point for Skills Orchestrator.
 8. Run `skills-orchestrator doctor --profile adopter`.
 9. Export manifest, registry graph, and evidence bundle for releases.
 10. Verify external skill trust metadata and container release evidence.
-11. Enable MCP runtime routing when static checks are stable.
+11. Build a multi-repo artifact index from repository evidence manifests.
+12. Enable MCP runtime routing when static checks are stable.

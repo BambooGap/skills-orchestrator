@@ -1239,6 +1239,65 @@ def evidence_export(
         raise SystemExit(1)
 
 
+@evidence.command("index")
+@click.option(
+    "--manifest",
+    "manifests",
+    multiple=True,
+    help="Evidence manifest path or repo-id=path. Can be repeated.",
+)
+@click.option(
+    "--manifest-glob",
+    "manifest_globs",
+    multiple=True,
+    help="Evidence manifest glob; supports ** recursion.",
+)
+@click.option("--scope-name", default=None, help="Organization or rollout scope name.")
+@click.option("--previous-index-hash", default="", help="Previous multi-repo index hash.")
+@click.option(
+    "--output", "-o", default=None, help="Write multi-repo artifacts JSON; default stdout."
+)
+@click.option("--force", is_flag=True, help="Overwrite existing output file.")
+def evidence_index(
+    manifests: tuple[str, ...],
+    manifest_globs: tuple[str, ...],
+    scope_name: str | None,
+    previous_index_hash: str,
+    output: str | None,
+    force: bool,
+):
+    """Index multiple evidence manifests as one multi-repo artifact contract."""
+    from skills_orchestrator.evidence_index import (
+        build_multi_repo_artifacts,
+        expand_manifest_inputs,
+        format_multi_repo_artifacts_json,
+    )
+
+    try:
+        manifest_specs = expand_manifest_inputs(manifests, manifest_globs)
+        rendered = format_multi_repo_artifacts_json(
+            build_multi_repo_artifacts(
+                manifest_specs,
+                scope_name=scope_name,
+                previous_index_hash=previous_index_hash,
+            )
+        )
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"Multi-repo artifacts index written: {output_path}"))
+            return
+        click.echo(console_safe_text(rendered), nl=False)
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 # ──────────────────────── Reviewer 子命令 ────────────────────────
 
 

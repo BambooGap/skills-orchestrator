@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-06-26
+
+### Added
+- Added `evidence index` to build a multi-repository artifact index from existing repository
+  evidence manifests.
+- Added the stable `multi-repo-artifacts` schema so platform teams and hosted registry consumers
+  can validate organization-level evidence indexes without reading CLI internals.
+- Added `examples/multi-repo-artifacts/`, SPEC, conformance, and registry/evidence documentation
+  for the multi-repo evidence contract.
+- Added tests covering manifest glob input, duplicate repository id rejection, missing artifacts,
+  tampered artifacts, and schema validation for multi-repo evidence indexes.
+
+### Changed
+- Updated current install, Action, container, release trust, and PyPI examples to `v4.5.0`.
+- Expanded schema catalog fixtures to include the multi-repo artifact contract.
+
 ## [4.4.0] - 2026-06-24
 
 ### Added
