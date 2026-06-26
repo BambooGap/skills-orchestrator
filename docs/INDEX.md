@@ -37,6 +37,8 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Pilot Repository Examples](../examples/pilot-repos/README.md): copyable starter packs for Healthchecks, Umami, and Woodpecker-style repositories.
 - [Open-core Boundary](open-core-boundary.md): what stays open-source and what belongs in hosted/enterprise layers.
 - [Commercial Handoff Examples](../examples/commercial-handoff/README.md): schema-valid example payloads for future hosted consumers.
+- [External Consumer Example](../examples/external-consumer/README.md): static hosted registry,
+  GitHub App, and multi-repo artifact inputs for downstream products.
 
 ## First Production Path
 
@@ -51,4 +53,5 @@ Use this page as the team entry point for Skills Orchestrator.
 9. Export manifest, registry graph, and evidence bundle for releases.
 10. Verify external skill trust metadata and container release evidence.
 11. Build a multi-repo artifact index from repository evidence manifests.
-12. Enable MCP runtime routing when static checks are stable.
+12. Validate external consumer payloads for hosted registry or GitHub App pilots.
+13. Enable MCP runtime routing when static checks are stable.

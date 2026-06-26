@@ -1,0 +1,19 @@
+{
+  "schema_version": "skills-orchestrator.github-app-installation.v1",
+  "installation": {
+    "id": 987654,
+    "account": "example-org"
+  },
+  "repository": {
+    "full_name": "example-org/platform-repo",
+    "default_branch": "main"
+  },
+  "permissions": {
+    "contents": "read",
+    "metadata": "read",
+    "pull_requests": "write",
+    "checks": "write",
+    "security_events": "write"
+  },
+  "events": ["pull_request", "push", "workflow_run"]
+}

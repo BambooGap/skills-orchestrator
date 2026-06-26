@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.0] - 2026-06-26
+
+### Added
+- Added `examples/external-consumer/`, a schema-valid adoption fixture for hosted registry,
+  GitHub App, and multi-repo artifact consumers.
+- Added tests proving external consumer example payloads validate against the public artifact
+  contracts.
+
+### Changed
+- Updated hosted registry and GitHub App docs to describe `multi-repo-artifacts.json` as an
+  external consumer input without moving hosted products into the OSS CLI.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.6.0`.
+
 ## [4.5.0] - 2026-06-26
 
 ### Added
