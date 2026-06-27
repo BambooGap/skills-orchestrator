@@ -82,6 +82,23 @@ def test_run_conformance_core_report_validates(tmp_path):
     negative = next(step for step in payload["steps"] if step["id"] == "negative-conformance-suite")
     assert negative["status"] == "pass"
     assert negative["metadata"]["passed"] == negative["metadata"]["total"]
+    assert negative["metadata"]["total"] == 7
+    covered_rules = {
+        rule for case in negative["metadata"]["cases"] for rule in case["expected_rules"]
+    }
+    assert {
+        "SO002",
+        "SO008",
+        "SO009",
+        "SO010",
+        "SO011",
+        "SO012",
+        "SO013",
+        "SO015",
+        "SO016",
+        "SO019",
+        "SO020",
+    } <= covered_rules
     assert any(step["id"] == "evidence-ledger" for step in payload["steps"])
     assert any(step["id"] == "registry-graph" for step in payload["steps"])
     assert validate_document("conformance", str(report_file)).valid is True

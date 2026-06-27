@@ -35,7 +35,19 @@ skills-orchestrator schema validate \
 
 The core suite includes positive contract checks and a negative conformance suite. The negative
 suite verifies that intentionally invalid skill projects trigger expected findings for missing
-governance metadata, duplicate ids, and external skill trust metadata.
+governance metadata, invalid parser-level metadata, duplicate ids, review-window failures, and
+external skill trust metadata. It currently covers these representative rule families:
+
+| Area | Expected rules |
+| --- | --- |
+| Duplicate skill identity | `SO002` |
+| Team governance metadata | `SO008`, `SO009`, `SO010`, `SO011`, `SO012` |
+| Parser-level skill metadata | `SO013` |
+| Review-window integrity | `SO015`, `SO016` |
+| External import trust | `SO019`, `SO020` |
+
+The negative suite is not a complete fuzzing harness. Its purpose is to prove that the public
+contract rejects the highest-value malformed inputs a platform team would use as CI gate fixtures.
 
 ### Level 1: Local SkillOps
 
@@ -227,7 +239,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.6.5
+      - uses: BambooGap/skills-orchestrator@v4.6.6
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

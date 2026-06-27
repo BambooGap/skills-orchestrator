@@ -300,6 +300,78 @@ def _negative_conformance_step() -> ConformanceStep:
             "expected_rules": {"SO008", "SO009", "SO010"},
         },
         {
+            "id": "invalid-skill-load-policy",
+            "policy_packs": [],
+            "skills": [
+                "---\n"
+                "id: invalid-policy\n"
+                "name: Invalid Policy\n"
+                "summary: Invalid load policy\n"
+                "load_policy: sometimes\n"
+                "---\n"
+                "# Invalid Policy\n"
+            ],
+            "expected_rules": {"SO013"},
+        },
+        {
+            "id": "invalid-lifecycle-and-required-approvers",
+            "policy_packs": ["builtin/team-standard"],
+            "skills": [
+                "---\n"
+                "id: required-without-approvers\n"
+                "name: Required Without Approvers\n"
+                "summary: Required skill without approvers\n"
+                "load_policy: require\n"
+                "owner: platform-team\n"
+                "source: internal://skills/required-without-approvers\n"
+                "version: 1.0.0\n"
+                "lifecycle: archived\n"
+                "---\n"
+                "# Required Without Approvers\n"
+            ],
+            "expected_rules": {"SO011", "SO012"},
+        },
+        {
+            "id": "invalid-review-window",
+            "policy_packs": ["builtin/engineering-grade"],
+            "skills": [
+                "---\n"
+                "id: invalid-review-window\n"
+                "name: Invalid Review Window\n"
+                "summary: Invalid review-window dates\n"
+                "owner: platform-team\n"
+                "source: internal://skills/invalid-review-window\n"
+                "version: 1.0.0\n"
+                "lifecycle: active\n"
+                "reviewed_at: yesterday\n"
+                "expires_at: 2999-01-01\n"
+                "license: MIT\n"
+                "---\n"
+                "# Invalid Review Window\n"
+            ],
+            "expected_rules": {"SO015"},
+        },
+        {
+            "id": "expired-review-window",
+            "policy_packs": ["builtin/engineering-grade"],
+            "skills": [
+                "---\n"
+                "id: expired-review-window\n"
+                "name: Expired Review Window\n"
+                "summary: Expired review-window dates\n"
+                "owner: platform-team\n"
+                "source: internal://skills/expired-review-window\n"
+                "version: 1.0.0\n"
+                "lifecycle: active\n"
+                "reviewed_at: 2000-01-01\n"
+                "expires_at: 2000-01-02\n"
+                "license: MIT\n"
+                "---\n"
+                "# Expired Review Window\n"
+            ],
+            "expected_rules": {"SO016"},
+        },
+        {
             "id": "external-provenance-and-license",
             "policy_packs": ["builtin/engineering-grade"],
             "skills": [
