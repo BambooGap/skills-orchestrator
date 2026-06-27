@@ -4,6 +4,9 @@ This playbook is the shortest path for adopting Skills Orchestrator in a real
 repository. It is written for platform teams that want a low-risk pilot before
 turning SkillOps checks into a blocking release gate.
 
+For repositories outside this project, first use [External Pilot Intake](external-pilot-intake.md)
+to confirm ownership, artifact retention, gate mode, and stop conditions.
+
 ## Adoption Modes
 
 | Mode | Gate | Recommended for | Commands |
@@ -80,7 +83,7 @@ sources, lifecycle metadata, and review windows for each skill.
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: BambooGap/skills-orchestrator@v4.8.1
+         - uses: BambooGap/skills-orchestrator@v4.8.2
            with:
              config: config/skills.yaml
              policy-pack: builtin/team-standard

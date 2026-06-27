@@ -80,8 +80,10 @@ Until then, the correct claim is:
 3. Keep public security-health signals visible through CodeQL, pinned Actions, Dependabot, and
    OpenSSF Scorecard.
 4. Improve the 10-minute adoption path and migration notes.
-5. Add more ecosystem round-trip examples only when they preserve the same artifact contracts.
-6. Seek real external pilot repos before expanding governance claims.
+5. Use [External Pilot Intake](external-pilot-intake.md) before counting a repository as an external
+   pilot.
+6. Add more ecosystem round-trip examples only when they preserve the same artifact contracts.
+7. Seek real external pilot repos before expanding governance claims.
 
 ## OpenSSF Scorecard Hygiene
 
