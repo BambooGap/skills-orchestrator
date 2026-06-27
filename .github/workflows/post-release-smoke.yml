@@ -1,0 +1,58 @@
+name: Post-release Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to verify, for example v4.7.10"
+        required: true
+        type: string
+      full_smoke:
+        description: "Install from PyPI and run the starter-kit adopter path"
+        required: false
+        default: false
+        type: boolean
+      retries:
+        description: "Number of public artifact readiness attempts"
+        required: false
+        default: "8"
+        type: string
+      retry_delay:
+        description: "Seconds to wait between attempts"
+        required: false
+        default: "20"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  post-release-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+
+      - name: Run post-release smoke
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+          FULL_SMOKE: ${{ inputs.full_smoke }}
+          RETRIES: ${{ inputs.retries }}
+          RETRY_DELAY: ${{ inputs.retry_delay }}
+        run: |
+          set -euo pipefail
+          args=(
+            --version "$VERSION"
+            --timeout 60
+            --retries "$RETRIES"
+            --retry-delay "$RETRY_DELAY"
+          )
+          if [ "$FULL_SMOKE" = "true" ]; then
+            args+=(--check-pypi-install --check-new-user-path --python python)
+          fi
+          python scripts/post_release_smoke.py "${args[@]}"

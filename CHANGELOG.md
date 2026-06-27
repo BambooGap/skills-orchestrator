@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.10] - 2026-06-27
+
+### Added
+- Added a manual `Post-release Smoke` GitHub Actions workflow for verifying published GitHub
+  Release, PyPI, and GHCR artifacts from the Actions UI.
+- Added an optional full-smoke mode that installs from PyPI and runs the starter-kit adopter path.
+
+### Changed
+- Documented the GitHub Actions post-release smoke workflow in `docs/release-verification.md`.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.10`.
+
 ## [4.7.9] - 2026-06-27
 
 ### Added
