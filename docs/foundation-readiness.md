@@ -39,6 +39,7 @@ work without requiring a SaaS backend. The minimum commercial-standard OSS packa
 - negative fixtures proving bad instruction artifacts fail deterministically,
 - GitHub Action integration that works in a single workflow step,
 - PyPI, GHCR, SBOM, provenance, and release attestation hygiene,
+- public OpenSSF Scorecard results or a documented reason why the check is temporarily disabled,
 - repeatable pilot examples for production-like repositories,
 - clear open-core boundary so hosted registry, GitHub App, and dashboard products consume OSS
   artifacts instead of changing CLI semantics.
@@ -76,6 +77,25 @@ Until then, the correct claim is:
 
 1. Harden conformance and negative fixtures.
 2. Keep GitHub Action and release trust workflows boring and reproducible.
-3. Improve the 10-minute adoption path and migration notes.
-4. Add more ecosystem round-trip examples only when they preserve the same artifact contracts.
-5. Seek real external pilot repos before expanding governance claims.
+3. Keep public security-health signals visible through CodeQL, pinned Actions, Dependabot, and
+   OpenSSF Scorecard.
+4. Improve the 10-minute adoption path and migration notes.
+5. Add more ecosystem round-trip examples only when they preserve the same artifact contracts.
+6. Seek real external pilot repos before expanding governance claims.
+
+## OpenSSF Scorecard Hygiene
+
+The repository runs OpenSSF Scorecard on `main`, on a weekly schedule, and on manual dispatch. The
+workflow publishes SARIF-backed results and keeps the action pinned to a full commit SHA, matching
+the repository's existing GitHub Actions pinning policy.
+
+Scorecard is not treated as a marketing badge or a release gate by itself. It is a public health
+signal that complements:
+
+- CodeQL analysis,
+- pinned third-party GitHub Actions,
+- Dependabot update checks,
+- PyPI trusted publishing,
+- package artifact attestations,
+- GHCR multi-architecture image publishing,
+- container SBOM/provenance attestations.

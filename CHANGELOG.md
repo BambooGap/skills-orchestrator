@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.3] - 2026-06-27
+
+### Added
+- Added an OpenSSF Scorecard workflow that runs on `main`, on a weekly schedule, and through manual
+  dispatch with SARIF-backed published results.
+- Added a Scorecard badge to the README and documented how Scorecard fits with CodeQL, pinned
+  Actions, trusted publishing, and container attestations.
+
+### Changed
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.3`.
+
 ## [4.7.2] - 2026-06-27
 
 ### Added
