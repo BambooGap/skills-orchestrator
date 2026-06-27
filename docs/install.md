@@ -13,6 +13,14 @@ python3.12 -m pip install skills-orchestrator
 skills-orchestrator --version
 ```
 
+The default package installs the lightweight governance CLI for `check`, `schema`, `registry`,
+`evidence`, `doctor`, and `conformance`. Install the optional MCP runtime only when you need
+`serve` or `mcp-test`:
+
+```bash
+python3.12 -m pip install "skills-orchestrator[mcp]"
+```
+
 ## Upgrade
 
 When upgrading an existing repository from an older Skills Orchestrator release,
@@ -20,6 +28,8 @@ regenerate the bootstrap and evidence artifacts after installing the new CLI:
 
 ```bash
 python3.12 -m pip install --upgrade skills-orchestrator
+# Optional, only when this repo runs the MCP server:
+python3.12 -m pip install --upgrade "skills-orchestrator[mcp]"
 skills-orchestrator build --config config/skills.yaml --lock
 skills-orchestrator evidence export --config config/skills.yaml --out evidence
 skills-orchestrator doctor --profile adopter --config config/skills.yaml
@@ -56,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.7.11
+      - uses: BambooGap/skills-orchestrator@v4.8.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -71,7 +81,7 @@ See [GitHub Action](github-action.md) for inputs and SARIF permissions.
 Use Docker when CI hosts should not install Python packages directly:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.7.11 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.0 --version
 
 docker build -t skills-orchestrator:local .
 docker run --rm -v "$PWD:/workspace" -w /workspace \

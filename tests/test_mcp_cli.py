@@ -12,6 +12,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
+import skills_orchestrator.main as main_module
 from skills_orchestrator.main import cli
 from skills_orchestrator.models import SkillMeta
 from skills_orchestrator.mcp.tools import ToolExecutor
@@ -172,3 +173,39 @@ class TestMcpTestCLI:
         )
         assert result.exit_code != 0
         assert "JSON" in result.output or "解析" in result.output
+
+    def test_mcp_test_missing_optional_dependency_shows_extra_hint(self, monkeypatch, tmp_path):
+        config_dir = tmp_path / "config"
+        config_dir.mkdir()
+        (config_dir / "skills.yaml").write_text('version: "1.0"\nzones: []\nskill_dirs: []\n')
+
+        def missing_runtime():
+            raise main_module.MissingMcpDependencyError()
+
+        monkeypatch.setattr(main_module, "_load_mcp_test_runtime", missing_runtime)
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["mcp-test", "list_skills", "{}", "-c", str(config_dir / "skills.yaml")],
+        )
+
+        assert result.exit_code != 0
+        assert "skills-orchestrator[mcp]" in result.output
+
+
+def test_serve_missing_optional_dependency_shows_extra_hint(monkeypatch, tmp_path):
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (config_dir / "skills.yaml").write_text('version: "1.0"\nzones: []\nskill_dirs: []\n')
+
+    def missing_runtime():
+        raise main_module.MissingMcpDependencyError()
+
+    monkeypatch.setattr(main_module, "_load_mcp_server_runtime", missing_runtime)
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["serve", "-c", str(config_dir / "skills.yaml")])
+
+    assert result.exit_code != 0
+    assert "skills-orchestrator[mcp]" in result.output

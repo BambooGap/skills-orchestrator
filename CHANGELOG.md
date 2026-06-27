@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.0] - 2026-06-28
+
+### Changed
+- Made MCP server runtime dependencies optional through the `mcp` extra so the default CLI install is
+  lighter for CI governance users.
+- Kept the development extra installing MCP dependencies so the full MCP test suite remains covered.
+- Updated `serve` and `mcp-test` to show a clear `skills-orchestrator[mcp]` installation hint when
+  optional MCP runtime dependencies are missing.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.0`.
+
 ## [4.7.11] - 2026-06-27
 
 ### Added

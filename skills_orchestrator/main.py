@@ -30,8 +30,48 @@ from .checker import fatal_error_report, run_check
 from .diagnostic import DiagnosticSeverity
 from .formatters import format_diagnostics_json, format_diagnostics_sarif
 
+MCP_EXTRA_INSTALL_COMMAND = 'python3.12 -m pip install "skills-orchestrator[mcp]"'
+
 
 # ─────────────────────────── helpers ────────────────────────────
+
+
+class MissingMcpDependencyError(RuntimeError):
+    """Raised when optional MCP runtime dependencies are not installed."""
+
+
+def _is_missing_mcp_dependency(exc: ImportError) -> bool:
+    missing_name = getattr(exc, "name", "") or ""
+    return missing_name == "mcp" or missing_name.startswith("mcp.")
+
+
+def _raise_missing_mcp_dependency(exc: ImportError) -> None:
+    if _is_missing_mcp_dependency(exc):
+        raise MissingMcpDependencyError from exc
+    raise exc
+
+
+def _load_mcp_server_runtime():
+    try:
+        from .mcp.server import run_stdio
+    except ImportError as exc:
+        _raise_missing_mcp_dependency(exc)
+    return run_stdio
+
+
+def _load_mcp_test_runtime():
+    try:
+        from .mcp.registry import SkillRegistry
+        from .mcp.tools import ToolExecutor
+    except ImportError as exc:
+        _raise_missing_mcp_dependency(exc)
+    return SkillRegistry, ToolExecutor
+
+
+def _show_missing_mcp_dependency() -> None:
+    click.echo(_err("缺少可选 MCP 运行依赖。"), err=True)
+    click.echo(_err(f"请运行: {MCP_EXTRA_INSTALL_COMMAND}"), err=True)
+    click.echo(_err('本地开发: python3.12 -m pip install -e ".[dev]"'), err=True)
 
 
 def _sym(symbol: str, fallback: str) -> str:
@@ -616,14 +656,10 @@ def serve(
     """
     import asyncio
 
-    # 检查 mcp 包是否已安装
     try:
-        from .mcp.server import run_stdio
-    except ImportError as e:
-        missing = str(e).replace("No module named ", "").strip("'")
-        click.echo(_err(f"缺少依赖: {missing}"), err=True)
-        click.echo(_err("请运行: pip install skills-orchestrator"), err=True)
-        click.echo(_err("或本地开发: pip install -e ."), err=True)
+        run_stdio = _load_mcp_server_runtime()
+    except MissingMcpDependencyError:
+        _show_missing_mcp_dependency()
         raise SystemExit(1)
 
     config_path = str(Path(config).resolve())
@@ -691,11 +727,9 @@ def mcp_test(
       skills-orchestrator mcp-test pipeline_start '{"pipeline_id": "full-dev"}'
       skills-orchestrator mcp-test list_skills '{}' -z enterprise
     """
-    from .mcp.registry import SkillRegistry
-    from .mcp.tools import ToolExecutor
-
     config_path = str(Path(config).resolve())
     try:
+        SkillRegistry, ToolExecutor = _load_mcp_test_runtime()
         registry = SkillRegistry(config_path, zone_id=zone)
         pipelines_dir = _resolve_pipelines_dir(config)
         executor = ToolExecutor(
@@ -710,6 +744,9 @@ def mcp_test(
             click.echo(console_safe_text(r.text))
     except json.JSONDecodeError as e:
         click.echo(_err(f"JSON 解析失败: {e}"), err=True)
+        raise SystemExit(1)
+    except MissingMcpDependencyError:
+        _show_missing_mcp_dependency()
         raise SystemExit(1)
     except Exception as e:
         click.echo(_err(str(e)), err=True)
