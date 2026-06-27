@@ -48,6 +48,8 @@ external skill trust metadata. It currently covers these representative rule fam
 
 The negative suite is not a complete fuzzing harness. Its purpose is to prove that the public
 contract rejects the highest-value malformed inputs a platform team would use as CI gate fixtures.
+The same rule families are also published as copyable projects under
+`examples/negative-conformance/` for downstream CI and third-party implementation tests.
 
 ### Level 1: Local SkillOps
 
@@ -239,7 +241,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.6.6
+      - uses: BambooGap/skills-orchestrator@v4.7.0
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard

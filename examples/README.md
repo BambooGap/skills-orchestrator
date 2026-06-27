@@ -59,6 +59,19 @@
 
 ---
 
+### [Negative Conformance Fixtures](negative-conformance/)
+
+**适合**：平台团队、安全团队、第三方实现者
+
+**展示内容**：
+- 如何验证坏输入会稳定失败
+- 如何复用缺治理元数据、错误 load_policy、过期 review-window、缺外部 provenance 等样本
+- 如何把负例规则集纳入下游 CI 或兼容性测试
+
+**时间**：10 分钟
+
+---
+
 ### [Adapter Evidence Example](adapter-evidence/)
 
 **适合**：agent runtime owner、平台团队、生态适配评估

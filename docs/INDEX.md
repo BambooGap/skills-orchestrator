@@ -7,11 +7,11 @@ Use this page as the team entry point for Skills Orchestrator.
 | Role | Start Here | Goal |
 | --- | --- | --- |
 | Repository maintainer | [Install](install.md), [GitHub Action](github-action.md) | Add a working skill check to one repo. |
-| Platform owner | [Adoption Playbook](adoption-playbook.md), [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
+| Platform owner | [Adoption Maturity Model](adoption-maturity-model.md), [Adoption Playbook](adoption-playbook.md), [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
 | Security reviewer | [Manifest And Policy Exports](manifest-policy-exports.md), [Policy Packs](policy-packs.md), [Compatibility](../COMPATIBILITY.md) | Review instruction assets with machine-readable evidence. |
 | Release owner | [Release Verification](release-verification.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence. |
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Route runtime context and preserve workflow state. |
-| External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
+| External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Negative Conformance Fixtures](../examples/negative-conformance/README.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
 | Pilot team | [Adoption Playbook](adoption-playbook.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo. |
 | Agent ecosystem integrator | [Adapters](adapters.md), [Adapter Evidence Example](../examples/adapter-evidence/README.md), [Conformance](../CONFORMANCE.md) | Generate Claude Skills, MCP client, and OpenAI Agents SDK evidence from one SkillOps config. |
 | Commercial product owner | [Open-core Boundary](open-core-boundary.md), [GitHub App Blueprint](github-app.md), [Hosted Registry](hosted-registry.md), [Enterprise Dashboard](enterprise-dashboard.md) | Build hosted products around OSS artifact contracts. |
@@ -22,6 +22,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Pipelines](PIPELINES.md): turn multiple skills into gated runtime workflows.
 - [Instruction Supply Chain Roadmap](instruction-supply-chain-roadmap.md): long-term ecosystem direction.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
+- [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local pilot to external adoption.
 - [Commercial And Foundation Readiness](foundation-readiness.md): honest adoption levels, commercial standard, and foundation-readiness gates.
 - [Registry And Evidence](registry-evidence.md): doctor, registry graph, evidence ledger, and integration catalog for SkillOps rollout.
 - [Adapters](adapters.md): AGENTS.md, Claude Skills, MCP client, and OpenAI Agents SDK bridge surfaces.
@@ -31,6 +32,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Policy Packs](policy-packs.md): team-standard, engineering-grade, license allowlists, and import provenance checks.
 - [SkillOps Contract](../SPEC.md): executable v1 artifact contract for metadata, registry, diff, evidence, and adapters.
 - [Conformance](../CONFORMANCE.md): reproducible checks for local, CI, registry, and adapter conformance.
+- [Negative Conformance Fixtures](../examples/negative-conformance/README.md): intentionally invalid projects that prove bad instruction artifacts fail with stable rule ids.
 - [Compatibility Policy](../COMPATIBILITY.md): stable contract surfaces, additive changes, and migration rules.
 - [Security Policy](../SECURITY.md): vulnerability reporting, MCP trust model, HMAC audit, and import provenance boundaries.
 - [Demo Repo](../examples/demo-repo/README.md): runnable end-to-end demo for PR review and evidence generation.

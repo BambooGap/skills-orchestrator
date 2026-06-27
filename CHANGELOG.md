@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.0] - 2026-06-27
+
+### Added
+- Added copyable negative conformance fixtures under `examples/negative-conformance/` so
+  downstream platform teams can prove malformed instruction artifacts fail with stable rule ids.
+- Added an adoption maturity model that defines the path from local discovery to external adoption
+  using executable gates and artifact evidence.
+
+### Changed
+- Linked negative fixtures and maturity levels from the README, documentation index, conformance
+  guide, and examples index.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.0`.
+
 ## [4.6.6] - 2026-06-27
 
 ### Changed
