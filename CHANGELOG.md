@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.4] - 2026-06-27
+
+### Fixed
+- Replaced the deprecated `actions/attest-sbom` release workflow step with the generic
+  `actions/attest` action while preserving SBOM attestation inputs and full-SHA pinning.
+
+### Changed
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+  `v4.6.4`.
+
 ## [4.6.3] - 2026-06-27
 
 ### Fixed
