@@ -13,7 +13,7 @@ Use this page as the team entry point for Skills Orchestrator.
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Consume governed context and preserve workflow state. |
 | External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Third-party Implementation](third-party-implementation.md), [Negative Conformance Fixtures](../examples/negative-conformance/README.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
 | Pilot team | [External Pilot Intake](external-pilot-intake.md), [Adoption Playbook](adoption-playbook.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo. |
-| Agent ecosystem integrator | [Adapters](adapters.md), [Adapter Evidence Example](../examples/adapter-evidence/README.md), [Conformance](../CONFORMANCE.md) | Generate Claude Skills, MCP client, and OpenAI Agents SDK evidence from one SkillOps config. |
+| Agent ecosystem integrator | [Agent Fleet Governance](agent-fleet-governance.md), [Adapters](adapters.md), [Adapter Evidence Example](../examples/adapter-evidence/README.md), [Conformance](../CONFORMANCE.md) | Generate governed agent-surface evidence from one SkillOps config. |
 | Commercial product owner | [Open-core Boundary](open-core-boundary.md), [GitHub App Blueprint](github-app.md), [Hosted Registry](hosted-registry.md), [Enterprise Dashboard](enterprise-dashboard.md) | Build hosted products around OSS artifact contracts. |
 
 ## Core Concepts
@@ -23,6 +23,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Instruction Supply Chain Roadmap](instruction-supply-chain-roadmap.md): long-term ecosystem direction.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
 - [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local pilot to external adoption.
+- [Agent Fleet Governance](agent-fleet-governance.md): multi-agent, multi-tenant, and multi-project governance boundary for instruction assets.
 - [Commercial And Foundation Readiness](foundation-readiness.md): honest adoption levels, commercial standard, and foundation-readiness gates.
 - [OpenSSF Scorecard Hygiene](foundation-readiness.md#openssf-scorecard-hygiene): public security-health signal alongside CodeQL, pinned Actions, and release attestations.
 - [Registry And Evidence](registry-evidence.md): doctor, registry graph, evidence ledger, and integration catalog for SkillOps rollout.
@@ -64,4 +65,5 @@ Use this page as the team entry point for Skills Orchestrator.
 12. Enable and review OpenSSF Scorecard results.
 13. Build a multi-repo artifact index from repository evidence manifests.
 14. Validate external consumer payloads for hosted registry or GitHub App pilots.
-15. Enable MCP task-scoped routing when static checks are stable.
+15. Map governed instruction artifacts to agent surfaces and tenant/project scopes as metadata.
+16. Enable MCP task-scoped routing when static checks are stable.

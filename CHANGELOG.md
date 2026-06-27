@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.4] - 2026-06-28
+
+### Added
+- Added `docs/agent-fleet-governance.md` to define the project's multi-agent, multi-tenant,
+  and multi-project governance boundary without claiming to be an agent runtime or provider
+  control plane.
+
+### Changed
+- Linked agent fleet governance from README, the documentation index, and the instruction supply
+  chain roadmap.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.4`.
+
 ## [4.8.3] - 2026-06-28
 
 ### Changed
