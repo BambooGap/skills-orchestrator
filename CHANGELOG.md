@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.2] - 2026-06-27
+
+### Fixed
+- Kept `pydantic-core` pinned to the exact version required by `pydantic`, fixing the
+  Dependabot runtime-constraint update that made CI dependency resolution impossible.
+
+### Changed
+- Updated pinned GitHub Actions used by CI, PyPI publishing, and GHCR release workflows to the
+  latest reviewed SHAs, including Node 24-compatible Docker setup and attestation actions.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+  `v4.6.2`.
+
 ## [4.6.1] - 2026-06-27
 
 ### Fixed
