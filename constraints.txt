@@ -21,7 +21,9 @@ jsonschema-specifications==2025.9.1
 mcp==1.28.1
 pycparser==3.0
 pydantic==2.13.4
-pydantic-core==2.47.0
+# pydantic-core is a strict companion package; keep it aligned with pydantic's
+# exact runtime requirement rather than bumping it independently.
+pydantic-core==2.46.4
 pydantic-settings==2.14.2
 PyJWT==2.13.0
 python-dotenv==1.2.2
