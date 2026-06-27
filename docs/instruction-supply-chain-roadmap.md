@@ -1,7 +1,7 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v3.0.0 open-core slice: PR registry diff automation, package SBOM, CodeQL/GHCR
-> workflows, adapter inspection/scaffolds, and commercial handoff contracts.
+> Status: v4.8.4 adoption slice: CI explainability, schema audit, release trust, adapter
+> evidence, multi-repo artifact contracts, and agent fleet governance guidance.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
 > by existing CI and supply-chain tooling.
@@ -38,6 +38,7 @@ Do not own:
 
 - A universal skill specification.
 - A competing policy runtime.
+- A multi-agent runtime, task queue, or provider tenant administration plane.
 - A replacement for CycloneDX, SPDX, OPA, SARIF, or GitHub Code Scanning.
 - Claims of security-scanner completeness before the rule model is mature.
 
@@ -263,6 +264,28 @@ Next:
   products.
 - Keep graph viewers and hosted dashboards outside the core CLI unless they remain static artifact
   renderers.
+
+## Phase 11: Agent Fleet Governance
+
+Status: introduced in v4.8.4 as documentation and adoption guidance.
+
+Goal: position SkillOps for the multi-agent, multi-tenant, and multi-project reality without
+turning the OSS CLI into a runtime control plane.
+
+Delivered:
+
+- `docs/agent-fleet-governance.md` as the boundary document for agent fleet instruction
+  governance.
+- README and documentation index links for agent ecosystem integrators.
+- Roadmap language that treats A2A, MCP, Claude Code subagents, and OpenAI Agents SDK handoffs as
+  downstream consumption or adapter surfaces, not dependencies of the core CLI.
+
+Next:
+
+- Add only adopter-driven fixtures for agent-surface metadata, such as Claude Code subagent
+  boundaries, MCP server scope, OpenAI Agents SDK role scaffolds, or A2A-facing agent card exports.
+- Keep tenant/project/cluster metadata optional until real adopters need it.
+- Keep provider project, budget, service account, and audit-log administration outside the OSS CLI.
 
 ## Phase 5: Community Narrative
 
