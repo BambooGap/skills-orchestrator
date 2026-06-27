@@ -95,6 +95,7 @@ signal that complements:
 - CodeQL analysis,
 - pinned third-party GitHub Actions,
 - constrained automation `pip install` paths checked by `scripts/check_pip_constraints.py`,
+- Docker base image digest pinning checked by `scripts/check_docker_base_digest.py`,
 - Dependabot update checks,
 - PyPI trusted publishing,
 - package artifact attestations,

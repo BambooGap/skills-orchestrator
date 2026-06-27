@@ -1,4 +1,5 @@
-FROM python:3.12-slim
+# python:3.12.13-slim-trixie manifest-list digest, refreshed during reviewed release hygiene.
+FROM python:3.12-slim@sha256:6c4dd321d176d61ea848dc8c73a4f7dbae8f70e0ee48bb411ea2f045b599fa8e
 
 LABEL org.opencontainers.image.title="skills-orchestrator" \
       org.opencontainers.image.description="SkillOps CLI for agent instruction governance" \
