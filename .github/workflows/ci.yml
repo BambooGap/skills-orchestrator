@@ -204,6 +204,9 @@ jobs:
       - name: Check third-party action pinning
         run: python scripts/check_action_pins.py
 
+      - name: Check constrained pip installs
+        run: python scripts/check_pip_constraints.py
+
       - name: Install package for supply-chain evidence
         run: pip install -c constraints.txt -e .
 
@@ -214,7 +217,7 @@ jobs:
 
       - name: Run pip-audit
         run: |
-          python -m pip install pip-audit==2.10.1
+          python -m pip install -c constraints.txt pip-audit
           pip-audit --strict --requirement constraints.txt
 
   docker:
