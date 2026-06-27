@@ -27,6 +27,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
       - name: Resolve image tags
         id: meta
         shell: bash
@@ -46,29 +52,23 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "sha_tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
-      - name: Build image
-        shell: bash
-        run: |
-          set -euo pipefail
-          image="${{ steps.meta.outputs.image }}"
-          docker build \
-            -t "$image:${{ steps.meta.outputs.version }}" \
-            -t "$image:${{ steps.meta.outputs.sha_tag }}" \
-            .
-
       - name: Log in to GHCR
         shell: bash
         run: |
           set -euo pipefail
           echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Push image
+      - name: Build and push multi-arch image
         shell: bash
         run: |
           set -euo pipefail
           image="${{ steps.meta.outputs.image }}"
-          docker push "$image:${{ steps.meta.outputs.version }}"
-          docker push "$image:${{ steps.meta.outputs.sha_tag }}"
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --tag "$image:${{ steps.meta.outputs.version }}" \
+            --tag "$image:${{ steps.meta.outputs.sha_tag }}" \
+            --push \
+            .
 
       - name: Smoke published image
         shell: bash
@@ -84,8 +84,10 @@ jobs:
         run: |
           set -euo pipefail
           image="${{ steps.meta.outputs.image }}"
-          ref="$(docker inspect --format='{{index .RepoDigests 0}}' "$image:${{ steps.meta.outputs.version }}")"
-          digest="${ref#*@}"
+          digest="$(
+            docker buildx imagetools inspect "$image:${{ steps.meta.outputs.version }}" |
+              awk '/^Digest:/ {print $2; exit}'
+          )"
           if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
             echo "unexpected image digest: $digest" >&2
             exit 1

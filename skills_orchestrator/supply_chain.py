@@ -371,7 +371,12 @@ def _resolve_sbom_path(
     else:
         return None
     if not path.is_absolute():
-        path = provenance_path.parent / path
+        candidates = [
+            (Path.cwd() / path).resolve(),
+            (provenance_path.parent / path).resolve(),
+            (provenance_path.parent / path.name).resolve(),
+        ]
+        return next((candidate for candidate in candidates if candidate.is_file()), None)
     return path if path.is_file() else None
 
 
