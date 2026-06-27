@@ -108,6 +108,33 @@ Verify:
 - Local container provenance, SBOM subject, and SBOM hash binding pass
   `supply-chain verify-container-release`.
 
+## Post-Release Smoke
+
+After PyPI and GHCR workflows finish, run the machine-readable public artifact smoke:
+
+```bash
+python scripts/post_release_smoke.py --version v4.7.8
+```
+
+For a slower adopter-path check that installs the PyPI package in a clean virtual environment and
+exercises the starter kit:
+
+```bash
+python scripts/post_release_smoke.py \
+  --version v4.7.8 \
+  --check-pypi-install \
+  --check-new-user-path \
+  --python python3.12
+```
+
+The default smoke checks:
+
+- GitHub Release tag, draft, and prerelease state,
+- PyPI latest version, wheel, and sdist presence,
+- GHCR manifest digest,
+- required `linux/amd64` and `linux/arm64` platforms,
+- GHCR attestation manifests.
+
 ## Current Gaps
 
 The release workflow attests Python distribution artifacts and the GHCR workflow publishes release
