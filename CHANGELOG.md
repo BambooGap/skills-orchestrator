@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.3] - 2026-06-27
+
+### Fixed
+- Added retry handling for GHCR image digest resolution after multi-arch image publication,
+  making container release SBOM/provenance attestation resilient to short registry propagation
+  windows.
+
+### Changed
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+  `v4.6.3`.
+
 ## [4.6.2] - 2026-06-27
 
 ### Fixed

@@ -13,7 +13,7 @@ docker run --rm skills-orchestrator:local --version
 Use the published release image when a CI host should not build the project first:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.6.2 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.6.3 --version
 ```
 
 ## Run Against A Repository
@@ -24,7 +24,7 @@ Mount the repository at `/workspace` and run commands from that directory:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.6.2 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.6.3 \
   check --config config/skills.yaml
 ```
 
@@ -34,7 +34,7 @@ Generate audit artifacts:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.6.2 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.6.3 \
   manifest --config config/skills.yaml --format cyclonedx \
   --output instruction-manifest.cdx.json
 ```
@@ -54,7 +54,7 @@ ghcr.io/bamboogap/skills-orchestrator
 ```
 
 Release builds are tagged with the release ref and a short commit SHA tag. Pull request workflows do
-not push images. v4.6.2 and newer release images are published as multi-arch manifests for
+not push images. v4.6.3 and newer release images are published as multi-arch manifests for
 `linux/amd64` and `linux/arm64`, so Apple Silicon and ARM CI hosts can run the released image
 without a platform mismatch warning.
 
