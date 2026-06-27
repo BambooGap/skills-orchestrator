@@ -4,7 +4,7 @@
 [![CI](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.7.0-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.7.1-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -13,9 +13,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.7.0` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.7.0` release tag | `BambooGap/skills-orchestrator@v4.7.0` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.7.0` |
+| OSS CLI | `v4.7.1` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.7.1` release tag | `BambooGap/skills-orchestrator@v4.7.1` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.7.1` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -66,7 +66,7 @@ Use `python3.12`, `pipx --python python3.12`, `uvx --python 3.12`, or the Docker
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.7.0 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.7.1 --version
 ```
 
 ### 初始化项目
@@ -142,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.7.0
+      - uses: BambooGap/skills-orchestrator@v4.7.1
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -179,6 +179,7 @@ enterprise gate：
 
 - [SkillOps Contract v1](SPEC.md): skill metadata、registry、diff、evidence、adapter 的机器可测试规范。
 - [Conformance](CONFORMANCE.md): 如何用 `conformance run`、`schema validate`、`check`、`registry`、`evidence` 验证兼容性。
+- [Third-party Implementation Guide](docs/third-party-implementation.md): 如何只依赖 schema、conformance 和负例 fixtures 实现兼容工具。
 - [Security Policy](SECURITY.md): MCP trust model、HMAC audit、import provenance 和漏洞报告流程。
 - [Demo Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
 - [Negative Conformance Fixtures](examples/negative-conformance/README.md): 可复制的坏输入样本，证明高风险 instruction artifacts 会稳定失败。
@@ -764,11 +765,12 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - v2.6.x：补齐稳定 JSON Schema、`schema validate`、`init --template team-standard` 和 `registry diff --format markdown`，降低团队 bootstrap 与 PR review 摩擦。
 - v3.0.x：补齐 PR registry diff comment automation、package SBOM、CodeQL/GHCR workflows、生态 adapter inspect/scaffold、open-core commercial handoff schemas 和 GitHub App / hosted registry / dashboard 蓝图。
 - v4.x：补齐 CI explainability、schema audit、digest-bound container SBOM/provenance、GHCR attestation、Claude Skills round-trip export、release evidence polish、multi-repo artifact index 和 external consumer adoption fixtures。
+- v4.7.x：补齐公开 negative conformance fixtures、adoption maturity model、第三方实现指南和 v4.x 兼容性口径。
 
 ### 下一阶段
 
 - 增加更多真实生态 adapter examples，包括跨仓 MCP client config、OpenAI Agents SDK scaffold 和 Claude Skills bundle 的负例 fixtures。
-- 继续推进 hash-locked dependency install、image signing、真实 GHCR attestation verification docs 和 release rollback playbook。
+- 继续推进 hash-locked dependency install、image signing、真实 GHCR attestation verification docs、release rollback playbook 和 OpenSSF Scorecard hygiene。
 - 在外部仓库实现 GitHub App / hosted registry / dashboard，继续消费 OSS artifact contracts；核心 CLI 只维护 artifact contracts、schema 和验证命令。
 
 ---

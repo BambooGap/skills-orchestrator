@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.1] - 2026-06-27
+
+### Added
+- Added a third-party implementation guide for compatible producers and consumers that rely on
+  schemas, conformance outputs, and negative fixtures instead of Python internals.
+
+### Changed
+- Updated the compatibility policy and SPEC wording from stale v3.x language to the current v4.x
+  compatible line.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.1`.
+
 ## [4.7.0] - 2026-06-27
 
 ### Added
