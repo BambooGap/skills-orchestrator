@@ -44,7 +44,7 @@ mkdir -p evidence
 
 skills-orchestrator supply-chain container-release \
   --image ghcr.io/bamboogap/skills-orchestrator \
-  --tag v4.8.0 \
+  --tag v4.8.1 \
   --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
   --repository BambooGap/skills-orchestrator \
   --commit local-fixture \
@@ -58,10 +58,9 @@ skills-orchestrator supply-chain verify-container-release \
   --provenance evidence/container-provenance.json \
   --sbom evidence/container-sbom.cdx.json \
   --image ghcr.io/bamboogap/skills-orchestrator \
-  --tag v4.8.0 \
+  --tag v4.8.1 \
   --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
 This verifies local release evidence. It does not replace GitHub Artifact Attestation verification
 for a real GHCR image digest.
-

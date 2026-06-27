@@ -131,6 +131,16 @@ def run_command(
     return subprocess.run(command, cwd=cwd, text=True, capture_output=True, timeout=timeout)
 
 
+def supports_optional_mcp_runtime(version: str) -> bool:
+    """Return whether the release should keep MCP runtime out of the default install."""
+    normalized = normalize_version(version)
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)", normalized)
+    if not match:
+        return False
+    major, minor, patch = (int(part) for part in match.groups())
+    return (major, minor, patch) >= (4, 8, 0)
+
+
 def pypi_install_smoke(
     *,
     package: str,
@@ -201,6 +211,49 @@ def pypi_install_smoke(
                 pip_check.stdout.strip() or pip_check.stderr.strip(),
             )
         )
+
+        if supports_optional_mcp_runtime(normalized):
+            no_mcp_script = (
+                "import importlib.util; "
+                "raise SystemExit(0 if importlib.util.find_spec('mcp') is None else 1)"
+            )
+            try:
+                no_mcp = run_command([str(py), "-c", no_mcp_script], timeout=timeout)
+            except subprocess.TimeoutExpired:
+                return [
+                    *checks,
+                    Check("pypi-default-without-mcp", False, f"timed out after {timeout:.0f}s"),
+                ]
+            checks.append(
+                Check(
+                    "pypi-default-without-mcp",
+                    no_mcp.returncode == 0,
+                    "default install does not include MCP runtime"
+                    if no_mcp.returncode == 0
+                    else "default install unexpectedly includes MCP runtime",
+                )
+            )
+
+            try:
+                mcp_hint = run_command(
+                    [str(cli), "mcp-test", "list_skills", "{}"],
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired:
+                return [
+                    *checks,
+                    Check("pypi-mcp-extra-hint", False, f"timed out after {timeout:.0f}s"),
+                ]
+            hint_output = f"{mcp_hint.stdout}\n{mcp_hint.stderr}"
+            checks.append(
+                Check(
+                    "pypi-mcp-extra-hint",
+                    mcp_hint.returncode != 0 and "skills-orchestrator[mcp]" in hint_output,
+                    "missing MCP runtime shows skills-orchestrator[mcp] install hint"
+                    if mcp_hint.returncode != 0 and "skills-orchestrator[mcp]" in hint_output
+                    else hint_output.strip(),
+                )
+            )
 
         if check_new_user_path:
             project = root / "new-user"

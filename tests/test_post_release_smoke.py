@@ -4,8 +4,10 @@ from scripts.post_release_smoke import (
     build_report,
     ghcr_manifest_check,
     github_release_check,
+    pypi_install_smoke,
     parse_imagetools_output,
     pypi_release_check,
+    supports_optional_mcp_runtime,
 )
 
 
@@ -130,3 +132,83 @@ def test_build_report_has_stable_schema_version():
         "summary": {"passed": 1, "failed": 0},
         "checks": [{"name": "github-release-tag", "ok": True, "message": "ready"}],
     }
+
+
+def test_supports_optional_mcp_runtime_starts_at_4_8_0():
+    assert supports_optional_mcp_runtime("v4.8.0") is True
+    assert supports_optional_mcp_runtime("4.8.1") is True
+    assert supports_optional_mcp_runtime("4.7.11") is False
+    assert supports_optional_mcp_runtime("not-a-version") is False
+
+
+def test_pypi_install_smoke_checks_default_mcp_extra_hint(monkeypatch):
+    def fake_run_command(command, *, cwd=None, timeout=120):
+        del cwd, timeout
+        if len(command) >= 4 and command[1:3] == ["-m", "venv"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "", "")
+        if command[1:4] == ["-m", "pip", "install"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "installed\n", "")
+        if command[1:4] == ["-m", "pip", "check"]:
+            return smoke.subprocess.CompletedProcess(
+                command, 0, "No broken requirements found.\n", ""
+            )
+        if command[1] == "-c":
+            return smoke.subprocess.CompletedProcess(command, 0, "", "")
+        if command[-1] == "--version":
+            return smoke.subprocess.CompletedProcess(
+                command, 0, "skills-orchestrator, version 4.8.1\n", ""
+            )
+        if command[1:4] == ["mcp-test", "list_skills", "{}"]:
+            return smoke.subprocess.CompletedProcess(
+                command,
+                1,
+                "",
+                '✗ 请运行: python3.12 -m pip install "skills-orchestrator[mcp]"\n',
+            )
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(smoke, "run_command", fake_run_command)
+
+    checks = pypi_install_smoke(
+        package="skills-orchestrator",
+        version="4.8.1",
+        python="python3.12",
+        check_new_user_path=False,
+        timeout=30,
+    )
+
+    by_name = {check.name: check for check in checks}
+    assert by_name["pypi-default-without-mcp"].ok is True
+    assert by_name["pypi-mcp-extra-hint"].ok is True
+
+
+def test_pypi_install_smoke_does_not_require_mcp_extra_hint_for_older_releases(monkeypatch):
+    def fake_run_command(command, *, cwd=None, timeout=120):
+        del cwd, timeout
+        if len(command) >= 4 and command[1:3] == ["-m", "venv"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "", "")
+        if command[1:4] == ["-m", "pip", "install"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "installed\n", "")
+        if command[1:4] == ["-m", "pip", "check"]:
+            return smoke.subprocess.CompletedProcess(
+                command, 0, "No broken requirements found.\n", ""
+            )
+        if command[-1] == "--version":
+            return smoke.subprocess.CompletedProcess(
+                command, 0, "skills-orchestrator, version 4.7.11\n", ""
+            )
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(smoke, "run_command", fake_run_command)
+
+    checks = pypi_install_smoke(
+        package="skills-orchestrator",
+        version="4.7.11",
+        python="python3.12",
+        check_new_user_path=False,
+        timeout=30,
+    )
+
+    check_names = {check.name for check in checks}
+    assert "pypi-default-without-mcp" not in check_names
+    assert "pypi-mcp-extra-hint" not in check_names
