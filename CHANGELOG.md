@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.2] - 2026-06-28
+
+### Added
+- Added `docs/external-pilot-intake.md`, a go / no-go checklist for external repository pilots,
+  artifact review, gate promotion, stop conditions, and adopter listing boundaries.
+
+### Changed
+- Linked the external pilot intake from README, the documentation index, the adoption playbook, and
+  foundation readiness guidance.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.2`.
+
 ## [4.8.1] - 2026-06-28
 
 ### Changed

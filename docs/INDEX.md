@@ -12,7 +12,7 @@ Use this page as the team entry point for Skills Orchestrator.
 | Release owner | [Release Verification](release-verification.md), [Release Rollback](release-rollback.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence and a rollback path. |
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Consume governed context and preserve workflow state. |
 | External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Third-party Implementation](third-party-implementation.md), [Negative Conformance Fixtures](../examples/negative-conformance/README.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
-| Pilot team | [Adoption Playbook](adoption-playbook.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo. |
+| Pilot team | [External Pilot Intake](external-pilot-intake.md), [Adoption Playbook](adoption-playbook.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo. |
 | Agent ecosystem integrator | [Adapters](adapters.md), [Adapter Evidence Example](../examples/adapter-evidence/README.md), [Conformance](../CONFORMANCE.md) | Generate Claude Skills, MCP client, and OpenAI Agents SDK evidence from one SkillOps config. |
 | Commercial product owner | [Open-core Boundary](open-core-boundary.md), [GitHub App Blueprint](github-app.md), [Hosted Registry](hosted-registry.md), [Enterprise Dashboard](enterprise-dashboard.md) | Build hosted products around OSS artifact contracts. |
 
@@ -41,6 +41,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Security Policy](../SECURITY.md): vulnerability reporting, MCP trust model, HMAC audit, and import provenance boundaries.
 - [Demo Repo](../examples/demo-repo/README.md): runnable end-to-end demo for PR review and evidence generation.
 - [Adoption Playbook](adoption-playbook.md): 15-minute pilot path and promotion criteria from advisory to blocking gates.
+- [External Pilot Intake](external-pilot-intake.md): go / no-go checklist for repositories outside this project.
 - [Pilot Repository Examples](../examples/pilot-repos/README.md): copyable starter packs for Healthchecks, Umami, and Woodpecker-style repositories.
 - [Open-core Boundary](open-core-boundary.md): what stays open-source and what belongs in hosted/enterprise layers.
 - [Commercial Handoff Examples](../examples/commercial-handoff/README.md): schema-valid example payloads for future hosted consumers.
