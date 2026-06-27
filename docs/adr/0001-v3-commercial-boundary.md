@@ -7,8 +7,8 @@ Date: 2026-06-21
 ## Context
 
 Skills Orchestrator is moving from a local skill compiler/checker into an open-source SkillOps
-control plane. The project can support commercial products, but adding hosted SaaS concerns directly
-to the OSS core would increase maintenance burden and reduce trust.
+governance layer. The project can support commercial products, but adding hosted SaaS concerns
+directly to the OSS core would increase maintenance burden and reduce trust.
 
 ## Decision
 

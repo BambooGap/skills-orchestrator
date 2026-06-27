@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.5] - 2026-06-27
+
+### Changed
+- Hardened public positioning across PyPI metadata, README, CLI help, and high-level docs to describe
+  Skills Orchestrator as a CI-native SkillOps governance system rather than an agent runtime control
+  plane.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.5`.
+
 ## [4.7.4] - 2026-06-27
 
 ### Added

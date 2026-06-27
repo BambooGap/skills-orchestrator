@@ -232,9 +232,10 @@ skills-orchestrator integrations list --format json
 ```
 
 The catalog defines ecosystem position, not hard dependencies. `skills-orchestrator` should remain
-the SkillOps control plane: skills, routing decisions, policy reports, registry manifests, and audit
-evidence. Code graph, business memory, visualization, execution, and multi-agent orchestration tools
-should consume those artifacts instead of being embedded into this package.
+the SkillOps artifact contract surface: skills, routing decisions, policy reports, registry
+manifests, and audit evidence. Code graph, business memory, visualization, execution, and
+multi-agent orchestration tools should consume those artifacts instead of being embedded into this
+package.
 
 ## Adapter Inspection
 

@@ -1,7 +1,7 @@
 # Ecosystem Adapters
 
 Adapters are bridge contracts for adjacent agent ecosystems. They do not replace the native
-manifest, resolver, or MCP runtime.
+manifest, resolver, or MCP task-scoped loading surface.
 
 ## Inspect A Repository
 

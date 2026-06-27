@@ -3,7 +3,7 @@
 Skills Orchestrator is SkillOps infrastructure for agent instructions.
 
 It treats Markdown skills as governed instruction assets: source-controlled, checked in CI, locked
-for reproducibility, exported as machine-readable inventory, and routed at runtime through MCP.
+for reproducibility, exported as machine-readable inventory, and optionally routed through MCP.
 
 ## Buyer And Operator
 
@@ -18,7 +18,7 @@ for reproducibility, exported as machine-readable inventory, and routed at runti
 
 - AAIF / agent instruction formats: natural home for instruction packaging and runtime contracts.
 - OpenSSF: security story through SARIF, manifests, SBOM, provenance, pinned Actions, and CodeQL.
-- CNCF: enterprise adoption path through CI/CD, containers, MCP runtime operations, and platform teams.
+- CNCF: enterprise adoption path through CI/CD, containers, MCP task-scoped routing, and platform teams.
 - SPDX / CycloneDX / GUAC: downstream consumers for instruction inventory once schemas mature.
 - OPA: policy-as-code proof surface, not the default runtime decision engine.
 
@@ -28,7 +28,7 @@ for reproducibility, exported as machine-readable inventory, and routed at runti
 - Resolver decisions remain the source of truth.
 - `check` is the adoption lane.
 - `manifest` and `policy export` are proof surfaces.
-- MCP is the runtime loading lane.
+- MCP is the optional task-scoped loading lane.
 - Docker and GitHub Action reduce integration friction.
 - Hosted products consume OSS artifacts instead of replacing CLI semantics.
 
@@ -42,11 +42,11 @@ for reproducibility, exported as machine-readable inventory, and routed at runti
 
 ## Product Ceiling
 
-The next ceiling is not more CLI commands. The ceiling is becoming the standard control plane for
+The next ceiling is not more CLI commands. The ceiling is becoming the standard governance layer for
 team-owned agent instruction assets:
 
 1. enforceable policy packs,
-2. structured runtime decision records,
+2. structured task-scoped routing decision records,
 3. audit and usage reports,
 4. schema-stable manifests,
 5. signed release and container evidence,
