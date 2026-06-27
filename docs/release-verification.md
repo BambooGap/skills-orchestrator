@@ -2,6 +2,9 @@
 
 Use this checklist before publishing a release or after cutting a tag.
 
+If a release is already published and turns out to be wrong, use
+[Release Rollback](release-rollback.md) before deleting tags, assets, or container images.
+
 ## Local Checks
 
 ```bash
@@ -112,3 +115,7 @@ images with digest-bound provenance and SBOM attestations. Image signing, full o
 layer SBOMs, SLSA level claims, and hash-locked Python installs remain future hardening items.
 `verify-container-release` validates local SkillOps release artifacts; it is not a replacement for
 GitHub Artifact Attestation verification against a real GHCR digest.
+
+Rollback drills are documented in [Release Rollback](release-rollback.md). The default incident
+response is to publish a fixed patch release and preserve evidence, not to rewrite published
+history.

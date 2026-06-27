@@ -9,7 +9,7 @@ Use this page as the team entry point for Skills Orchestrator.
 | Repository maintainer | [Install](install.md), [GitHub Action](github-action.md) | Add a working skill check to one repo. |
 | Platform owner | [Adoption Maturity Model](adoption-maturity-model.md), [Adoption Playbook](adoption-playbook.md), [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
 | Security reviewer | [Manifest And Policy Exports](manifest-policy-exports.md), [Policy Packs](policy-packs.md), [Compatibility](../COMPATIBILITY.md) | Review instruction assets with machine-readable evidence. |
-| Release owner | [Release Verification](release-verification.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence. |
+| Release owner | [Release Verification](release-verification.md), [Release Rollback](release-rollback.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence and a rollback path. |
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Route runtime context and preserve workflow state. |
 | External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Third-party Implementation](third-party-implementation.md), [Negative Conformance Fixtures](../examples/negative-conformance/README.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
 | Pilot team | [Adoption Playbook](adoption-playbook.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo. |
@@ -28,6 +28,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Adapters](adapters.md): AGENTS.md, Claude Skills, MCP client, and OpenAI Agents SDK bridge surfaces.
 - [Adapter Evidence Example](../examples/adapter-evidence/README.md): executable adapter fixture for Claude Skills export, MCP client config, and OpenAI Agents SDK scaffold.
 - [Release Trust Example](../examples/release-trust/README.md): external skill trust metadata and container release verification fixture.
+- [Release Rollback Playbook](release-rollback.md): incident response for bad PyPI, GHCR, GitHub Release, or evidence artifacts.
 - [Multi-repo Artifacts Example](../examples/multi-repo-artifacts/README.md): organization-level evidence index over multiple repositories.
 - [Policy Packs](policy-packs.md): team-standard, engineering-grade, license allowlists, and import provenance checks.
 - [SkillOps Contract](../SPEC.md): executable v1 artifact contract for metadata, registry, diff, evidence, and adapters.
@@ -56,6 +57,7 @@ Use this page as the team entry point for Skills Orchestrator.
 8. Run `skills-orchestrator doctor --profile adopter`.
 9. Export manifest, registry graph, and evidence bundle for releases.
 10. Verify external skill trust metadata and container release evidence.
-11. Build a multi-repo artifact index from repository evidence manifests.
-12. Validate external consumer payloads for hosted registry or GitHub App pilots.
-13. Enable MCP runtime routing when static checks are stable.
+11. Document the release rollback path.
+12. Build a multi-repo artifact index from repository evidence manifests.
+13. Validate external consumer payloads for hosted registry or GitHub App pilots.
+14. Enable MCP runtime routing when static checks are stable.
