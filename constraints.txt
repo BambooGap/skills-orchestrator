@@ -5,35 +5,37 @@
 
 # Runtime dependency closure
 annotated-types==0.7.0
-anyio==4.13.0
+anyio==4.14.1
 attrs==26.1.0
-certifi==2026.4.22
+certifi==2026.6.17
 cffi==2.0.0
-click==8.3.3
-cryptography==48.0.1
+click==8.4.2
+cryptography==49.0.0
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
 httpx-sse==0.4.3
-idna==3.15
+idna==3.18
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
-mcp==1.27.0
+mcp==1.28.1
 pycparser==3.0
-pydantic==2.13.3
-pydantic-core==2.46.3
+pydantic==2.13.4
+# pydantic-core is a strict companion package; keep it aligned with pydantic's
+# exact runtime requirement rather than bumping it independently.
+pydantic-core==2.46.4
 pydantic-settings==2.14.2
 PyJWT==2.13.0
 python-dotenv==1.2.2
-python-multipart==0.0.31
+python-multipart==0.0.32
 PyYAML==6.0.3
 referencing==0.37.0
-rpds-py==0.30.0
-sse-starlette==3.4.1
+rpds-py==2026.5.1
+sse-starlette==3.4.5
 starlette==1.3.1
 typing-extensions==4.15.0
 typing-inspection==0.4.2
-uvicorn==0.46.0
+uvicorn==0.49.0
 
 # Test, build, and publish tools
 build==1.5.0
@@ -42,15 +44,15 @@ docutils==0.23
 keyring==25.7.0
 markdown-it-py==4.2.0
 mdurl==0.1.2
-nh3==0.3.5
+nh3==0.3.6
 packaging==26.2
 Pygments==2.20.0
-pytest==9.0.3
+pytest==9.1.1
 pytest-benchmark==5.2.3
 requests==2.34.2
 requests-toolbelt==1.0.0
 rfc3986==2.0.0
 rich==15.0.0
-ruff==0.15.12
+ruff==0.15.20
 twine==6.2.0
 urllib3==2.7.0
