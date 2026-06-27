@@ -1,0 +1,47 @@
+{
+  "schema_version": "skills-orchestrator.negative-conformance-fixtures.v1",
+  "cases": [
+    {
+      "id": "missing-governance",
+      "config": "cases/missing-governance/config/skills.yaml",
+      "policy_packs": ["builtin/team-standard"],
+      "expected_rules": ["SO008", "SO009", "SO010"]
+    },
+    {
+      "id": "invalid-load-policy",
+      "config": "cases/invalid-load-policy/config/skills.yaml",
+      "policy_packs": [],
+      "expected_rules": ["SO013"]
+    },
+    {
+      "id": "invalid-lifecycle-required-approvers",
+      "config": "cases/invalid-lifecycle-required-approvers/config/skills.yaml",
+      "policy_packs": ["builtin/team-standard"],
+      "expected_rules": ["SO011", "SO012"]
+    },
+    {
+      "id": "invalid-review-window",
+      "config": "cases/invalid-review-window/config/skills.yaml",
+      "policy_packs": ["builtin/engineering-grade"],
+      "expected_rules": ["SO015"]
+    },
+    {
+      "id": "expired-review-window",
+      "config": "cases/expired-review-window/config/skills.yaml",
+      "policy_packs": ["builtin/engineering-grade"],
+      "expected_rules": ["SO016"]
+    },
+    {
+      "id": "external-trust",
+      "config": "cases/external-trust/config/skills.yaml",
+      "policy_packs": ["builtin/engineering-grade"],
+      "expected_rules": ["SO019", "SO020"]
+    },
+    {
+      "id": "duplicate-id",
+      "config": "cases/duplicate-id/config/skills.yaml",
+      "policy_packs": [],
+      "expected_rules": ["SO002"]
+    }
+  ]
+}
