@@ -55,4 +55,12 @@ jobs:
           if [ "$FULL_SMOKE" = "true" ]; then
             args+=(--check-pypi-install --check-new-user-path --python python)
           fi
-          python scripts/post_release_smoke.py "${args[@]}"
+          python scripts/post_release_smoke.py "${args[@]}" --format json | tee post-release-smoke.json
+
+      - name: Upload smoke report
+        if: always() && hashFiles('post-release-smoke.json') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: post-release-smoke-${{ inputs.version }}
+          path: post-release-smoke.json
+          if-no-files-found: error

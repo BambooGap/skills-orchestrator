@@ -99,6 +99,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "multi-repo-artifacts",
         "policy-opa-input",
         "policy-pack",
+        "post-release-smoke",
         "registry",
         "registry-diff",
         "registry-graph",
@@ -124,6 +125,7 @@ def test_schema_resources_are_packaged_and_loadable():
         ("multi-repo-artifacts", "multi-repo-artifacts.json"),
         ("policy-opa-input", "policy-opa-input.json"),
         ("policy-pack", "policy-pack.yaml"),
+        ("post-release-smoke", "post-release-smoke.json"),
         ("registry", "skill-registry.json"),
         ("registry-diff", "registry-diff.json"),
         ("registry-graph", "registry-graph.json"),
@@ -375,6 +377,26 @@ rules:
     severity: warning
     required_fields: [owner]
 """,
+        encoding="utf-8",
+    )
+    (root / "post-release-smoke.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "skills-orchestrator.post-release-smoke.v1",
+                "status": "pass",
+                "summary": {"passed": 1, "failed": 0},
+                "checks": [
+                    {
+                        "name": "github-release-tag",
+                        "ok": True,
+                        "message": "tag='v0.0.0', expected='v0.0.0'",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     doctor_result = CliRunner().invoke(cli, ["doctor", "--config", str(config), "--format", "json"])

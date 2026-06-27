@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.11] - 2026-06-27
+
+### Added
+- Added the `post-release-smoke` schema contract for JSON reports emitted by
+  `scripts/post_release_smoke.py --format json`.
+- Added workflow artifact upload for the manual `Post-release Smoke` GitHub Actions workflow.
+- Added test coverage for the post-release smoke report schema version and schema validation.
+
+### Changed
+- Documented schema validation for post-release smoke reports in `docs/release-verification.md`.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.11`.
+
 ## [4.7.10] - 2026-06-27
 
 ### Added
