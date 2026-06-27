@@ -1,11 +1,11 @@
 # Compatibility Policy
 
 Skills Orchestrator treats SkillOps artifacts as contracts. This policy describes what can change
-inside the v3.x line.
+inside the v4.x line and later compatible lines.
 
 ## Stable Contract Surfaces
 
-The following are stable for compatible v3.x releases:
+The following are stable for compatible v4.x releases and later compatible lines:
 
 - JSON Schema kinds returned by `skills-orchestrator schema list`.
 - Schema catalog entries returned by `skills-orchestrator schema list --format json`.
@@ -72,8 +72,8 @@ contract distribution quality:
 
 - `skills-orchestrator.conformance.v1`
 - `skills-orchestrator.policy-pack.v1`
-- optional `policy_trace` in check reports, required for v3.4 conformance
-- optional `ledger` in evidence manifests, required for v3.4 conformance
+- optional `policy_trace` in check reports, required for v4.x conformance
+- optional `ledger` in evidence manifests, required for v4.x conformance
 - `skills-orchestrator.registry-graph.v1`
 - `skills-orchestrator.schema-catalog.v1`
 - `skills-orchestrator.schema-audit.v1`
@@ -82,3 +82,19 @@ The v4.0 release does not rename or remove v1 contracts. It marks the core packa
 adds `schema audit` so CI can verify packaged schema quality without reading project skill files.
 Commercial handoff contracts for GitHub App installation, hosted registry ingest, and enterprise
 dashboard snapshots/rollups remain `preview` catalog entries in v4.x.
+
+## Third-party Implementations
+
+Compatible implementations do not need to copy this repository's internal Python modules. They
+SHOULD use the published JSON Schemas, conformance command outputs, and example fixtures as the
+contract boundary:
+
+1. load the schema catalog with `schema list --format json`,
+2. validate emitted artifacts with `schema validate`,
+3. pass the positive checks in `conformance run --profile core`,
+4. reject the public negative fixtures under `examples/negative-conformance/`,
+5. preserve existing `SOxxx` rule meanings when emitting compatible diagnostics.
+
+Implementations MAY add local policy packs or extra diagnostic rules. They MUST NOT change the
+meaning of existing stable `schema_version` identifiers, schema kinds, or rule ids while claiming
+compatibility with SkillOps Contract v1.

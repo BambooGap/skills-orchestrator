@@ -55,7 +55,7 @@ Every catalog entry MUST include:
 | `since` | First release exposing the contract surface. |
 | `consumers` | Intended integration surfaces such as `ci`, `audit`, or `hosted-service`. |
 
-`stable` catalog entries follow the compatibility policy for v3.x and later compatible lines.
+`stable` catalog entries follow the compatibility policy for v4.x and later compatible lines.
 `preview` entries are executable and tested, but downstream hosted-product workflows may still
 evolve additively before a future major version.
 
@@ -203,8 +203,9 @@ Failed trace items SHOULD embed the corresponding diagnostic in `diagnostic`. Po
 items SHOULD include `policy_pack`. This trace is a CI rule-evaluation trace; it MUST NOT be
 represented as an agent reasoning trace or runtime execution graph.
 
-`policy_trace` is additive in the v1 JSON Schema for backwards compatibility with older v3.x check
-reports. v3.4 and newer emitters MUST include it, and `conformance run` MUST fail when it is absent.
+`policy_trace` is additive in the v1 JSON Schema for backwards compatibility with older check
+reports. v4.x conformant emitters MUST include it, and `conformance run` MUST fail when it is
+absent.
 
 ## CI Explainability Contract
 
@@ -400,8 +401,8 @@ The `ledger` object MUST include:
 Ledger hashes are integrity evidence for generated artifacts. They do not imply cryptographic
 signing, attestation, or SLSA compliance by themselves.
 
-`ledger` is additive in the v1 JSON Schema for backwards compatibility with older v3.x evidence
-manifests. v3.4 and newer emitters MUST include it, and `conformance run` MUST fail when it is
+`ledger` is additive in the v1 JSON Schema for backwards compatibility with older evidence
+manifests. v4.x conformant emitters MUST include it, and `conformance run` MUST fail when it is
 absent or incomplete.
 
 ## Multi-repo Artifacts Contract
