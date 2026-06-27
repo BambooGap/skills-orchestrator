@@ -84,12 +84,22 @@ jobs:
         run: |
           set -euo pipefail
           image="${{ steps.meta.outputs.image }}"
-          digest="$(
-            docker buildx imagetools inspect "$image:${{ steps.meta.outputs.version }}" |
-              awk '/^Digest:/ {print $2; exit}'
-          )"
+          ref="$image:${{ steps.meta.outputs.version }}"
+          digest=""
+          inspect_output=""
+          for attempt in {1..10}; do
+            if inspect_output="$(docker buildx imagetools inspect "$ref" 2>&1)"; then
+              digest="$(awk '/^Digest:/ {print $2; exit}' <<<"$inspect_output")"
+              if [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+                break
+              fi
+            fi
+            echo "Digest for $ref is not ready yet (attempt $attempt/10)." >&2
+            sleep 6
+          done
           if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
             echo "unexpected image digest: $digest" >&2
+            printf '%s\n' "$inspect_output" >&2
             exit 1
           fi
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
