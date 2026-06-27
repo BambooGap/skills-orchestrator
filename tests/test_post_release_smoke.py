@@ -2,13 +2,50 @@ import scripts.post_release_smoke as smoke
 from scripts.post_release_smoke import (
     Check,
     build_report,
+    fetch_json,
     ghcr_manifest_check,
+    github_token_from_env,
     github_release_check,
     pypi_install_smoke,
     parse_imagetools_output,
     pypi_release_check,
     supports_optional_mcp_runtime,
 )
+
+
+def test_fetch_json_adds_github_token_headers(monkeypatch):
+    captured = {}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return b'{"ok": true}'
+
+    def fake_urlopen(request, *, timeout):
+        captured["headers"] = dict(request.header_items())
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(smoke.urllib.request, "urlopen", fake_urlopen)
+
+    assert fetch_json(
+        "https://api.github.com/repos/example/project", timeout=12, token="token"
+    ) == {"ok": True}
+    assert captured["headers"]["Authorization"] == "Bearer token"
+    assert captured["headers"]["X-github-api-version"] == "2022-11-28"
+    assert captured["timeout"] == 12
+
+
+def test_github_token_from_env_prefers_github_token(monkeypatch):
+    monkeypatch.setenv("GITHUB_TOKEN", "github-token")
+    monkeypatch.setenv("GH_TOKEN", "gh-token")
+
+    assert github_token_from_env() == "github-token"
 
 
 def test_pypi_release_check_requires_wheel_and_sdist():
