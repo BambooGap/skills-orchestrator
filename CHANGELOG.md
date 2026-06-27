@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.2] - 2026-06-27
+
+### Added
+- Added a release rollback playbook for PyPI, GHCR, GitHub Release, evidence regeneration, and
+  release incident communication.
+
+### Changed
+- Linked rollback guidance from the README, documentation index, and release verification guide.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.2`.
+
 ## [4.7.1] - 2026-06-27
 
 ### Added
