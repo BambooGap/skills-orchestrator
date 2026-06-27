@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.6] - 2026-06-27
+
+### Changed
+- Expanded the negative conformance suite from 3 to 7 representative malformed-input cases,
+  covering parser-level skill metadata, lifecycle/approver metadata, review-window failures,
+  duplicate ids, and external import trust metadata.
+- Added commercial and foundation readiness guidance that separates CI pilot value,
+  external adoption evidence, and future foundation candidacy without creating fake adopter claims.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+  `v4.6.6`.
+
 ## [4.6.5] - 2026-06-27
 
 ### Fixed
