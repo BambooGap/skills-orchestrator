@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.5] - 2026-06-27
+
+### Fixed
+- Suppressed expected pip root-user and version-check noise during container image builds by
+  setting explicit pip build environment variables in the Dockerfile.
+
+### Changed
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+  `v4.6.5`.
+
 ## [4.6.4] - 2026-06-27
 
 ### Fixed
