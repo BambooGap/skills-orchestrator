@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.9] - 2026-06-27
+
+### Added
+- Added `--retries` and `--retry-delay` to `scripts/post_release_smoke.py` so the script can wait
+  through PyPI and registry propagation windows without external shell loops.
+- Added unit coverage for post-release smoke retry behavior.
+
+### Changed
+- Updated release verification docs to recommend retry-enabled post-release smoke commands.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.9`.
+
 ## [4.7.8] - 2026-06-27
 
 ### Added

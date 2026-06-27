@@ -1,4 +1,6 @@
+import scripts.post_release_smoke as smoke
 from scripts.post_release_smoke import (
+    Check,
     ghcr_manifest_check,
     github_release_check,
     parse_imagetools_output,
@@ -88,3 +90,31 @@ Digest:    sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
     failed = {check.name for check in checks if not check.ok}
     assert failed == {"ghcr-required-platforms"}
+
+
+def test_main_retries_until_checks_pass(monkeypatch):
+    attempts = []
+
+    def fake_collect_checks(_args):
+        attempts.append(1)
+        return [Check("eventual-readiness", len(attempts) == 2, "ready")]
+
+    monkeypatch.setattr(smoke, "collect_checks", fake_collect_checks)
+    monkeypatch.setattr(smoke.time, "sleep", lambda _seconds: None)
+
+    exit_code = smoke.main(
+        [
+            "--version",
+            "v1.2.3",
+            "--skip-github",
+            "--skip-pypi",
+            "--skip-ghcr",
+            "--retries",
+            "2",
+            "--retry-delay",
+            "0",
+        ]
+    )
+
+    assert exit_code == 0
+    assert len(attempts) == 2

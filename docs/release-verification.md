@@ -113,7 +113,7 @@ Verify:
 After PyPI and GHCR workflows finish, run the machine-readable public artifact smoke:
 
 ```bash
-python scripts/post_release_smoke.py --version v4.7.8
+python scripts/post_release_smoke.py --version v4.7.9 --retries 8 --retry-delay 15
 ```
 
 For a slower adopter-path check that installs the PyPI package in a clean virtual environment and
@@ -121,7 +121,9 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.7.8 \
+  --version v4.7.9 \
+  --retries 8 \
+  --retry-delay 20 \
   --check-pypi-install \
   --check-new-user-path \
   --python python3.12
