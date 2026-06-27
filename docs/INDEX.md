@@ -24,6 +24,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
 - [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local pilot to external adoption.
 - [Commercial And Foundation Readiness](foundation-readiness.md): honest adoption levels, commercial standard, and foundation-readiness gates.
+- [OpenSSF Scorecard Hygiene](foundation-readiness.md#openssf-scorecard-hygiene): public security-health signal alongside CodeQL, pinned Actions, and release attestations.
 - [Registry And Evidence](registry-evidence.md): doctor, registry graph, evidence ledger, and integration catalog for SkillOps rollout.
 - [Adapters](adapters.md): AGENTS.md, Claude Skills, MCP client, and OpenAI Agents SDK bridge surfaces.
 - [Adapter Evidence Example](../examples/adapter-evidence/README.md): executable adapter fixture for Claude Skills export, MCP client config, and OpenAI Agents SDK scaffold.
@@ -58,6 +59,7 @@ Use this page as the team entry point for Skills Orchestrator.
 9. Export manifest, registry graph, and evidence bundle for releases.
 10. Verify external skill trust metadata and container release evidence.
 11. Document the release rollback path.
-12. Build a multi-repo artifact index from repository evidence manifests.
-13. Validate external consumer payloads for hosted registry or GitHub App pilots.
-14. Enable MCP runtime routing when static checks are stable.
+12. Enable and review OpenSSF Scorecard results.
+13. Build a multi-repo artifact index from repository evidence manifests.
+14. Validate external consumer payloads for hosted registry or GitHub App pilots.
+15. Enable MCP runtime routing when static checks are stable.
