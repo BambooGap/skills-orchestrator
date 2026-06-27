@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.4-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.5-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -14,9 +14,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.4` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.4` release tag | `BambooGap/skills-orchestrator@v4.8.4` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.4` |
+| OSS CLI | `v4.8.5` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.5` release tag | `BambooGap/skills-orchestrator@v4.8.5` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.5` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -80,7 +80,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.4 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.5 --version
 ```
 
 ### 初始化项目
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.4
+      - uses: BambooGap/skills-orchestrator@v4.8.5
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -201,6 +201,7 @@ enterprise gate：
 - [External Pilot Intake](docs/external-pilot-intake.md): 外部仓库试点前的 go / no-go 清单。
 - [Adoption Maturity Model](docs/adoption-maturity-model.md): 从本地试点到多仓治理的分级准入标准。
 - [Agent Fleet Governance](docs/agent-fleet-governance.md): 多 Agent、多租户、多项目指令资产治理边界。
+- [Supervisor Governance](docs/supervisor-governance.md): 总控 Agent、子 Agent、交接、权限和证据的治理模型。
 - [Pilot Repository Examples](examples/pilot-repos/README.md): Healthchecks、Umami、Woodpecker 风格仓库的最小接入包。
 - [External Consumer Example](examples/external-consumer/): hosted registry、GitHub App 和 multi-repo artifact 输入边界。
 - [Commercial And Foundation Readiness](docs/foundation-readiness.md): 商用试点、外部 adoption、基金会候选之间的真实门槛。
@@ -785,7 +786,7 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - v3.0.x：补齐 PR registry diff comment automation、package SBOM、CodeQL/GHCR workflows、生态 adapter inspect/scaffold、open-core commercial handoff schemas 和 GitHub App / hosted registry / dashboard 蓝图。
 - v4.x：补齐 CI explainability、schema audit、digest-bound container SBOM/provenance、GHCR attestation、Claude Skills round-trip export、release evidence polish、multi-repo artifact index 和 external consumer adoption fixtures。
 - v4.7.x：补齐公开 negative conformance fixtures、adoption maturity model、第三方实现指南、release rollback playbook 和 v4.x 兼容性口径。
-- v4.8.x：补齐 lightweight 默认安装、post-release smoke、外部试点 intake、negative fixture 语义、agent fleet governance 边界和当前 release hygiene。
+- v4.8.x：补齐 lightweight 默认安装、post-release smoke、外部试点 intake、negative fixture 语义、agent fleet governance、supervisor governance 边界和当前 release hygiene。
 
 ### 下一阶段
 
@@ -794,6 +795,8 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
   和 OpenSSF Scorecard hygiene；自动化 `pip install` 路径已经由 `constraints.txt` gate 覆盖。
 - 围绕 [Agent Fleet Governance](docs/agent-fleet-governance.md) 增加真实 adopter 需要的 adapter fixtures，
   但不把 CLI 扩展成 agent runtime、tenant admin tool 或 multi-agent queue。
+- 围绕 [Supervisor Governance](docs/supervisor-governance.md) 增加真实 adopter 需要的 lead/worker/handoff
+  证据 fixtures，但仍由下游 runtime 负责调度、权限执行和租户隔离。
 - 在外部仓库实现 GitHub App / hosted registry / dashboard，继续消费 OSS artifact contracts；核心 CLI 只维护 artifact contracts、schema 和验证命令。
 
 ---

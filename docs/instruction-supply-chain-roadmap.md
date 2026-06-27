@@ -1,7 +1,8 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.4 adoption slice: CI explainability, schema audit, release trust, adapter
-> evidence, multi-repo artifact contracts, and agent fleet governance guidance.
+> Status: v4.8.5 adoption slice: CI explainability, schema audit, release trust, adapter
+> evidence, multi-repo artifact contracts, agent fleet governance, and supervisor governance
+> guidance.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
 > by existing CI and supply-chain tooling.
@@ -286,6 +287,27 @@ Next:
   boundaries, MCP server scope, OpenAI Agents SDK role scaffolds, or A2A-facing agent card exports.
 - Keep tenant/project/cluster metadata optional until real adopters need it.
 - Keep provider project, budget, service account, and audit-log administration outside the OSS CLI.
+
+## Phase 12: Supervisor Governance
+
+Status: introduced in v4.8.5 as documentation and adoption guidance.
+
+Goal: explain how a lead agent can coordinate worker agents while deterministic platform controls
+enforce permission, tenant, budget, timeout, evidence, and audit boundaries.
+
+Delivered:
+
+- `docs/supervisor-governance.md` as the lead/worker/handoff/evidence boundary model.
+- README, documentation index, and agent fleet governance links.
+- Roadmap language that distinguishes a conversational thread list from a real supervisor control
+  loop.
+
+Next:
+
+- Add lead/worker/handoff fixtures only when a downstream runtime or adopter can consume them.
+- Keep worker scheduling, queues, retries, and provider permissions outside the core CLI.
+- Treat future supervisor manifests as preview contracts until at least two adapter surfaces need
+  the same metadata.
 
 ## Phase 5: Community Narrative
 
