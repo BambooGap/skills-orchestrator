@@ -1,0 +1,6 @@
+[project]
+name = "skillops-adapter-negative-example"
+version = "0.1.0"
+dependencies = [
+  "openai>=3",
+]

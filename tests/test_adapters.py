@@ -330,3 +330,29 @@ def test_adapter_evidence_example_generates_all_surfaces(tmp_path):
         "mcp-client-config",
         "openai-agents-sdk",
     } <= detected
+
+
+def test_adapter_negative_example_rejects_invalid_surfaces(tmp_path):
+    example = tmp_path / "adapter-negative"
+    shutil.copytree(ROOT / "examples" / "adapter-negative", example)
+
+    payload = inspect_adapters(example)
+    surfaces = {surface["id"]: surface for surface in payload["surfaces"]}
+
+    claude = surfaces["claude-skills"]
+    assert claude["detected"] is False
+    assert claude["paths"] == []
+    assert claude["verification"]["invalid_paths"] == [
+        ".claude/skills/broken-frontmatter/SKILL.md",
+        ".claude/skills/missing-entrypoint-metadata/SKILL.md",
+    ]
+    assert "reference.md" not in json.dumps(claude)
+
+    mcp = surfaces["mcp-client-config"]
+    assert mcp["detected"] is False
+    assert mcp["paths"] == []
+    assert mcp["verification"]["invalid_paths"] == [".mcp.json"]
+
+    openai = surfaces["openai-agents-sdk"]
+    assert openai["detected"] is False
+    assert openai["paths"] == []
