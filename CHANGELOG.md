@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.3] - 2026-06-28
+
+### Changed
+- Updated the conformance GitHub Action example to the current release tag.
+- Clarified negative conformance fixture wording so "fail" means expected rule ids appear; warning
+  cases require `--fail-on warning` when an exit-code failure is desired.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.3`.
+
 ## [4.8.2] - 2026-06-28
 
 ### Added
