@@ -10,7 +10,7 @@ on:
       full_smoke:
         description: "Install from PyPI and run the starter-kit adopter path"
         required: false
-        default: false
+        default: true
         type: boolean
       retries:
         description: "Number of public artifact readiness attempts"

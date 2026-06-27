@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.1] - 2026-06-28
+
+### Changed
+- Made the manual `Post-release Smoke` workflow run the full PyPI install and starter-kit path by
+  default so release evidence covers real adopter setup, not only public artifact metadata.
+- Extended full post-release smoke for `v4.8.0+` to verify the default PyPI install does not include
+  the optional MCP runtime and that MCP commands show the `skills-orchestrator[mcp]` install hint.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.1`.
+
 ## [4.8.0] - 2026-06-28
 
 ### Changed
