@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -42,10 +43,19 @@ def tag_for_version(version: str) -> str:
     return f"v{normalized}"
 
 
-def fetch_json(url: str, *, timeout: float) -> Any:
-    request = urllib.request.Request(url, headers={"Accept": "application/json"})
+def fetch_json(url: str, *, timeout: float, token: str | None = None) -> Any:
+    headers = {"Accept": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+        headers["X-GitHub-Api-Version"] = "2022-11-28"
+    request = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def github_token_from_env() -> str | None:
+    """Return the GitHub API token exposed by local or GitHub Actions environments."""
+    return os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
 
 
 def github_release_check(release: dict[str, Any], *, version: str) -> list[Check]:
@@ -362,6 +372,7 @@ def collect_checks(args: argparse.Namespace) -> list[Check]:
             release = fetch_json(
                 f"https://api.github.com/repos/{args.repo}/releases/tags/{tag}",
                 timeout=args.timeout,
+                token=github_token_from_env(),
             )
             checks.extend(github_release_check(release, version=version))
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:

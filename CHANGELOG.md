@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.6] - 2026-06-28
+
+### Changed
+- Made `scripts/post_release_smoke.py` use `GITHUB_TOKEN` or `GH_TOKEN` for GitHub Release API
+  checks so GitHub Actions post-release smoke is not blocked by anonymous API rate limits.
+- Passed the workflow `github.token` into the post-release smoke step.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.6`.
+
 ## [4.8.5] - 2026-06-28
 
 ### Added

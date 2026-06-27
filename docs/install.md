@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.5
+      - uses: BambooGap/skills-orchestrator@v4.8.6
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -81,7 +81,7 @@ See [GitHub Action](github-action.md) for inputs and SARIF permissions.
 Use Docker when CI hosts should not install Python packages directly:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.5 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.6 --version
 
 docker build -t skills-orchestrator:local .
 docker run --rm -v "$PWD:/workspace" -w /workspace \
