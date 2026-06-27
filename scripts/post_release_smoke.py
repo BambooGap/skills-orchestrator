@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -298,28 +299,7 @@ def print_checks(checks: list[Check], *, as_json: bool) -> None:
         print(f"[{marker}] {check.name}: {check.message}")
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--version", required=True, help="Release version, with or without leading v."
-    )
-    parser.add_argument("--repo", default="BambooGap/skills-orchestrator")
-    parser.add_argument("--package", default="skills-orchestrator")
-    parser.add_argument("--image", default="ghcr.io/bamboogap/skills-orchestrator")
-    parser.add_argument("--timeout", type=float, default=30)
-    parser.add_argument("--skip-github", action="store_true")
-    parser.add_argument("--skip-pypi", action="store_true")
-    parser.add_argument("--skip-ghcr", action="store_true")
-    parser.add_argument("--check-pypi-install", action="store_true")
-    parser.add_argument("--check-new-user-path", action="store_true")
-    parser.add_argument("--python", default=sys.executable)
-    parser.add_argument(
-        "--require-platform", action="append", default=["linux/amd64", "linux/arm64"]
-    )
-    parser.add_argument("--no-ghcr-attestations", action="store_true")
-    parser.add_argument("--format", choices=["text", "json"], default="text")
-    args = parser.parse_args(argv)
-
+def collect_checks(args: argparse.Namespace) -> list[Check]:
     checks: list[Check] = []
     version = normalize_version(args.version)
     tag = tag_for_version(version)
@@ -379,6 +359,52 @@ def main(argv: list[str] | None = None) -> int:
                 timeout=max(args.timeout, 300),
             )
         )
+
+    return checks
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--version", required=True, help="Release version, with or without leading v."
+    )
+    parser.add_argument("--repo", default="BambooGap/skills-orchestrator")
+    parser.add_argument("--package", default="skills-orchestrator")
+    parser.add_argument("--image", default="ghcr.io/bamboogap/skills-orchestrator")
+    parser.add_argument("--timeout", type=float, default=30)
+    parser.add_argument("--skip-github", action="store_true")
+    parser.add_argument("--skip-pypi", action="store_true")
+    parser.add_argument("--skip-ghcr", action="store_true")
+    parser.add_argument("--check-pypi-install", action="store_true")
+    parser.add_argument("--check-new-user-path", action="store_true")
+    parser.add_argument("--python", default=sys.executable)
+    parser.add_argument(
+        "--require-platform", action="append", default=["linux/amd64", "linux/arm64"]
+    )
+    parser.add_argument("--no-ghcr-attestations", action="store_true")
+    parser.add_argument("--retries", type=int, default=1)
+    parser.add_argument("--retry-delay", type=float, default=15)
+    parser.add_argument("--format", choices=["text", "json"], default="text")
+    args = parser.parse_args(argv)
+
+    if args.retries < 1:
+        parser.error("--retries must be >= 1")
+    if args.retry_delay < 0:
+        parser.error("--retry-delay must be >= 0")
+
+    checks: list[Check] = []
+    for attempt in range(1, args.retries + 1):
+        checks = collect_checks(args)
+        if all(check.ok for check in checks):
+            break
+        if attempt < args.retries:
+            if args.format == "text":
+                print(
+                    f"Post-release smoke attempt {attempt}/{args.retries} failed; "
+                    f"retrying in {args.retry_delay:g}s...",
+                    file=sys.stderr,
+                )
+            time.sleep(args.retry_delay)
 
     print_checks(checks, as_json=args.format == "json")
     return 0 if all(check.ok for check in checks) else 1
