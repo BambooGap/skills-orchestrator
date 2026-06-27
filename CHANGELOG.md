@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.6] - 2026-06-27
+
+### Added
+- Added `scripts/check_pip_constraints.py` to fail CI when automation installs Python dependencies
+  without `constraints.txt`, while preserving explicit wheel smoke-test installs.
+- Added unit coverage for constrained and unconstrained automation `pip install` detection.
+
+### Changed
+- Constrained the CI `pip-audit` installation and added the `pip-audit` dependency closure to
+  `constraints.txt`.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.6`.
+
 ## [4.7.5] - 2026-06-27
 
 ### Changed
