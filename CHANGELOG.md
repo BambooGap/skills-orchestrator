@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.7] - 2026-06-27
+
+### Added
+- Added `scripts/check_docker_base_digest.py` to fail CI when Docker base images are not pinned to
+  sha256 digests.
+- Added unit coverage for Docker base image digest pinning rules.
+
+### Changed
+- Pinned the Docker base image to the current `python:3.12.13-slim-trixie` manifest-list digest.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.7`.
+
 ## [4.7.6] - 2026-06-27
 
 ### Added
