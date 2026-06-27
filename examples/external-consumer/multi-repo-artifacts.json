@@ -2,7 +2,7 @@
   "schema_version": "skills-orchestrator.multi-repo-artifacts.v1",
   "tool": {
     "name": "skills-orchestrator",
-    "version": "4.6.1"
+    "version": "4.6.2"
   },
   "generated_at": "2026-06-26T00:00:00Z",
   "scope": {
