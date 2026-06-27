@@ -1,6 +1,7 @@
 import scripts.post_release_smoke as smoke
 from scripts.post_release_smoke import (
     Check,
+    build_report,
     ghcr_manifest_check,
     github_release_check,
     parse_imagetools_output,
@@ -118,3 +119,14 @@ def test_main_retries_until_checks_pass(monkeypatch):
 
     assert exit_code == 0
     assert len(attempts) == 2
+
+
+def test_build_report_has_stable_schema_version():
+    report = build_report([Check("github-release-tag", True, "ready")])
+
+    assert report == {
+        "schema_version": "skills-orchestrator.post-release-smoke.v1",
+        "status": "pass",
+        "summary": {"passed": 1, "failed": 0},
+        "checks": [{"name": "github-release-tag", "ok": True, "message": "ready"}],
+    }

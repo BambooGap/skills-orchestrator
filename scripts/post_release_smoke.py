@@ -273,20 +273,7 @@ def pypi_install_smoke(
 
 def print_checks(checks: list[Check], *, as_json: bool) -> None:
     if as_json:
-        print(
-            json.dumps(
-                {
-                    "status": "pass" if all(check.ok for check in checks) else "fail",
-                    "summary": {
-                        "passed": sum(1 for check in checks if check.ok),
-                        "failed": sum(1 for check in checks if not check.ok),
-                    },
-                    "checks": [check.as_dict() for check in checks],
-                },
-                indent=2,
-                ensure_ascii=False,
-            )
-        )
+        print(json.dumps(build_report(checks), indent=2, ensure_ascii=False))
         return
 
     status = "pass" if all(check.ok for check in checks) else "fail"
@@ -297,6 +284,19 @@ def print_checks(checks: list[Check], *, as_json: bool) -> None:
     for check in checks:
         marker = "OK" if check.ok else "FAIL"
         print(f"[{marker}] {check.name}: {check.message}")
+
+
+def build_report(checks: list[Check]) -> dict[str, Any]:
+    """Build the machine-readable post-release smoke report."""
+    return {
+        "schema_version": "skills-orchestrator.post-release-smoke.v1",
+        "status": "pass" if all(check.ok for check in checks) else "fail",
+        "summary": {
+            "passed": sum(1 for check in checks if check.ok),
+            "failed": sum(1 for check in checks if not check.ok),
+        },
+        "checks": [check.as_dict() for check in checks],
+    }
 
 
 def collect_checks(args: argparse.Namespace) -> list[Check]:

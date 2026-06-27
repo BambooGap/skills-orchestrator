@@ -113,7 +113,14 @@ Verify:
 After PyPI and GHCR workflows finish, run the machine-readable public artifact smoke:
 
 ```bash
-python scripts/post_release_smoke.py --version v4.7.10 --retries 8 --retry-delay 15
+python scripts/post_release_smoke.py \
+  --version v4.7.11 \
+  --retries 8 \
+  --retry-delay 15 \
+  --format json > post-release-smoke.json
+skills-orchestrator schema validate \
+  --kind post-release-smoke \
+  --input post-release-smoke.json
 ```
 
 For a slower adopter-path check that installs the PyPI package in a clean virtual environment and
@@ -121,12 +128,16 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.7.10 \
+  --version v4.7.11 \
   --retries 8 \
   --retry-delay 20 \
   --check-pypi-install \
   --check-new-user-path \
-  --python python3.12
+  --python python3.12 \
+  --format json > post-release-smoke-full.json
+skills-orchestrator schema validate \
+  --kind post-release-smoke \
+  --input post-release-smoke-full.json
 ```
 
 The default smoke checks:
@@ -138,8 +149,10 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.7.10`. Enable `full_smoke` when you
-also want the workflow to install from PyPI and run the starter-kit adopter path.
+Use the release tag as the `version` input, for example `v4.7.11`. Enable `full_smoke` when you
+also want the workflow to install from PyPI and run the starter-kit adopter path. The workflow
+uploads `post-release-smoke.json` as a retained run artifact so platform teams can review or archive
+the release verification evidence after the job finishes.
 
 ## Current Gaps
 

@@ -255,6 +255,18 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v3.2.0",
         consumers=("ci", "platform-policy", "release-gate"),
     ),
+    "post-release-smoke": SchemaDescriptor(
+        kind="post-release-smoke",
+        filename="post-release-smoke.schema.json",
+        title="Post-release Smoke Report",
+        description=(
+            "Public artifact smoke report for GitHub Release, PyPI, GHCR, and adopter path checks."
+        ),
+        contract_id="skills-orchestrator.post-release-smoke.v1",
+        stability="stable",
+        since="v4.7.11",
+        consumers=("ci", "release-gate", "platform-review"),
+    ),
     "registry": SchemaDescriptor(
         kind="registry",
         filename="skill-registry.schema.json",
