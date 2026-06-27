@@ -28,6 +28,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Registry And Evidence](registry-evidence.md): doctor, registry graph, evidence ledger, and integration catalog for SkillOps rollout.
 - [Adapters](adapters.md): AGENTS.md, Claude Skills, MCP client, and OpenAI Agents SDK bridge surfaces.
 - [Adapter Evidence Example](../examples/adapter-evidence/README.md): executable adapter fixture for Claude Skills export, MCP client config, and OpenAI Agents SDK scaffold.
+- [Adapter Negative Fixtures](../examples/adapter-negative/README.md): malformed Claude Skills, MCP config, and OpenAI-looking files that must not be detected as valid adapter surfaces.
 - [Release Trust Example](../examples/release-trust/README.md): external skill trust metadata and container release verification fixture.
 - [Release Rollback Playbook](release-rollback.md): incident response for bad PyPI, GHCR, GitHub Release, or evidence artifacts.
 - [Multi-repo Artifacts Example](../examples/multi-repo-artifacts/README.md): organization-level evidence index over multiple repositories.

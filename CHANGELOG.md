@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.4] - 2026-06-27
+
+### Added
+- Added adapter negative fixtures for malformed Claude Skills entrypoints, invalid MCP client JSON,
+  and OpenAI-looking project files that must not be detected as valid OpenAI Agents SDK surfaces.
+- Added regression coverage proving adapter inspection reports invalid paths without treating
+  supporting files as skills.
+
+### Changed
+- Linked adapter negative fixtures from the documentation index and examples index.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.4`.
+
 ## [4.7.3] - 2026-06-27
 
 ### Added

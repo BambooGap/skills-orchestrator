@@ -86,6 +86,20 @@
 
 ---
 
+### [Adapter Negative Fixtures](adapter-negative/)
+
+**适合**：平台团队、安全团队、第三方实现者
+
+**展示内容**：
+- 如何验证坏 Claude Skills entrypoint 不会被误识别为有效 skill
+- 如何验证坏 MCP JSON config 会进入 `invalid_paths`
+- 如何验证 OpenAI-looking project files 不会被误判成 OpenAI Agents SDK surface
+- 如何保持 adapter 检测是保守的 artifact contract，而不是猜测式 runtime discovery
+
+**时间**：5 分钟
+
+---
+
 ### [Release Trust Example](release-trust/)
 
 **适合**：release owner、安全团队、平台团队
