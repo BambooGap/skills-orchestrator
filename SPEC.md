@@ -1,6 +1,6 @@
 # SkillOps Contract v1
 
-Status: stable contract surface for `skills-orchestrator` v3.x.
+Status: stable contract surface for `skills-orchestrator` v4.x and compatible later lines.
 
 This document defines the machine-checkable contract exposed by Skills Orchestrator. It is not a
 vision document and does not define a new agent runtime. A project conforms by producing and

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.1] - 2026-06-27
+
+### Fixed
+- Fixed `supply-chain verify-container-release` so README-style relative SBOM paths such as
+  `evidence/container-sbom.cdx.json` resolve from the current working directory before falling
+  back to the provenance artifact directory.
+- Updated `SPEC.md` status text from the stale v3.x wording to the current v4.x contract surface.
+
+### Changed
+- Updated GHCR publishing to build and push `linux/amd64` and `linux/arm64` images with Docker
+  Buildx, binding release SBOM/provenance to the published manifest-list digest.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.6.1`.
+
 ## [4.6.0] - 2026-06-26
 
 ### Added
