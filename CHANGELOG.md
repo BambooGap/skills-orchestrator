@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.8] - 2026-06-27
+
+### Added
+- Added `scripts/post_release_smoke.py` to verify published GitHub Release, PyPI, and GHCR artifacts
+  after a release.
+- Added optional PyPI clean-install and starter-kit smoke checks to the post-release script.
+- Added unit coverage for PyPI release metadata, GitHub Release state, and GHCR manifest parsing.
+
+### Changed
+- Documented the post-release smoke flow in `docs/release-verification.md`.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.8`.
+
 ## [4.7.7] - 2026-06-27
 
 ### Added
