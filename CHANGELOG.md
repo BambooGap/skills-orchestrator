@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.5] - 2026-06-28
+
+### Added
+- Added `docs/supervisor-governance.md` to explain how lead agents, worker agents, handoffs,
+  tenant boundaries, permissions, and evidence should be governed without making the CLI a runtime
+  scheduler.
+
+### Changed
+- Linked supervisor governance from README, the documentation index, agent fleet governance, and
+  the instruction supply chain roadmap.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.5`.
+
 ## [4.8.4] - 2026-06-28
 
 ### Added

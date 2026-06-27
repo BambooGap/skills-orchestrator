@@ -1,6 +1,6 @@
 # Agent Fleet Governance
 
-> Status: v4.8.4 adoption guidance.
+> Status: v4.8.5 adoption guidance.
 >
 > Scope: governance for AI instruction artifacts used by multi-agent, multi-tenant, and
 > multi-project systems. This is not a runtime orchestration specification.
@@ -25,6 +25,11 @@ Skills Orchestrator should answer those questions through CI artifacts, schemas,
 registry output, conformance checks, and evidence bundles. It should not become a queue, runtime
 scheduler, hosted control plane, or replacement for OpenAI Agents SDK, Claude Code, A2A, MCP,
 LangGraph, CrewAI, AutoGen, or a cloud provider's tenant administration APIs.
+
+For the lead-agent-to-worker-agent control model, see
+[Supervisor Governance](supervisor-governance.md). The short version is: a lead agent may plan,
+delegate, and merge, but a deterministic platform layer must enforce permissions, tenant
+boundaries, budgets, timeouts, evidence, and audit behavior.
 
 ## Current Market Signal
 
@@ -256,6 +261,7 @@ Exit criteria:
 - Keep the CLI focused on check, schema, evidence, registry, conformance, release trust, adapters,
   and post-release smoke.
 - Add documentation, fixtures, and adoption guidance for agent fleet governance.
+- Use [Supervisor Governance](supervisor-governance.md) as the boundary for lead/worker handoffs.
 - Keep all multi-tenant and multi-cluster concepts as metadata and artifact contracts.
 - Do not add provider admin API write operations.
 
