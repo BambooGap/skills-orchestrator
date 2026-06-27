@@ -2,6 +2,15 @@
 
 Skills Orchestrator exposes a stdio MCP server for runtime skill routing.
 
+## Install MCP Runtime
+
+The default PyPI package is a lightweight CI governance CLI. Install the optional MCP runtime extra
+before using `serve` or `mcp-test`:
+
+```bash
+python3.12 -m pip install "skills-orchestrator[mcp]"
+```
+
 ## Start The Server
 
 ```bash

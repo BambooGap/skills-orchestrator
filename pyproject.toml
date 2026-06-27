@@ -1,6 +1,6 @@
 [project]
 name = "skills-orchestrator"
-version = "4.7.11"
+version = "4.8.0"
 description = "CI-native SkillOps governance for AI-agent instruction artifacts: policy packs, registries, evidence bundles, SARIF/CI, adapters, and MCP bridges."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -31,12 +31,15 @@ dependencies = [
     "pyyaml>=6.0",
     "click>=8.0",
     "jsonschema>=4.20",
-    "mcp>=1.0",
 ]
 
 [project.optional-dependencies]
+mcp = [
+    "mcp>=1.0",
+]
 dev = [
     "build>=1.0",
+    "mcp>=1.0",
     "pytest>=7.0",
     "pytest-benchmark>=4.0",
     "ruff>=0.4",

@@ -114,7 +114,7 @@ After PyPI and GHCR workflows finish, run the machine-readable public artifact s
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.7.11 \
+  --version v4.8.0 \
   --retries 8 \
   --retry-delay 15 \
   --format json > post-release-smoke.json
@@ -128,7 +128,7 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.7.11 \
+  --version v4.8.0 \
   --retries 8 \
   --retry-delay 20 \
   --check-pypi-install \
@@ -149,7 +149,7 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.7.11`. Enable `full_smoke` when you
+Use the release tag as the `version` input, for example `v4.8.0`. Enable `full_smoke` when you
 also want the workflow to install from PyPI and run the starter-kit adopter path. The workflow
 uploads `post-release-smoke.json` as a retained run artifact so platform teams can review or archive
 the release verification evidence after the job finishes.
