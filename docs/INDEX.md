@@ -10,7 +10,7 @@ Use this page as the team entry point for Skills Orchestrator.
 | Platform owner | [Adoption Maturity Model](adoption-maturity-model.md), [Adoption Playbook](adoption-playbook.md), [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
 | Security reviewer | [Manifest And Policy Exports](manifest-policy-exports.md), [Policy Packs](policy-packs.md), [Compatibility](../COMPATIBILITY.md) | Review instruction assets with machine-readable evidence. |
 | Release owner | [Release Verification](release-verification.md), [Release Rollback](release-rollback.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence and a rollback path. |
-| Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Route runtime context and preserve workflow state. |
+| Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Consume governed context and preserve workflow state. |
 | External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Third-party Implementation](third-party-implementation.md), [Negative Conformance Fixtures](../examples/negative-conformance/README.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
 | Pilot team | [Adoption Playbook](adoption-playbook.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo. |
 | Agent ecosystem integrator | [Adapters](adapters.md), [Adapter Evidence Example](../examples/adapter-evidence/README.md), [Conformance](../CONFORMANCE.md) | Generate Claude Skills, MCP client, and OpenAI Agents SDK evidence from one SkillOps config. |
@@ -63,4 +63,4 @@ Use this page as the team entry point for Skills Orchestrator.
 12. Enable and review OpenSSF Scorecard results.
 13. Build a multi-repo artifact index from repository evidence manifests.
 14. Validate external consumer payloads for hosted registry or GitHub App pilots.
-15. Enable MCP runtime routing when static checks are stable.
+15. Enable MCP task-scoped routing when static checks are stable.

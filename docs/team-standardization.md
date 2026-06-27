@@ -1,13 +1,13 @@
 # Team Standardization Guide
 
-Use Skills Orchestrator as a team control plane for agent instructions:
+Use Skills Orchestrator as a team governance layer for agent instructions:
 
 1. keep skills in source control,
 2. check them in CI,
 3. lock and review instruction changes,
 4. export manifests for audit,
 5. export registry/evidence bundles for release review,
-6. route runtime context through MCP.
+6. optionally route task-scoped context through MCP after CI checks are stable.
 
 ## Repository Contract
 
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.7.4
+      - uses: BambooGap/skills-orchestrator@v4.7.5
         with:
           config: config/skills.yaml
           check-lock: skills.lock.json

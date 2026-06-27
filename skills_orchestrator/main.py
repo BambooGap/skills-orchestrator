@@ -125,7 +125,7 @@ def _load_pipeline(pipeline_id: str, config_path: Optional[str] = None):
 @click.group()
 @click.version_option(version=__version__, prog_name="skills-orchestrator")
 def cli():
-    """Skills Orchestrator — SkillOps / instruction-supply-chain control plane."""
+    """Skills Orchestrator — CI-native SkillOps governance for AI instruction artifacts."""
     pass
 
 

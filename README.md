@@ -5,18 +5,18 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.7.4-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.7.5-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**开源 SkillOps / instruction-supply-chain 控制层** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP runtime，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
+**开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
 
-它不替代 Codex、Claude Code、Omnigent、CodeGraph、Superpowers 或业务记忆系统；它位于这些工具之间，负责回答团队最实际的问题：哪些 skills 可以用、谁负责、来源是否可信、CI 是否能阻断、审计证据在哪里，以及运行时应给 agent 注入哪些指令。
+它不替代 Codex、Claude Code、Omnigent、CodeGraph、Superpowers 或业务记忆系统；它位于这些工具之间，负责回答团队最实际的问题：哪些 skills 可以用、谁负责、来源是否可信、CI 是否能阻断、审计证据在哪里，以及下游 agent runtime 应消费哪些经过治理的指令资产。
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.7.4` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.7.4` release tag | `BambooGap/skills-orchestrator@v4.7.4` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.7.4` |
+| OSS CLI | `v4.7.5` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.7.5` release tag | `BambooGap/skills-orchestrator@v4.7.5` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.7.5` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -67,7 +67,7 @@ Use `python3.12`, `pipx --python python3.12`, `uvx --python 3.12`, or the Docker
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.7.4 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.7.5 --version
 ```
 
 ### 初始化项目
@@ -143,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.7.4
+      - uses: BambooGap/skills-orchestrator@v4.7.5
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -762,7 +762,7 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - v2.0.x：稳定了 build / validate / zone / conflict、frontmatter discovery、MCP Server、Skill Inheritance、sync targets、Pipeline 编排、PyPI 发布和基础安全边界。
 - 检查诊断与机器报告阶段：补齐 `check` 诊断面，输出 JSON / SARIF，并把项目定位收敛到 SkillOps 和 instruction supply chain。
 - v2.3.x：发布 GitHub Action、CycloneDX / native manifest、OPA/Rego proof export、Action SHA pinning、artifact attestation 和 PyPI 发布防护。
-- v2.4.x：补齐 Docker 交付、团队标准化文档、MCP runtime decision record、usage audit、pipeline recovery 和本地运行证据。
+- v2.4.x：补齐 Docker 交付、团队标准化文档、MCP routing decision record、usage audit、pipeline recovery 和本地运行证据。
 - v2.5.x：补齐 `builtin/team-standard` policy pack、治理元数据、`doctor` readiness、组织级 `registry`、`evidence export`、integration catalog、MCP 内容上限、audit HMAC 和 pipeline 状态脱敏。
 - v2.6.x：补齐稳定 JSON Schema、`schema validate`、`init --template team-standard` 和 `registry diff --format markdown`，降低团队 bootstrap 与 PR review 摩擦。
 - v3.0.x：补齐 PR registry diff comment automation、package SBOM、CodeQL/GHCR workflows、生态 adapter inspect/scaffold、open-core commercial handoff schemas 和 GitHub App / hosted registry / dashboard 蓝图。

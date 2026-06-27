@@ -1,7 +1,8 @@
 # Open-core Boundary
 
-Skills Orchestrator is an open-source SkillOps control plane. The OSS core should remain useful
-without a hosted service and should keep producing portable files that other systems can consume.
+Skills Orchestrator is an open-source SkillOps governance system for AI instruction artifacts. The
+OSS core should remain useful without a hosted service and should keep producing portable files that
+other systems can consume.
 
 ## OSS Core
 
@@ -13,7 +14,7 @@ The open-source package owns:
   manifests, adapter inspection, and package SBOM.
 - GitHub Action automation for local CI, SARIF upload, registry diff artifacts, and optional PR
   comments.
-- MCP runtime serving for task-scoped skill loading.
+- Optional MCP serving for task-scoped skill loading, without owning model execution.
 
 ## Hosted Or Enterprise Layer
 
