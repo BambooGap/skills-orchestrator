@@ -1,6 +1,6 @@
 # Supervisor Governance Model
 
-> Status: v4.8.29 adoption guidance.
+> Status: v4.8.30 adoption guidance.
 >
 > Scope: how a lead agent can coordinate specialized agents without turning Skills Orchestrator
 > into a runtime scheduler.

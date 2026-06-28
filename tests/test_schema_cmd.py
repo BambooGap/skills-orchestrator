@@ -128,7 +128,7 @@ def test_supply_chain_sbom_accepts_syft_components_without_version(tmp_path):
                     "component": {
                         "type": "container",
                         "name": "ghcr.io/bamboogap/skills-orchestrator",
-                        "version": "v4.8.29",
+                        "version": "v4.8.30",
                     }
                 },
                 "components": [

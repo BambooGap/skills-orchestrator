@@ -27,6 +27,7 @@ if str(REPO_ROOT) not in sys.path:
 DIGEST_RE = re.compile(r"^Digest:\s+(sha256:[0-9a-f]{64})$", re.MULTILINE)
 PLATFORM_RE = re.compile(r"^\s*Platform:\s+(\S+)\s*$", re.MULTILINE)
 ATTESTATION_RE = re.compile(r"vnd\.docker\.reference\.type:\s+attestation-manifest")
+DEFAULT_TIMEOUT_SECONDS = 60
 
 
 @dataclass(frozen=True)
@@ -822,7 +823,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", default="BambooGap/skills-orchestrator")
     parser.add_argument("--package", default="skills-orchestrator")
     parser.add_argument("--image", default="ghcr.io/bamboogap/skills-orchestrator")
-    parser.add_argument("--timeout", type=float, default=30)
+    parser.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT_SECONDS)
     parser.add_argument("--skip-github", action="store_true")
     parser.add_argument("--skip-pypi", action="store_true")
     parser.add_argument("--skip-ghcr", action="store_true")
