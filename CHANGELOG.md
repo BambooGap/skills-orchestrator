@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.12] - 2026-06-28
+
+### Changed
+- Updated the post-release smoke artifact upload step to `actions/upload-artifact` v7.0.1 pinned
+  by full commit SHA, removing the Node.js 20 deprecation annotation from future release smoke
+  runs.
+- Updated dashboard artifact upload documentation to use `actions/upload-artifact@v7`.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.12`.
+
 ## [4.8.11] - 2026-06-28
 
 ### Added
