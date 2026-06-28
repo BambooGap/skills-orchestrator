@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.31] - 2026-06-28
+
+### Fixed
+- Pointed the README license badge at the README license section instead of the top-level MIT text.
+- Added a short README note explaining that GitHub detects the repository as MIT while Apache-2.0
+  remains available via `LICENSE-APACHE` and package metadata stays `MIT OR Apache-2.0`.
+
 ## [4.8.30] - 2026-06-28
 
 ### Fixed
