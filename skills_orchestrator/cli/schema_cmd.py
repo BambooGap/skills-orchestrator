@@ -31,14 +31,23 @@ def schema() -> None:
     default="text",
     show_default=True,
 )
-def schema_list(output_format: str) -> None:
+@click.option(
+    "--stability",
+    type=click.Choice(["all", "stable", "preview"]),
+    default="all",
+    show_default=True,
+    help="Limit the schema catalog to a contract stability tier.",
+)
+def schema_list(output_format: str, stability: str) -> None:
     """List available schema kinds."""
-    descriptors = list_schema_descriptors()
+    descriptors = list_schema_descriptors(stability=stability)
     if output_format == "json":
-        click.echo(json.dumps(build_schema_catalog(), ensure_ascii=False, indent=2))
+        click.echo(
+            json.dumps(build_schema_catalog(stability=stability), ensure_ascii=False, indent=2)
+        )
         return
 
-    click.echo("Available schemas:")
+    click.echo(f"Available schemas ({stability}):")
     for descriptor in descriptors:
         click.echo(
             f"  {descriptor.kind}: {descriptor.title} "
@@ -54,15 +63,23 @@ def schema_list(output_format: str) -> None:
     default="text",
     show_default=True,
 )
-def schema_audit(output_format: str) -> None:
+@click.option(
+    "--stability",
+    type=click.Choice(["all", "stable", "preview"]),
+    default="all",
+    show_default=True,
+    help="Audit all schemas or only a contract stability tier.",
+)
+def schema_audit(output_format: str, stability: str) -> None:
     """Audit packaged schema contracts and catalog metadata."""
-    payload = audit_schema_catalog()
+    payload = audit_schema_catalog(stability=stability)
     if output_format == "json":
         click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         summary = payload["summary"]
         click.echo(
             f"Schema audit: {payload['status']}\n"
+            f"Scope: {stability}\n"
             f"Summary: {summary['schemas']} schemas, {summary['stable']} stable, "
             f"{summary['preview']} preview, {summary['failed']} failed"
         )

@@ -88,7 +88,7 @@ After a fixed patch release, regenerate release evidence:
 
 ```bash
 skills-orchestrator evidence export --config config/skills.yaml --out evidence
-skills-orchestrator schema audit --format text
+skills-orchestrator schema audit --stability all --format text
 skills-orchestrator conformance run \
   --config config/skills.yaml \
   --profile enterprise \
@@ -129,5 +129,5 @@ An incident is closed when:
 - GHCR manifest exists for the fixed version,
 - GitHub Release latest points at the fixed version,
 - clean PyPI install passes,
-- `schema audit`, `conformance run`, and `doctor --profile enterprise` pass,
+- `schema audit --stability all`, `conformance run`, and `doctor --profile enterprise` pass,
 - docs no longer point at the withdrawn release.

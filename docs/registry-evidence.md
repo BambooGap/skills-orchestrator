@@ -10,7 +10,8 @@
 - `evidence index`: multi-repository artifact index from existing evidence manifests.
 - `schema validate`: machine-checkable JSON Schema contracts for generated files.
 - `schema list --format json`: machine-checkable catalog of stable and preview contract surfaces.
-- `schema audit`: package self-audit for schema loadability and catalog metadata.
+- `schema audit --stability stable`: production gate over stable schema loadability and catalog metadata.
+- `schema audit --stability all`: maintainer gate over both stable and preview contract surfaces.
 - `integrations list`: adjacent ecosystem catalog for agent runtimes, memory layers, and visualization tools.
 - `adapters inspect`: detected AGENTS.md, Claude Skills, MCP, and Agents SDK surfaces.
 - `supply-chain sbom`: Python package SBOM for the software distribution surface.
@@ -166,9 +167,9 @@ skills-orchestrator schema validate --kind evidence --input evidence/evidence-ma
 skills-orchestrator schema validate \
   --kind agent-handoff \
   --input examples/agent-handoff/release-review-handoff.json
-skills-orchestrator schema list --format json > evidence/schema-catalog.json
+skills-orchestrator schema list --stability stable --format json > evidence/schema-catalog.json
 skills-orchestrator schema validate --kind schema-catalog --input evidence/schema-catalog.json
-skills-orchestrator schema audit --format json > evidence/schema-audit.json
+skills-orchestrator schema audit --stability stable --format json > evidence/schema-audit.json
 skills-orchestrator schema validate --kind schema-audit --input evidence/schema-audit.json
 ```
 
@@ -177,7 +178,9 @@ config and artifact contracts, including adapter inspection and Claude Skills ex
 The schema catalog declares each native contract's `contract_id`, `stability`, `since`, and
 intended consumers so platform teams can audit compatibility without scraping docs. The schema
 audit report verifies packaged schema loadability and catalog metadata without reading project
-skill files. The agent handoff and commercial handoff schemas are additive preview contracts for
+skill files. Production repositories can pass `--stability stable` to exclude preview contracts
+from blocking gates while keeping the filtered catalog machine-validatable. The agent handoff and
+commercial handoff schemas are additive preview contracts for
 future supervised-agent runtimes, GitHub App, hosted registry, and enterprise dashboard consumers:
 
 ```bash

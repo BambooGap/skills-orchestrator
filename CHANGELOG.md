@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.26] - 2026-06-28
+
+### Added
+- Added `--stability all|stable|preview` to `schema list` and `schema audit` so production CI can
+  bind blocking gates to stable contracts while maintainers can continue auditing preview surfaces.
+- Added optional `scope.stability` metadata to schema catalog and schema audit reports.
+
 ## [4.8.25] - 2026-06-28
 
 ### Fixed

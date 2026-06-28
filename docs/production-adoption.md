@@ -36,8 +36,8 @@ For production CI, pin every moving part:
 | Surface | Minimum production rule |
 | --- | --- |
 | GitHub Action | Pin `actions/checkout` and `BambooGap/skills-orchestrator` to full commit SHAs. |
-| PyPI CLI | Pin an exact version such as `skills-orchestrator==4.8.25`. |
-| Docker image | Pin the GHCR digest, not only `:v4.8.25`. |
+| PyPI CLI | Pin an exact version such as `skills-orchestrator==4.8.26`. |
+| Docker image | Pin the GHCR digest, not only `:v4.8.26`. |
 | Policy pack | Start with `builtin/team-standard`; promote to `builtin/engineering-grade` when owners accept external import and license requirements. |
 | Evidence | Retain `check.json`, SARIF, `ci-explainability.json`, registry outputs, `evidence-manifest.json`, `post-release-smoke.json`, and `slsa-readiness.json`. |
 | Rollback | Keep a documented rollback owner and downgrade path before enabling blocking gates. |
@@ -50,13 +50,13 @@ release pin in production CI.
 Resolve the action commit from the release tag:
 
 ```bash
-git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.25
+git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.26
 ```
 
 Resolve the image digest:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/bamboogap/skills-orchestrator:v4.8.25
+docker buildx imagetools inspect ghcr.io/bamboogap/skills-orchestrator:v4.8.26
 ```
 
 Use the returned SHA and digest in production workflows. Keep the tag in comments or documentation
@@ -90,7 +90,7 @@ jobs:
           fetch-depth: 0
 
       # Resolve with:
-      # git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.25
+      # git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.26
       - id: skillops
         uses: BambooGap/skills-orchestrator@<skills-orchestrator-release-commit-sha>
         with:
@@ -126,7 +126,7 @@ Use staged rollout instead of enabling the strictest gate on day one.
 
 | Stage | Gate | Exit criteria |
 | --- | --- | --- |
-| 1. Advisory | `check`, `schema audit`, `conformance run --profile core`, `evidence export` | Two weeks of runs with reviewers understanding SARIF and registry diff output. |
+| 1. Advisory | `check`, `schema audit --stability stable`, `conformance run --profile core`, `evidence export` | Two weeks of runs with reviewers understanding SARIF and registry diff output. |
 | 2. Team blocking | `builtin/team-standard --fail-on warning` | Skill owners, source, version, lifecycle, and lock drift are accepted by repo owners. |
 | 3. Engineering-grade blocking | `builtin/engineering-grade --fail-on warning` | External imports have license/provenance metadata and review windows. |
 | 4. Release gate | Post-release smoke, release trust, evidence retention, rollback playbook | Release owners can prove what was published and how to roll back. |
@@ -200,15 +200,20 @@ platform's admission policy.
 For CI hosts that install the CLI directly, pin the version:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator==4.8.25"
-skills-orchestrator schema audit
+python3.12 -m pip install "skills-orchestrator==4.8.26"
+skills-orchestrator schema audit --stability stable
 skills-orchestrator check --config config/skills.yaml --policy-pack builtin/team-standard --fail-on warning
 ```
+
+Use `--stability stable` for production blocking gates. Preview contracts such as supervised-agent
+handoff, runtime image review, hosted registry ingest, dashboard rollups, and SLSA readiness are
+valuable review artifacts, but they should not become downstream compatibility promises until they
+are promoted to stable.
 
 Use the optional MCP extra only when the CI job intentionally runs MCP smoke checks:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator[mcp]==4.8.25"
+python3.12 -m pip install "skills-orchestrator[mcp]==4.8.26"
 ```
 
 Exact version pins are not hash-locked installs. If the organization requires hash locking, generate

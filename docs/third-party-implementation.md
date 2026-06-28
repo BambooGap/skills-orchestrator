@@ -29,7 +29,7 @@ existing consumers can ignore unknown fields.
 Use this matrix before claiming compatibility:
 
 ```bash
-skills-orchestrator schema audit --format text
+skills-orchestrator schema audit --stability stable --format text
 
 skills-orchestrator conformance run \
   --profile core \

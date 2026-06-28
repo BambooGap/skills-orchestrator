@@ -8,7 +8,7 @@ screenshots or project branding.
 
 | Level | Name | Recommended gate | Required evidence |
 | --- | --- | --- | --- |
-| 0 | Discovery | None | `schema audit` passes for the installed package. |
+| 0 | Discovery | None | `schema audit --stability stable` passes for the installed package. |
 | 1 | Local pilot | Local advisory | `init --template team-standard`, `check`, `build --lock`, and `doctor --profile adopter` run locally. |
 | 2 | CI advisory | CI fails on errors only | GitHub Action runs on pull requests and uploads JSON/SARIF artifacts. |
 | 3 | Team warning gate | CI fails on warnings | `builtin/team-standard --fail-on warning`, lock drift, and registry diff are understood by reviewers. |
@@ -23,13 +23,13 @@ screenshots or project branding.
 ```bash
 python3.12 -m pip install skills-orchestrator
 skills-orchestrator --version
-skills-orchestrator schema audit --format text
+skills-orchestrator schema audit --stability stable --format text
 ```
 
 Exit criteria:
 
 - The package installs from PyPI or runs from GHCR.
-- `schema audit` passes.
+- `schema audit --stability stable` passes.
 
 ### Level 1: Local Pilot
 
@@ -53,7 +53,7 @@ Exit criteria:
 Use the GitHub Action in advisory mode:
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v4.8.25
+- uses: BambooGap/skills-orchestrator@v4.8.26
   with:
     config: config/skills.yaml
     policy-pack: builtin/team-standard
