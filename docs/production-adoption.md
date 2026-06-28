@@ -120,6 +120,9 @@ jobs:
             ${{ steps.skillops.outputs.dashboard-snapshot-file }}
 ```
 
+Before copying this workflow, change `branches: [main]` to the repository's actual default branch,
+such as `main`, `master`, or the team's protected default branch.
+
 ## Advisory To Blocking Promotion
 
 Use staged rollout instead of enabling the strictest gate on day one.

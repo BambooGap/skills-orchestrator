@@ -31,6 +31,9 @@ jobs:
           config: config/skills.yaml
 ```
 
+When copying any starter workflow, change `branches: [main]` to the repository's actual default
+branch, such as `main`, `master`, or the team's protected default branch.
+
 ## Code Scanning
 
 To upload SARIF to GitHub Code Scanning, grant `security-events: write` and set

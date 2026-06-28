@@ -103,6 +103,9 @@ sources, lifecycle metadata, and review windows for each skill.
              comment-registry-diff: true
    ```
 
+   Adjust `branches: [main]` to the target repository's actual default branch, such as `main`,
+   `master`, or the team's protected default branch.
+
    Strict supply-chain environments can replace the checkout line with the
    pinned value emitted by `init --template team-standard --hardened-workflow`.
 
