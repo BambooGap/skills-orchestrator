@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.27] - 2026-06-28
+
+### Added
+- Added an explicit stable schema audit step to the post-release new-user smoke path so release
+  artifacts prove `schema audit --stability stable` works from a clean PyPI install.
+
 ## [4.8.26] - 2026-06-28
 
 ### Added

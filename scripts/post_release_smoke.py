@@ -459,6 +459,10 @@ def pypi_install_smoke(
                     ],
                 ),
                 ("new-user-schema-audit", [str(cli), "schema", "audit", "--format", "json"]),
+                (
+                    "new-user-schema-audit-stable",
+                    [str(cli), "schema", "audit", "--stability", "stable", "--format", "json"],
+                ),
                 ("new-user-build", [str(cli), "build", "--lock"]),
                 (
                     "new-user-doctor",
