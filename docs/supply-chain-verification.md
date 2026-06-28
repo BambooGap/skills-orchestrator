@@ -26,7 +26,7 @@ docker login ghcr.io
 Set the release version and repository:
 
 ```bash
-VERSION=v4.8.21
+VERSION=v4.8.22
 PYPI_VERSION="${VERSION#v}"
 REPO=BambooGap/skills-orchestrator
 IMAGE=ghcr.io/bamboogap/skills-orchestrator
@@ -184,7 +184,7 @@ Store the downloaded JSONL bundle with the release evidence bundle and `post-rel
 
 ## Consumer-Side Hash-Locked Install
 
-`skills-orchestrator==4.8.21` is an exact version pin, not a hash-locked install. Repositories that
+`skills-orchestrator==4.8.22` is an exact version pin, not a hash-locked install. Repositories that
 require hash locking should create and own a requirements lock that includes every transitive
 dependency hash.
 
@@ -194,7 +194,7 @@ platform by downloading a wheelhouse, generating a temporary hash lock, and inst
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.21 \
+  --version v4.8.22 \
   --check-pypi-hash-lock \
   --python python3.12
 ```
@@ -205,7 +205,7 @@ One common pattern is:
 python3.12 -m pip install pip-tools
 
 cat > requirements.in <<'EOF'
-skills-orchestrator==4.8.21
+skills-orchestrator==4.8.22
 EOF
 
 pip-compile \

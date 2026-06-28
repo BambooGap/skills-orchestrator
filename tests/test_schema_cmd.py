@@ -115,6 +115,34 @@ def test_schema_resources_are_packaged_and_loadable():
         assert load_schema(kind)["$schema"] == "https://json-schema.org/draft/2020-12/schema"
 
 
+def test_supply_chain_sbom_accepts_syft_components_without_version(tmp_path):
+    sbom = tmp_path / "container-os-sbom.cdx.json"
+    sbom.write_text(
+        json.dumps(
+            {
+                "bomFormat": "CycloneDX",
+                "specVersion": "1.6",
+                "metadata": {
+                    "component": {
+                        "type": "container",
+                        "name": "ghcr.io/bamboogap/skills-orchestrator",
+                        "version": "v4.8.22",
+                    }
+                },
+                "components": [
+                    {
+                        "type": "file",
+                        "name": "/usr/local/bin/python",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert validate_document("supply-chain-sbom", str(sbom)).valid is True
+
+
 @pytest.mark.parametrize(
     ("kind", "filename"),
     [
