@@ -6,10 +6,12 @@ from scripts.post_release_smoke import (
     ghcr_manifest_check,
     github_token_from_env,
     github_release_check,
+    pypi_hash_locked_install_smoke,
     pypi_install_smoke,
     parse_imagetools_output,
     pypi_release_check,
     supports_optional_mcp_runtime,
+    wheel_requirement_line,
 )
 
 
@@ -178,6 +180,16 @@ def test_supports_optional_mcp_runtime_starts_at_4_8_0():
     assert supports_optional_mcp_runtime("not-a-version") is False
 
 
+def test_wheel_requirement_line_generates_pip_hash(tmp_path):
+    wheel = tmp_path / "skills_orchestrator-4.8.19-py3-none-any.whl"
+    wheel.write_bytes(b"fake wheel bytes")
+
+    line = wheel_requirement_line(wheel)
+
+    assert line.startswith("skills-orchestrator==4.8.19 --hash=sha256:")
+    assert len(line.rsplit(":", 1)[1]) == 64
+
+
 def test_pypi_install_smoke_checks_default_mcp_extra_hint(monkeypatch):
     def fake_run_command(command, *, cwd=None, timeout=120):
         del cwd, timeout
@@ -217,6 +229,57 @@ def test_pypi_install_smoke_checks_default_mcp_extra_hint(monkeypatch):
     by_name = {check.name: check for check in checks}
     assert by_name["pypi-default-without-mcp"].ok is True
     assert by_name["pypi-mcp-extra-hint"].ok is True
+
+
+def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
+    install_commands = []
+
+    def fake_run_command(command, *, cwd=None, timeout=120):
+        del cwd, timeout
+        if command[1:4] == ["-m", "pip", "download"]:
+            wheelhouse = command[command.index("--dest") + 1]
+            (smoke.Path(wheelhouse) / "skills_orchestrator-4.8.19-py3-none-any.whl").write_bytes(
+                b"skillops"
+            )
+            (smoke.Path(wheelhouse) / "click-8.4.2-py3-none-any.whl").write_bytes(b"click")
+            return smoke.subprocess.CompletedProcess(command, 0, "downloaded\n", "")
+        if len(command) >= 4 and command[1:3] == ["-m", "venv"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "", "")
+        if command[1:4] == ["-m", "pip", "install"]:
+            install_commands.append(command)
+            assert "--require-hashes" in command
+            assert "--no-index" in command
+            lock_file = smoke.Path(command[command.index("-r") + 1])
+            lock_text = lock_file.read_text(encoding="utf-8")
+            assert "skills-orchestrator==4.8.19 --hash=sha256:" in lock_text
+            assert "click==8.4.2 --hash=sha256:" in lock_text
+            return smoke.subprocess.CompletedProcess(command, 0, "installed\n", "")
+        if command[1:4] == ["-m", "pip", "check"]:
+            return smoke.subprocess.CompletedProcess(
+                command, 0, "No broken requirements found.\n", ""
+            )
+        if command[-1] == "--version":
+            return smoke.subprocess.CompletedProcess(
+                command, 0, "skills-orchestrator, version 4.8.19\n", ""
+            )
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(smoke, "run_command", fake_run_command)
+
+    checks = pypi_hash_locked_install_smoke(
+        package="skills-orchestrator",
+        version="4.8.19",
+        python="python3.12",
+        timeout=30,
+    )
+
+    assert install_commands
+    by_name = {check.name: check for check in checks}
+    assert by_name["pypi-hash-lock-download"].ok is True
+    assert by_name["pypi-hash-lock-file"].ok is True
+    assert by_name["pypi-hash-lock-install"].ok is True
+    assert by_name["pypi-hash-lock-cli-version"].ok is True
+    assert by_name["pypi-hash-lock-pip-check"].ok is True
 
 
 def test_pypi_install_smoke_does_not_require_mcp_extra_hint_for_older_releases(monkeypatch):

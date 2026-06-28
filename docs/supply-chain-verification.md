@@ -25,7 +25,7 @@ docker login ghcr.io
 Set the release version and repository:
 
 ```bash
-VERSION=v4.8.18
+VERSION=v4.8.19
 PYPI_VERSION="${VERSION#v}"
 REPO=BambooGap/skills-orchestrator
 IMAGE=ghcr.io/bamboogap/skills-orchestrator
@@ -145,9 +145,20 @@ Store the downloaded JSONL bundle with the release evidence bundle and `post-rel
 
 ## Consumer-Side Hash-Locked Install
 
-`skills-orchestrator==4.8.18` is an exact version pin, not a hash-locked install. Repositories that
+`skills-orchestrator==4.8.19` is an exact version pin, not a hash-locked install. Repositories that
 require hash locking should create and own a requirements lock that includes every transitive
 dependency hash.
+
+The post-release smoke can verify that a released version supports this install mode on the current
+platform by downloading a wheelhouse, generating a temporary hash lock, and installing with
+`--require-hashes`:
+
+```bash
+python scripts/post_release_smoke.py \
+  --version v4.8.19 \
+  --check-pypi-hash-lock \
+  --python python3.12
+```
 
 One common pattern is:
 
@@ -155,7 +166,7 @@ One common pattern is:
 python3.12 -m pip install pip-tools
 
 cat > requirements.in <<'EOF'
-skills-orchestrator==4.8.18
+skills-orchestrator==4.8.19
 EOF
 
 pip-compile \
@@ -178,6 +189,7 @@ For a production CI rollout, keep evidence that:
 - PyPI wheel and sdist attestations verify against `publish.yml` and the release tag;
 - GHCR provenance and CycloneDX SBOM attestations verify against `ghcr.yml` and the release tag;
 - `post-release-smoke.json` passes schema validation with `failed: 0`;
+- full post-release smoke includes `pypi-hash-lock-install` and `pypi-hash-lock-pip-check`;
 - the consuming repo has its own dependency hash-locking policy if direct PyPI installation is used;
 - runtime enforcement remains outside SkillOps and is owned by the agent platform/provider.
 
