@@ -1,6 +1,6 @@
 # Agent Fleet Governance
 
-> Status: v4.8.14 adoption guidance.
+> Status: v4.8.15 adoption guidance.
 >
 > Scope: governance for AI instruction artifacts used by multi-agent, multi-tenant, and
 > multi-project systems. This is not a runtime orchestration specification.
@@ -200,6 +200,12 @@ skills-orchestrator schema validate \
   --kind agent-handoff \
   --input examples/agent-handoff/release-review-handoff.json
 ```
+
+The same fixture directory includes negative examples for unsafe supervisor delegation:
+
+- a privileged worker without explicit approval;
+- a privileged worker without a `human-review` gate;
+- a production handoff without `ci-explainability` evidence.
 
 When a worker is packaged as a container image, use the preview `agent-runtime-image` contract to
 review the image and runtime boundary before execution:

@@ -470,10 +470,12 @@ The root object MUST include:
 | `evidence` | Required and produced SkillOps artifacts for the handoff. |
 | `evaluation` | Gates and reviewers required before accepting worker output. |
 
-Privileged workers MUST explicitly set `requires_human_approval: true`. Implementations MUST NOT
-treat a valid `agent-handoff` artifact as proof that a runtime executed workers, enforced tenant
-boundaries, or applied provider budgets. It is a reviewable contract that runtimes and CI can
-consume before execution.
+Authorized, running, or completed handoffs MUST set `evaluation.required: true`. Production
+handoffs MUST require both `evidence-manifest` and `ci-explainability` artifacts. Privileged
+workers MUST explicitly set `requires_human_approval: true` and the handoff evaluation gates MUST
+include `human-review`. Implementations MUST NOT treat a valid `agent-handoff` artifact as proof
+that a runtime executed workers, enforced tenant boundaries, or applied provider budgets. It is a
+reviewable contract that runtimes and CI can consume before execution.
 
 ## Agent Runtime Image Contract
 

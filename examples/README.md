@@ -147,7 +147,8 @@
 **展示内容**：
 - 如何把 supervisor/worker handoff 表达成机器可验证 artifact
 - 如何声明 tenant scope、worker permission mode、tool boundary 和 evaluation gates
-- 如何用负例验证 privileged worker 必须有人类批准
+- 如何用负例验证 privileged worker 必须有人类批准和 human-review gate
+- 如何用负例验证 production handoff 必须带 CI explainability evidence
 - 如何让 Skills Orchestrator 治理 handoff contract，而不是运行子 Agent
 
 **时间**：10 分钟

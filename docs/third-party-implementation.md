@@ -83,6 +83,23 @@ skills-orchestrator schema validate \
   --input examples/agent-runtime-image/codex-worker-image.json
 ```
 
+Compatible implementations should also reject the negative handoff fixtures:
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/invalid-privileged-worker.json \
+  --format json
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/invalid-privileged-without-human-review.json \
+  --format json
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/invalid-production-evidence.json \
+  --format json
+```
+
 When building a compatible consumer, reject artifacts that fail schema validation and ignore
 unknown additive fields unless your consumer explicitly runs in strict mode.
 

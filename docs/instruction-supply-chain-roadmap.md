@@ -1,6 +1,6 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.14 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.15 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > and external agent runtime image contracts.
 >
@@ -292,6 +292,8 @@ Next:
 ## Phase 12: Supervisor Governance
 
 Status: introduced in v4.8.5 as documentation and adoption guidance.
+Machine-checkable handoff fixtures were hardened in v4.8.15 with additional negative cases for
+privileged workers and production evidence.
 
 Goal: explain how a lead agent can coordinate worker agents while deterministic platform controls
 enforce permission, tenant, budget, timeout, evidence, and audit boundaries.

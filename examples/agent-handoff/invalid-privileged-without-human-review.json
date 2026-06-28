@@ -1,0 +1,63 @@
+{
+  "schema_version": "skills-orchestrator.agent-handoff.v1",
+  "handoff": {
+    "id": "privileged-without-human-review",
+    "mode": "manager-agent",
+    "created_at": "2026-06-28T00:00:00Z",
+    "owner": "platform-ai",
+    "status": "authorized"
+  },
+  "tenant_scope": {
+    "provider": "internal",
+    "project": "payments-prod",
+    "environment": "production"
+  },
+  "supervisor": {
+    "id": "release-lead",
+    "role": "Delegate bounded production release checks.",
+    "allowed_actions": ["plan", "delegate", "evaluate", "reject"]
+  },
+  "workers": [
+    {
+      "id": "release-mutator",
+      "purpose": "This worker is intentionally invalid because privileged production workers need a human-review evaluation gate.",
+      "agent_surface": "internal-runtime",
+      "permission_mode": "privileged",
+      "requires_human_approval": true,
+      "allowed_tools": ["Read", "Bash", "Write"],
+      "denied_tools": ["modify-secrets"],
+      "context": {
+        "isolation": "isolated",
+        "allowed_inputs": ["evidence/evidence-manifest.json"],
+        "forbidden_inputs": ["tenant-secrets", "customer-data"]
+      },
+      "required_outputs": ["release_result", "evidence_paths"]
+    }
+  ],
+  "task": {
+    "id": "unsafe-release-review",
+    "summary": "Invalid privileged worker fixture.",
+    "scope": "production release candidate only",
+    "inputs": [
+      {
+        "kind": "evidence-manifest",
+        "path": "evidence/evidence-manifest.json"
+      }
+    ],
+    "expected_outputs": ["release_result"],
+    "stop_condition": "Never run this fixture."
+  },
+  "evidence": {
+    "required_artifacts": ["evidence-manifest", "ci-explainability"],
+    "produced_artifacts": [
+      {
+        "kind": "agent-handoff",
+        "path": "examples/agent-handoff/invalid-privileged-without-human-review.json"
+      }
+    ]
+  },
+  "evaluation": {
+    "required": true,
+    "gates": ["policy-check", "schema-validate", "conformance"]
+  }
+}

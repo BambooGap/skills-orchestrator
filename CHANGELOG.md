@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.15] - 2026-06-28
+
+### Added
+- Added agent handoff negative fixtures for privileged workers without a `human-review` gate and
+  production handoffs without `ci-explainability` evidence.
+- Added schema contract tests proving the positive handoff fixture validates and all negative
+  handoff fixtures fail at stable review paths.
+
+### Changed
+- Tightened the preview `agent-handoff` schema so authorized/running/completed handoffs require
+  evaluation, production handoffs require `evidence-manifest` and `ci-explainability`, and
+  privileged workers require a `human-review` evaluation gate.
+- Documented the hardened supervisor/worker handoff safety rules in the agent handoff example,
+  supervisor governance, agent fleet governance, and third-party implementation guide.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.15`.
+
 ## [4.8.14] - 2026-06-28
 
 ### Changed

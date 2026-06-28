@@ -22,10 +22,10 @@ skills-orchestrator schema validate \
   --input examples/agent-handoff/release-review-handoff.json
 ```
 
-## Validate The Negative Fixture
+## Validate Negative Fixtures
 
-This fixture is expected to fail because a `privileged` worker must explicitly
-set `requires_human_approval: true`.
+These fixtures are expected to fail. They prove that the handoff contract catches
+the common places where a supervisor agent can over-delegate to worker agents.
 
 ```bash
 skills-orchestrator schema validate \
@@ -33,6 +33,31 @@ skills-orchestrator schema validate \
   --input examples/agent-handoff/invalid-privileged-worker.json \
   --format json
 ```
+
+The first fixture fails because a `privileged` worker must explicitly set
+`requires_human_approval: true`.
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/invalid-privileged-without-human-review.json \
+  --format json
+```
+
+The second fixture fails because privileged workers also need a `human-review`
+evaluation gate. Approval metadata alone is not enough for production delegation.
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/invalid-production-evidence.json \
+  --format json
+```
+
+The third fixture fails because production handoffs must require both
+`evidence-manifest` and `ci-explainability` artifacts. A supervisor can delegate
+work, but platform reviewers still need the CI decision record that explains why
+the handoff is acceptable.
 
 ## Why This Matters
 
