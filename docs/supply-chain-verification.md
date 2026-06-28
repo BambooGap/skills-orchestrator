@@ -5,12 +5,13 @@ container before using it in production CI.
 
 This guide verifies release artifacts. It does not claim that Skills Orchestrator is an agent
 runtime control plane, tenant isolation layer, budget enforcer, secret broker, worker sandbox,
-independent image-signing system, or formal SLSA level certification.
+or formal SLSA level certification.
 
 ## Required Tools
 
 - GitHub CLI with attestation support: `gh attestation verify --help`
 - Docker Buildx for image digest inspection: `docker buildx imagetools inspect`
+- Cosign for keyless image-signature verification: `cosign version`
 - Python 3.12 or newer
 
 Authenticate to GitHub/GHCR before verifying OCI attestations:
@@ -25,7 +26,7 @@ docker login ghcr.io
 Set the release version and repository:
 
 ```bash
-VERSION=v4.8.19
+VERSION=v4.8.20
 PYPI_VERSION="${VERSION#v}"
 REPO=BambooGap/skills-orchestrator
 IMAGE=ghcr.io/bamboogap/skills-orchestrator
@@ -127,6 +128,25 @@ gh attestation verify \
 The GHCR SBOM describes the SkillOps package dependency surface in the image. It is not a full
 operating-system layer SBOM.
 
+## Verify GHCR Image Signature
+
+The GHCR release workflow also signs the image digest with Sigstore Cosign keyless signing.
+Verify the signature against the release workflow identity:
+
+```bash
+IDENTITY_REGEXP="^https://github\\.com/${REPO}/\\.github/workflows/ghcr\\.yml@refs/(tags|heads)/.+$"
+
+cosign verify \
+  --certificate-identity-regexp "${IDENTITY_REGEXP}" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  "${IMAGE}@${IMAGE_DIGEST}"
+```
+
+This proves that the image digest has a keyless Sigstore signature from the repository's GHCR
+publishing workflow. Keep this separate from the GitHub Artifact Attestations above: signatures
+answer "who signed this digest", while attestations answer "what workflow evidence is attached to
+this digest."
+
 ## Optional Offline Attestation Archive
 
 Download attestation bundles for evidence retention:
@@ -145,7 +165,7 @@ Store the downloaded JSONL bundle with the release evidence bundle and `post-rel
 
 ## Consumer-Side Hash-Locked Install
 
-`skills-orchestrator==4.8.19` is an exact version pin, not a hash-locked install. Repositories that
+`skills-orchestrator==4.8.20` is an exact version pin, not a hash-locked install. Repositories that
 require hash locking should create and own a requirements lock that includes every transitive
 dependency hash.
 
@@ -155,7 +175,7 @@ platform by downloading a wheelhouse, generating a temporary hash lock, and inst
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.19 \
+  --version v4.8.20 \
   --check-pypi-hash-lock \
   --python python3.12
 ```
@@ -166,7 +186,7 @@ One common pattern is:
 python3.12 -m pip install pip-tools
 
 cat > requirements.in <<'EOF'
-skills-orchestrator==4.8.19
+skills-orchestrator==4.8.20
 EOF
 
 pip-compile \
@@ -188,8 +208,10 @@ For a production CI rollout, keep evidence that:
 - the Docker reference is pinned to the image digest;
 - PyPI wheel and sdist attestations verify against `publish.yml` and the release tag;
 - GHCR provenance and CycloneDX SBOM attestations verify against `ghcr.yml` and the release tag;
+- GHCR image signature verifies against the `ghcr.yml` workflow identity;
 - `post-release-smoke.json` passes schema validation with `failed: 0`;
-- full post-release smoke includes `pypi-hash-lock-install` and `pypi-hash-lock-pip-check`;
+- full post-release smoke includes `pypi-hash-lock-install`, `pypi-hash-lock-pip-check`, and
+  `ghcr-cosign-signature`;
 - the consuming repo has its own dependency hash-locking policy if direct PyPI installation is used;
 - runtime enforcement remains outside SkillOps and is owned by the agent platform/provider.
 
@@ -199,13 +221,14 @@ Implemented:
 
 - PyPI Trusted Publishing with artifact attestations for wheel and sdist.
 - GHCR multi-arch image publishing.
+- GHCR keyless Cosign image signatures bound to the pushed digest.
 - GHCR digest-bound SLSA provenance attestation.
 - GHCR digest-bound CycloneDX SBOM attestation.
-- Post-release smoke for GitHub Release, PyPI, GHCR, default install, and starter-kit path.
+- Post-release smoke for GitHub Release, PyPI, GHCR, Cosign signature verification, default install,
+  hash-locked install, and starter-kit path.
 
 Not claimed:
 
-- Independent image signing policy.
 - Formal SLSA level.
 - Full operating-system layer SBOM.
 - Runtime admission control.

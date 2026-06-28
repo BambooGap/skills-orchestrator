@@ -37,6 +37,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install cosign
+        if: ${{ inputs.full_smoke }}
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.1
+
       - name: Run post-release smoke
         shell: bash
         env:
@@ -54,7 +60,13 @@ jobs:
             --retry-delay "$RETRY_DELAY"
           )
           if [ "$FULL_SMOKE" = "true" ]; then
-            args+=(--check-pypi-install --check-pypi-hash-lock --check-new-user-path --python python)
+            args+=(
+              --check-pypi-install
+              --check-pypi-hash-lock
+              --check-ghcr-signature
+              --check-new-user-path
+              --python python
+            )
           fi
           python scripts/post_release_smoke.py "${args[@]}" --format json | tee post-release-smoke.json
 
