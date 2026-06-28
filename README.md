@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.29-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.30-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -14,9 +14,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.29` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.29` release tag | `BambooGap/skills-orchestrator@v4.8.29` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.29` |
+| OSS CLI | `v4.8.30` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.30` release tag | `BambooGap/skills-orchestrator@v4.8.30` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.30` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -80,7 +80,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.29 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.30 --version
 ```
 
 ### 初始化项目
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.29
+      - uses: BambooGap/skills-orchestrator@v4.8.30
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -847,6 +847,9 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
   让一行 CI 接入同时覆盖稳定 schema contract gate；可用 `schema-audit-stability: none` 关闭。
 - v4.8.29：补齐双许可、社区支持文件、PR 模板、CODEOWNERS 和 third-party notices，
   降低企业法务/开源办公室和外部贡献者的第一轮审查摩擦。
+- v4.8.30：让顶层 `LICENSE` 回到 GitHub 可识别的标准 MIT 文本，同时保留
+  `MIT OR Apache-2.0` package metadata 和 `LICENSE-APACHE`；并提高本地 post-release smoke
+  默认超时，减少 GHCR attestation 查询的误报。
 
 ### 下一阶段
 

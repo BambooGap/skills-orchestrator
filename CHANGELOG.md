@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.30] - 2026-06-28
+
+### Fixed
+- Restored the top-level `LICENSE` file to a standard MIT text so GitHub license detection can show
+  a recognized license while package metadata and documentation continue to advertise
+  `MIT OR Apache-2.0`.
+- Increased the local post-release smoke default timeout to reduce false negatives when verifying
+  GHCR OS SBOM attestations from slower networks.
+- Fixed a typo in `CODE_OF_CONDUCT.md`.
+
 ## [4.8.29] - 2026-06-28
 
 ### Added

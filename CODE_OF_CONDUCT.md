@@ -10,7 +10,7 @@ Expected behavior:
 - Use welcoming and inclusive language.
 - Disagree with ideas directly, not with people personally.
 - Keep issues and pull requests grounded in reproducible evidence.
-- Respect maintainainer time by keeping reports scoped and actionable.
+- Respect maintainer time by keeping reports scoped and actionable.
 - Avoid posting secrets, private customer data, exploit details, or unrelated promotional content.
 
 Unacceptable behavior:

@@ -17,7 +17,7 @@ Reference: <https://slsa.dev/spec/v1.2/build-requirements>
 
 ```bash
 skills-orchestrator supply-chain slsa-readiness \
-  --version v4.8.29 \
+  --version v4.8.30 \
   --repository BambooGap/skills-orchestrator \
   --image ghcr.io/bamboogap/skills-orchestrator \
   --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \

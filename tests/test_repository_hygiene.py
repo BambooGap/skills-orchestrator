@@ -17,8 +17,7 @@ def test_dual_license_metadata_and_files_are_present():
     )
 
     license_notice = (ROOT / "LICENSE").read_text(encoding="utf-8")
-    assert "Apache License, Version 2.0" in license_notice
-    assert "MIT License" in license_notice
+    assert license_notice.startswith("MIT License")
     assert (ROOT / "LICENSE-MIT").read_text(encoding="utf-8").startswith("MIT License")
     assert "Apache License" in (ROOT / "LICENSE-APACHE").read_text(encoding="utf-8")
 
