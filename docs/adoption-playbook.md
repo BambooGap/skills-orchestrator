@@ -90,7 +90,7 @@ sources, lifecycle metadata, and review windows for each skill.
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: BambooGap/skills-orchestrator@v4.8.11
+         - uses: BambooGap/skills-orchestrator@v4.8.12
            with:
              config: config/skills.yaml
              policy-pack: builtin/team-standard

@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.11
+      - uses: BambooGap/skills-orchestrator@v4.8.12
         with:
           config: config/skills.yaml
 ```
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.11
+      - uses: BambooGap/skills-orchestrator@v4.8.12
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -85,7 +85,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v4.8.11
+      - uses: BambooGap/skills-orchestrator@v4.8.12
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -132,7 +132,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: skillops
-        uses: BambooGap/skills-orchestrator@v4.8.11
+        uses: BambooGap/skills-orchestrator@v4.8.12
         with:
           config: config/skills.yaml
           policy-pack: builtin/engineering-grade
@@ -156,7 +156,7 @@ decision data remains in `check.json`, `doctor.json`, `skill-registry.json`, and
 
 ```yaml
 - id: skillops
-  uses: BambooGap/skills-orchestrator@v4.8.11
+  uses: BambooGap/skills-orchestrator@v4.8.12
   with:
     config: config/skills.yaml
     policy-pack: builtin/engineering-grade
@@ -164,7 +164,7 @@ decision data remains in `check.json`, `doctor.json`, `skill-registry.json`, and
     dashboard-snapshot: true
 
 - name: Upload SkillOps dashboard snapshot
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: skillops-dashboard-snapshot
     path: ${{ steps.skillops.outputs.dashboard-snapshot-file }}
@@ -200,7 +200,7 @@ jobs:
 
 `action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
 repository can be used directly with a release tag, for example
-`BambooGap/skills-orchestrator@v4.8.11`, even before the Marketplace listing is public.
+`BambooGap/skills-orchestrator@v4.8.12`, even before the Marketplace listing is public.
 
 Recommended Marketplace positioning:
 
