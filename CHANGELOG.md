@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.14] - 2026-06-28
+
+### Changed
+- Clarified the `init --template team-standard` next steps so new users run `build --lock` before
+  expecting `doctor --profile adopter --fail-under 100` to pass.
+- Updated onboarding docs and maturity checklists to make `build --lock` the explicit bridge
+  between starter generation and full adopter readiness.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.14`.
+
 ## [4.8.13] - 2026-06-28
 
 ### Changed

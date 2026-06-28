@@ -192,6 +192,9 @@ def test_init_team_standard_template_generates_portable_scaffold(tmp_path, monke
     assert (tmp_path / ".github" / "workflows" / "skills-orchestrator.yml").exists()
     assert (tmp_path / "evidence" / ".gitkeep").exists()
     assert not (tmp_path / "AGENTS.md").exists()
+    assert "skills-orchestrator build --config" in result.output
+    assert "doctor --config" in result.output
+    assert "build --lock before expecting doctor 100/100" in result.output
 
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     assert config["skill_dirs"] == ["../skills"]
