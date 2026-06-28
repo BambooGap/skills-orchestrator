@@ -72,14 +72,14 @@ def test_slsa_readiness_report_is_schema_valid(tmp_path):
     digest = "sha256:" + ("e" * 64)
 
     report = build_slsa_readiness(
-        release_version="4.8.25",
+        release_version="4.8.26",
         repository="BambooGap/skills-orchestrator",
         image="ghcr.io/bamboogap/skills-orchestrator",
         digest=digest,
     )
 
     assert report["status"] == "readiness-mapped"
-    assert report["subject"]["release"] == "v4.8.25"
+    assert report["subject"]["release"] == "v4.8.26"
     assert report["subject"]["digest"] == digest
     assert report["summary"]["formal_claim"] is False
     assert any(control["id"] == "build-l3.hardened-isolation" for control in report["controls"])
@@ -99,7 +99,7 @@ def test_slsa_readiness_cli_writes_json_report(tmp_path):
             "supply-chain",
             "slsa-readiness",
             "--version",
-            "v4.8.25",
+            "v4.8.26",
             "--digest",
             digest,
             "--output",

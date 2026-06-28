@@ -20,7 +20,7 @@ hosted compliance platform.
 
 | Level | Claim | Evidence required |
 | --- | --- | --- |
-| 1. Local pilot | One repo can run SkillOps checks locally. | `check`, `schema audit`, `build --lock`, `doctor --profile adopter`, and `conformance run --profile core` pass. |
+| 1. Local pilot | One repo can run SkillOps checks locally. | `check`, `schema audit --stability stable`, `build --lock`, `doctor --profile adopter`, and `conformance run --profile core` pass. |
 | 2. CI pilot | One repo can run SkillOps in pull requests. | GitHub Action produces JSON/SARIF, reviewer summary, registry diff, and evidence bundle artifacts. |
 | 3. Production advisory | A production-like repo can run advisory gates without blocking delivery. | `builtin/team-standard` is enabled, lock drift is visible, and PR reviewers understand failures. |
 | 4. Production blocking | A platform-owned repo can block merges on instruction governance. | `builtin/engineering-grade --fail-on warning`, negative conformance, release trust verification, and rollback path are accepted by owners. |

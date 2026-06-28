@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.25-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.26-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -14,9 +14,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.25` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.25` release tag | `BambooGap/skills-orchestrator@v4.8.25` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.25` |
+| OSS CLI | `v4.8.26` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.26` release tag | `BambooGap/skills-orchestrator@v4.8.26` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.26` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -80,7 +80,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.25 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.26 --version
 ```
 
 ### 初始化项目
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.25
+      - uses: BambooGap/skills-orchestrator@v4.8.26
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -309,7 +309,7 @@ skills-orchestrator schema list --format json > schema-catalog.json
 skills-orchestrator schema validate \
   --kind schema-catalog \
   --input schema-catalog.json
-skills-orchestrator schema audit --format json > schema-audit.json
+skills-orchestrator schema audit --stability stable --format json > schema-audit.json
 skills-orchestrator schema validate \
   --kind schema-audit \
   --input schema-audit.json
@@ -344,7 +344,9 @@ Claude Skills export manifest、SBOM、dashboard snapshot/rollup、agent handoff
 和 commercial handoff 文件合同。`schema list --format json` 现在输出可验证的
 `schema-catalog`，包含每个合同的 `contract_id`、`stability`、`since` 和目标消费者，
 适合平台团队做自动发现和兼容性审计；`schema audit` 会自检所有打包 schema 和
-catalog 元数据，是 v4 线的合同自审计 gate。
+catalog 元数据，是 v4 线的合同自审计 gate。生产 blocking CI 建议使用
+`schema audit --stability stable`，只绑定 stable contract surface；维护者发版继续运行默认
+`schema audit --stability all`，同时覆盖 preview fixtures 和未来合同。
 `builtin/engineering-grade` 在 v3.2 起额外检查 `license`、外部 skill `provenance`
 和 review-window 元数据；外部导入应保留 observed `source_url`、`source_ref`、
 `source_commit`、`content_hash` 和 `fetched_at`，不要把未验证 frontmatter 当成可信来源。
@@ -835,6 +837,8 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
   在 GitHub Actions full smoke 中真实通过。
 - v4.8.25：给 workflow-dispatched Post-release Smoke 安装 constrained local smoke dependencies，
   让 `slsa-readiness-report` 在 GitHub runner 上也能使用 schema/runtime dependencies。
+- v4.8.26：给 `schema list` / `schema audit` 增加 `--stability stable|preview|all`，
+  让生产 blocking CI 明确只绑定 stable contract surface。
 
 ### 下一阶段
 

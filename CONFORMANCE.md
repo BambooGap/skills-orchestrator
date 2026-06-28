@@ -22,16 +22,20 @@ skills-orchestrator schema validate \
   --kind conformance \
   --input evidence/conformance.json
 
-skills-orchestrator schema list --format json > evidence/schema-catalog.json
+skills-orchestrator schema list --stability stable --format json > evidence/schema-catalog.json
 skills-orchestrator schema validate \
   --kind schema-catalog \
   --input evidence/schema-catalog.json
 
-skills-orchestrator schema audit --format json > evidence/schema-audit.json
+skills-orchestrator schema audit --stability stable --format json > evidence/schema-audit.json
 skills-orchestrator schema validate \
   --kind schema-audit \
   --input evidence/schema-audit.json
 ```
+
+Production blocking gates SHOULD bind only the stable contract surface. Maintainer release gates
+SHOULD additionally run the default `schema list --stability all` and `schema audit --stability all`
+so preview contracts remain tested without becoming downstream compatibility promises.
 
 The core suite includes positive contract checks and a negative conformance suite. The negative
 suite verifies that intentionally invalid skill projects trigger expected findings for missing

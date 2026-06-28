@@ -67,7 +67,7 @@ skills-orchestrator build --lock
 skills-orchestrator doctor --profile adopter --fail-under 90
 skills-orchestrator conformance run --profile core
 skills-orchestrator evidence export --out evidence
-skills-orchestrator schema audit
+skills-orchestrator schema audit --stability stable
 ```
 
 If the repository needs MCP serving, install it explicitly:
@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v4.8.25
+      - uses: BambooGap/skills-orchestrator@v4.8.26
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -187,7 +187,7 @@ repository: owner/repo
 pilot_owner: team-or-person
 gate_mode: advisory
 started_at: YYYY-MM-DD
-skillops_version: v4.8.25
+skillops_version: v4.8.26
 ci_system: github-actions
 policy_pack: builtin/team-standard
 artifacts:
@@ -200,4 +200,3 @@ next_review: YYYY-MM-DD
 ```
 
 Only create or update `ADOPTERS.md` after the repository owner explicitly allows public listing.
-

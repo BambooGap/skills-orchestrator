@@ -376,28 +376,37 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
 }
 
 
-def list_schema_descriptors() -> list[SchemaDescriptor]:
+def list_schema_descriptors(stability: str = "all") -> list[SchemaDescriptor]:
     """Return registered schemas in stable display order."""
-    return [SCHEMAS[key] for key in sorted(SCHEMAS)]
+    if stability not in {"all", "stable", "preview"}:
+        raise ValueError("stability must be one of: all, stable, preview")
+    descriptors = [SCHEMAS[key] for key in sorted(SCHEMAS)]
+    if stability == "all":
+        return descriptors
+    return [descriptor for descriptor in descriptors if descriptor.stability == stability]
 
 
-def build_schema_catalog() -> dict[str, Any]:
+def build_schema_catalog(stability: str = "all") -> dict[str, Any]:
     """Return the machine-readable catalog for registered schemas."""
     return {
         "schema_version": "skills-orchestrator.schema-catalog.v1",
-        "schemas": [descriptor.to_catalog_entry() for descriptor in list_schema_descriptors()],
+        "scope": {"stability": stability},
+        "schemas": [
+            descriptor.to_catalog_entry()
+            for descriptor in list_schema_descriptors(stability=stability)
+        ],
     }
 
 
-def audit_schema_catalog() -> dict[str, Any]:
+def audit_schema_catalog(stability: str = "all") -> dict[str, Any]:
     """Audit packaged schemas and catalog metadata without reading project files."""
     checks: list[dict[str, Any]] = []
-    descriptors = list_schema_descriptors()
+    descriptors = list_schema_descriptors(stability=stability)
     for descriptor in descriptors:
         _add_schema_load_check(checks, descriptor)
         _add_descriptor_metadata_check(checks, descriptor)
 
-    catalog = build_schema_catalog()
+    catalog = build_schema_catalog(stability=stability)
     try:
         Draft202012Validator(load_schema("schema-catalog")).validate(catalog)
         checks.append(
@@ -422,6 +431,7 @@ def audit_schema_catalog() -> dict[str, Any]:
     return {
         "schema_version": "skills-orchestrator.schema-audit.v1",
         "tool": {"name": "skills-orchestrator", "version": __version__},
+        "scope": {"stability": stability},
         "status": "pass" if failed == 0 else "fail",
         "summary": {
             "schemas": len(descriptors),

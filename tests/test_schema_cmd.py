@@ -128,7 +128,7 @@ def test_supply_chain_sbom_accepts_syft_components_without_version(tmp_path):
                     "component": {
                         "type": "container",
                         "name": "ghcr.io/bamboogap/skills-orchestrator",
-                        "version": "v4.8.25",
+                        "version": "v4.8.26",
                     }
                 },
                 "components": [
@@ -311,6 +311,22 @@ def test_schema_list_json(tmp_path):
     assert validate_document("schema-catalog", str(catalog_file)).valid is True
 
 
+def test_schema_list_json_can_filter_stable_contracts(tmp_path):
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["schema", "list", "--format", "json", "--stability", "stable"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["scope"]["stability"] == "stable"
+    assert payload["schemas"]
+    assert {schema["stability"] for schema in payload["schemas"]} == {"stable"}
+    assert "agent-handoff" not in {schema["kind"] for schema in payload["schemas"]}
+    catalog_file = tmp_path / "schema-catalog-stable.json"
+    catalog_file.write_text(result.output, encoding="utf-8")
+    assert validate_document("schema-catalog", str(catalog_file)).valid is True
+
+
 def test_schema_audit_json_validates(tmp_path):
     runner = CliRunner()
 
@@ -326,6 +342,40 @@ def test_schema_audit_json_validates(tmp_path):
     assert validate_document("schema-audit", str(audit_file)).valid is True
 
 
+def test_schema_audit_json_can_filter_stable_contracts(tmp_path):
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["schema", "audit", "--format", "json", "--stability", "stable"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["scope"]["stability"] == "stable"
+    assert payload["status"] == "pass"
+    assert payload["summary"]["stable"] > 0
+    assert payload["summary"]["preview"] == 0
+    assert not any(check["kind"] == "agent-handoff" for check in payload["checks"])
+    audit_file = tmp_path / "schema-audit-stable.json"
+    audit_file.write_text(result.output, encoding="utf-8")
+    assert validate_document("schema-audit", str(audit_file)).valid is True
+
+
+def test_schema_audit_json_can_filter_preview_contracts(tmp_path):
+    runner = CliRunner()
+
+    result = runner.invoke(cli, ["schema", "audit", "--format", "json", "--stability", "preview"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["scope"]["stability"] == "preview"
+    assert payload["status"] == "pass"
+    assert payload["summary"]["stable"] == 0
+    assert payload["summary"]["preview"] > 0
+    assert any(check["kind"] == "agent-handoff" for check in payload["checks"])
+    audit_file = tmp_path / "schema-audit-preview.json"
+    audit_file.write_text(result.output, encoding="utf-8")
+    assert validate_document("schema-audit", str(audit_file)).valid is True
+
+
 def test_schema_audit_text_passes():
     runner = CliRunner()
 
@@ -333,6 +383,7 @@ def test_schema_audit_text_passes():
 
     assert result.exit_code == 0
     assert "Schema audit: pass" in result.output
+    assert "Scope: all" in result.output
 
 
 def test_hosted_registry_ingest_rejects_unsafe_artifact_paths(tmp_path):

@@ -15,6 +15,14 @@
       },
       "additionalProperties": true
     },
+    "scope": {
+      "type": "object",
+      "required": ["stability"],
+      "properties": {
+        "stability": { "enum": ["all", "stable", "preview"] }
+      },
+      "additionalProperties": false
+    },
     "status": { "enum": ["pass", "fail"] },
     "summary": {
       "type": "object",
