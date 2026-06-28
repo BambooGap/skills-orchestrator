@@ -140,6 +140,19 @@
 
 ---
 
+### [External Pilot Record Example](external-pilot-record/)
+
+**适合**：平台团队、外部试点评估、开源采用审查
+
+**展示内容**：
+- 如何把真实仓库 pilot 的 owner、gate、artifact 状态和 promotion decision 记录成 schema-valid artifact
+- 如何把技术试点成功和公开 adopter listing consent 分开
+- 如何避免把 demo 或 synthetic fixture 误写进 `ADOPTERS.md`
+
+**时间**：5 分钟
+
+---
+
 ### [Agent Handoff Contract Example](agent-handoff/)
 
 **适合**：多 Agent runtime owner、平台团队、安全团队
@@ -207,11 +220,12 @@
 3. [Release Trust Example](release-trust/) → 验证外部 skill provenance 和 release artifact 绑定
 4. [Multi-repo Artifacts Example](multi-repo-artifacts/) → 聚合多个仓库的 evidence manifest
 5. [External Consumer Example](external-consumer/) → 验证 hosted/GitHub App consumer 输入
-6. [Agent Handoff Contract Example](agent-handoff/) → 验证 supervisor/worker handoff 边界
-7. [Agent Runtime Image Contract Example](agent-runtime-image/) → 验证外部 agent runtime 镜像边界
-8. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
-9. [SPEC.md](../SPEC.md) → 检查合同字段
-10. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
+6. [External Pilot Record Example](external-pilot-record/) → 验证外部试点交接记录
+7. [Agent Handoff Contract Example](agent-handoff/) → 验证 supervisor/worker handoff 边界
+8. [Agent Runtime Image Contract Example](agent-runtime-image/) → 验证外部 agent runtime 镜像边界
+9. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
+10. [SPEC.md](../SPEC.md) → 检查合同字段
+11. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 
 ## 💡 提示
 
