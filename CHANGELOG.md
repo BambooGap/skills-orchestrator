@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.13] - 2026-06-28
+
+### Changed
+- Corrected the public roadmap and README release attribution so `agent-runtime-image` is recorded
+  as the v4.8.11 feature and v4.8.12 remains the release-hygiene update.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.13`.
+
 ## [4.8.12] - 2026-06-28
 
 ### Changed
