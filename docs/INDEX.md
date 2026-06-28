@@ -25,7 +25,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local pilot to external adoption.
 - [Agent Fleet Governance](agent-fleet-governance.md): multi-agent, multi-tenant, and multi-project governance boundary for instruction assets.
 - [Supervisor Governance](supervisor-governance.md): lead agent, worker agent, handoff, permission, and evidence governance model.
-- [Agent Handoff Contract Example](../examples/agent-handoff/README.md): preview schema fixture for supervisor/worker delegation, tenant scope, tool boundaries, and evaluation gates.
+- [Agent Handoff Contract Example](../examples/agent-handoff/README.md): preview schema fixture for supervisor/worker delegation, tenant scope, tool boundaries, evaluation gates, and negative handoff safety cases.
 - [Agent Runtime Image Contract Example](../examples/agent-runtime-image/README.md): preview schema fixture for external agent runtime images, permission boundaries, SBOM/provenance, and evaluation gates.
 - [Commercial And Foundation Readiness](foundation-readiness.md): honest adoption levels, commercial standard, and foundation-readiness gates.
 - [OpenSSF Scorecard Hygiene](foundation-readiness.md#openssf-scorecard-hygiene): public security-health signal alongside CodeQL, pinned Actions, and release attestations.

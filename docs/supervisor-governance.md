@@ -1,6 +1,6 @@
 # Supervisor Governance Model
 
-> Status: v4.8.14 adoption guidance.
+> Status: v4.8.15 adoption guidance.
 >
 > Scope: how a lead agent can coordinate specialized agents without turning Skills Orchestrator
 > into a runtime scheduler.
@@ -139,14 +139,31 @@ skills-orchestrator schema validate \
   --input examples/agent-handoff/release-review-handoff.json
 ```
 
-The negative fixture intentionally fails when a privileged worker lacks explicit human approval:
+The negative fixtures intentionally fail when a supervisor delegates too much authority or too
+little evidence:
 
 ```bash
 skills-orchestrator schema validate \
   --kind agent-handoff \
   --input examples/agent-handoff/invalid-privileged-worker.json \
   --format json
+
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/invalid-privileged-without-human-review.json \
+  --format json
+
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/invalid-production-evidence.json \
+  --format json
 ```
+
+The current preview contract enforces three CI-reviewable safety properties:
+
+- authorized, running, or completed handoffs must enable evaluation;
+- production handoffs must require `evidence-manifest` and `ci-explainability`;
+- privileged workers must have explicit approval and a `human-review` gate.
 
 If the worker is packaged as a container image, validate the runtime image boundary separately:
 
@@ -213,8 +230,8 @@ control plane.
 
 - Add adapter examples for supervisor/worker instruction packs when a real runtime can consume
   them.
-- Add negative fixtures for unsafe worker permissions, stale evidence, or missing handoff contract
-  only after the field model is stable.
+- Keep expanding negative fixtures for unsafe worker permissions, stale evidence, or missing
+  handoff evidence only when the field model can be enforced by schema.
 - Consider a preview `agent-fleet-manifest` schema only when the same metadata appears in at least
   two downstream surfaces.
 

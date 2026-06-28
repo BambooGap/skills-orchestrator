@@ -147,6 +147,90 @@
       "additionalProperties": true
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "handoff": {
+            "properties": {
+              "status": { "enum": ["authorized", "running", "completed"] }
+            },
+            "required": ["status"]
+          }
+        },
+        "required": ["handoff"]
+      },
+      "then": {
+        "properties": {
+          "evaluation": {
+            "properties": {
+              "required": { "const": true }
+            },
+            "required": ["required"]
+          }
+        },
+        "required": ["evaluation"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "tenant_scope": {
+            "properties": {
+              "environment": { "const": "production" }
+            },
+            "required": ["environment"]
+          }
+        },
+        "required": ["tenant_scope"]
+      },
+      "then": {
+        "properties": {
+          "evidence": {
+            "properties": {
+              "required_artifacts": {
+                "allOf": [
+                  { "contains": { "const": "evidence-manifest" } },
+                  { "contains": { "const": "ci-explainability" } }
+                ]
+              }
+            },
+            "required": ["required_artifacts"]
+          }
+        },
+        "required": ["evidence"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "workers": {
+            "contains": {
+              "type": "object",
+              "properties": {
+                "permission_mode": { "const": "privileged" }
+              },
+              "required": ["permission_mode"]
+            }
+          }
+        },
+        "required": ["workers"]
+      },
+      "then": {
+        "properties": {
+          "evaluation": {
+            "properties": {
+              "gates": {
+                "contains": { "const": "human-review" }
+              }
+            },
+            "required": ["gates"]
+          }
+        },
+        "required": ["evaluation"]
+      }
+    }
+  ],
   "$defs": {
     "non_empty_string": { "type": "string", "minLength": 1 },
     "tenant_scope": {

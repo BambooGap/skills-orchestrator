@@ -280,7 +280,9 @@ validates adapter inspection evidence.
 
 `examples/agent-handoff/` is the preview supervisor/worker handoff fixture. It validates tenant
 scope, worker permission mode, tool boundaries, evidence requirements, and evaluation gates without
-claiming that Skills Orchestrator runs worker agents.
+claiming that Skills Orchestrator runs worker agents. Its negative fixtures must reject privileged
+workers without explicit approval, privileged workers without a `human-review` evaluation gate, and
+production handoffs without `ci-explainability` evidence.
 
 `examples/agent-runtime-image/` is the preview runtime image fixture. It validates immutable image
 digests, SBOM/provenance references, runtime permission boundaries, adapter surfaces, handoff
