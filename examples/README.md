@@ -154,6 +154,20 @@
 
 ---
 
+### [Agent Runtime Image Contract Example](agent-runtime-image/)
+
+**适合**：多 Agent runtime owner、平台团队、安全团队、供应链审查负责人
+
+**展示内容**：
+- 如何把外部 agent runtime 容器镜像表达成机器可验证 artifact
+- 如何声明 image digest、SBOM/provenance、tenant scope、网络/文件/secret 边界
+- 如何用负例验证 floating tag、特权文件系统、无限制网络和 secret access 不能绕过审批 gate
+- 如何让 Skills Orchestrator 治理 runtime image contract，而不是运行或调度 Agent 容器
+
+**时间**：10 分钟
+
+---
+
 ### [Pilot Repository Examples](pilot-repos/)
 
 **适合**：平台团队、开源采用评估、真实仓库试点
@@ -192,9 +206,11 @@
 3. [Release Trust Example](release-trust/) → 验证外部 skill provenance 和 release artifact 绑定
 4. [Multi-repo Artifacts Example](multi-repo-artifacts/) → 聚合多个仓库的 evidence manifest
 5. [External Consumer Example](external-consumer/) → 验证 hosted/GitHub App consumer 输入
-6. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
-7. [SPEC.md](../SPEC.md) → 检查合同字段
-8. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
+6. [Agent Handoff Contract Example](agent-handoff/) → 验证 supervisor/worker handoff 边界
+7. [Agent Runtime Image Contract Example](agent-runtime-image/) → 验证外部 agent runtime 镜像边界
+8. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
+9. [SPEC.md](../SPEC.md) → 检查合同字段
+10. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 
 ## 💡 提示
 

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.11] - 2026-06-28
+
+### Added
+- Added the preview `agent-runtime-image` schema for containerized agent runtime images,
+  permission boundaries, adapter surfaces, evidence requirements, and handoff/evaluation gates.
+- Added `examples/agent-runtime-image/` with a valid runtime image contract fixture and an
+  invalid floating-tag / unapproved-privilege fixture.
+- Added schema contract tests proving runtime image fixtures validate and fail in the expected
+  places.
+
+### Changed
+- Documented agent runtime images as external, evidence-backed consumers of SkillOps artifacts
+  rather than official runtimes bundled into the core CLI.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.11`.
+
 ## [4.8.10] - 2026-06-28
 
 ### Changed

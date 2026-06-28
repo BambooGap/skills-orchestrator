@@ -19,6 +19,7 @@ A compatible implementation SHOULD support these stable surfaces:
 | Claude Skills export | Produce or consume Claude Skills export manifests that validate against `skills-orchestrator.claude-skills-export.v1` when claiming Claude Skills round-trip compatibility. |
 | Conformance | Pass positive conformance checks and fail the public negative fixtures deterministically. |
 | Agent handoff | Treat `agent-handoff` as a preview artifact contract for supervisor/worker delegation metadata, not as proof that a runtime executed workers. |
+| Agent runtime image | Treat `agent-runtime-image` as a preview artifact contract for external containerized agent runtime review, not as proof that SkillOps started containers or enforced tenants. |
 
 Compatible tools MAY add local fields or custom rules. They SHOULD keep custom data additive so
 existing consumers can ignore unknown fields.
@@ -77,6 +78,9 @@ skills-orchestrator schema validate \
 skills-orchestrator schema validate \
   --kind agent-handoff \
   --input examples/agent-handoff/release-review-handoff.json
+skills-orchestrator schema validate \
+  --kind agent-runtime-image \
+  --input examples/agent-runtime-image/codex-worker-image.json
 ```
 
 When building a compatible consumer, reject artifacts that fail schema validation and ignore
@@ -96,6 +100,7 @@ Third-party compatibility does not require:
 - matching terminal text output byte-for-byte,
 - implementing hosted dashboards or GitHub App behavior,
 - controlling agent runtime execution,
+- starting or endorsing a default agent runtime image,
 - producing identical artifact ordering when the JSON Schema does not require ordering.
 
 ## Release Checklist For Implementers

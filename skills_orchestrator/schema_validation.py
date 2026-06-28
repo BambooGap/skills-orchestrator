@@ -98,6 +98,19 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v4.8.8",
         consumers=("agent-runtime", "ci", "platform-review"),
     ),
+    "agent-runtime-image": SchemaDescriptor(
+        kind="agent-runtime-image",
+        filename="agent-runtime-image.schema.json",
+        title="Agent Runtime Image Contract",
+        description=(
+            "Preview contract for containerized agent runtime images, permission boundaries, "
+            "adapter surfaces, evidence requirements, and handoff/evaluation gates."
+        ),
+        contract_id="skills-orchestrator.agent-runtime-image.v1",
+        stability="preview",
+        since="v4.8.11",
+        consumers=("agent-runtime", "ci", "platform-review", "supply-chain"),
+    ),
     "adapter-inspect": SchemaDescriptor(
         kind="adapter-inspect",
         filename="adapter-inspect.schema.json",

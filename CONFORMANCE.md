@@ -208,6 +208,18 @@ skills-orchestrator adapters export openai-agents-sdk \
 python3.12 -m py_compile evidence/openai_skillops_agent.py
 ```
 
+Projects packaging agent runtimes as container images MAY publish a runtime image contract:
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-runtime-image \
+  --input examples/agent-runtime-image/codex-worker-image.json
+```
+
+The runtime image contract is conformance evidence for image pinning, permission boundaries,
+adapter surfaces, handoff requirements, and evaluation gates. It is not proof that the runtime
+executed agents, enforced tenants, injected secrets safely, or applied budgets.
+
 ### Level 5: Multi-repo Artifact Index
 
 An organization-level rollout is Level 5 conformant when each repository produces a Level 2 evidence
@@ -245,7 +257,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.8
+      - uses: BambooGap/skills-orchestrator@v4.8.11
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -269,6 +281,11 @@ validates adapter inspection evidence.
 `examples/agent-handoff/` is the preview supervisor/worker handoff fixture. It validates tenant
 scope, worker permission mode, tool boundaries, evidence requirements, and evaluation gates without
 claiming that Skills Orchestrator runs worker agents.
+
+`examples/agent-runtime-image/` is the preview runtime image fixture. It validates immutable image
+digests, SBOM/provenance references, runtime permission boundaries, adapter surfaces, handoff
+requirements, and evaluation gates without claiming that Skills Orchestrator starts containers or
+enforces tenant isolation at runtime.
 
 ## Claims
 

@@ -1,6 +1,6 @@
 # Agent Fleet Governance
 
-> Status: v4.8.10 adoption guidance.
+> Status: v4.8.11 adoption guidance.
 >
 > Scope: governance for AI instruction artifacts used by multi-agent, multi-tenant, and
 > multi-project systems. This is not a runtime orchestration specification.
@@ -201,6 +201,20 @@ skills-orchestrator schema validate \
   --input examples/agent-handoff/release-review-handoff.json
 ```
 
+When a worker is packaged as a container image, use the preview `agent-runtime-image` contract to
+review the image and runtime boundary before execution:
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-runtime-image \
+  --input examples/agent-runtime-image/codex-worker-image.json
+```
+
+This contract is deliberately runtime-adjacent. It can record an immutable image digest,
+SBOM/provenance paths, tenant/project/cluster scope, adapter surfaces, network/filesystem/secret
+boundaries, handoff requirements, and evaluation gates. It does not recommend an official agent
+image, start containers, inject secrets, enforce budgets, or prove tenant isolation.
+
 ## A2A And Protocol Strategy
 
 A2A is important because it formalizes agent-to-agent communication, capability discovery, long
@@ -273,6 +287,8 @@ Exit criteria:
 - Add documentation, fixtures, and adoption guidance for agent fleet governance.
 - Use [Supervisor Governance](supervisor-governance.md) as the boundary for lead/worker handoffs.
 - Keep all multi-tenant and multi-cluster concepts as metadata and artifact contracts.
+- Keep containerized agent runtimes as external images described by `agent-runtime-image` preview
+  artifacts; do not bundle or endorse a default worker image.
 - Do not add provider admin API write operations.
 
 ### v5.x

@@ -10,7 +10,7 @@ Normative terms use RFC 2119 meanings: MUST, MUST NOT, SHOULD, MAY.
 
 ## Scope
 
-SkillOps Contract v1 covers ten artifact families:
+SkillOps Contract v1 covers eleven artifact families:
 
 - skill metadata in `skills.yaml` and skill frontmatter,
 - schema catalog metadata for public contract discovery,
@@ -21,6 +21,7 @@ SkillOps Contract v1 covers ten artifact families:
 - evidence bundle manifests,
 - multi-repository artifact indexes,
 - preview agent handoff contracts,
+- preview agent runtime image contracts,
 - adapter inspection reports.
 
 SARIF, CycloneDX, OPA/Rego, MCP, and AGENTS.md remain upstream or adjacent standards. This contract
@@ -473,6 +474,39 @@ Privileged workers MUST explicitly set `requires_human_approval: true`. Implemen
 treat a valid `agent-handoff` artifact as proof that a runtime executed workers, enforced tenant
 boundaries, or applied provider budgets. It is a reviewable contract that runtimes and CI can
 consume before execution.
+
+## Agent Runtime Image Contract
+
+The agent runtime image contract is a preview artifact for containerized agent runtime review. The
+registered schema kind is `agent-runtime-image`, backed by
+`agent-runtime-image.schema.json`.
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-runtime-image \
+  --input examples/agent-runtime-image/codex-worker-image.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `skills-orchestrator.agent-runtime-image.v1`. |
+| `runtime` | Runtime id, name, kind, owner, purpose, and optional entrypoint metadata. |
+| `image` | Immutable image reference, `sha256:` digest, supported platforms, and provenance reference. |
+| `tenant_scope` | Provider, project, environment, and optional tenant / cluster metadata. |
+| `permission_boundary` | Network, filesystem, secret, and human-approval boundary declarations. |
+| `agent_surfaces` | AGENTS.md, Claude Skills, MCP, OpenAI Agents SDK, A2A, or internal runtime config surfaces consumed by the image. |
+| `evidence` | Required and produced SkillOps artifacts that reviewers should validate before running the image. |
+| `evaluation` | CI, schema, container-release, adapter, and human-review gates for the runtime image. |
+
+Runtime image references MUST be pinned to immutable `sha256:` digests. Floating tags such as
+`latest` are not sufficient evidence. Privileged filesystem access, unrestricted networking, and
+runtime secret access MUST be paired with explicit human-approval requirements.
+
+Implementations MUST NOT treat a valid `agent-runtime-image` artifact as proof that the image was
+executed, that tenants were isolated, that provider keys were managed correctly, or that budgets
+were enforced. This contract only makes the declared runtime-image boundary reviewable in CI.
 
 ## Adapter Inspection Contract
 
