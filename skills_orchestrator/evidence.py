@@ -18,7 +18,7 @@ from skills_orchestrator.explainability import (
 )
 from skills_orchestrator.formatters import format_diagnostics_json, format_diagnostics_sarif
 from skills_orchestrator.formatters.manifest import format_instruction_manifest_json
-from skills_orchestrator.org_registry import build_registry
+from skills_orchestrator.org_registry import build_registry, build_registry_graph
 from skills_orchestrator.policy.exporter import build_opa_input, build_rego_test
 from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
 
@@ -63,6 +63,7 @@ def export_evidence_bundle(
         agents_md=agents_md,
     )
     registry = build_registry([config_path], zone_id=zone_id)
+    registry_graph = build_registry_graph(registry)
     adapter_inspect = inspect_adapters(root)
     package_sbom = build_python_package_sbom()
 
@@ -90,6 +91,10 @@ def export_evidence_bundle(
         "registry": _write(
             output / "skill-registry.json",
             json.dumps(registry, ensure_ascii=False, indent=2) + "\n",
+        ),
+        "registry_graph": _write(
+            output / "registry-graph.json",
+            json.dumps(registry_graph, ensure_ascii=False, indent=2) + "\n",
         ),
         "adapter_inspect": _write(
             output / "adapter-inspect.json",

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.10] - 2026-06-28
+
+### Changed
+- Included `registry-graph.json` directly in `evidence export` bundles and the evidence ledger.
+- Made enterprise doctor validate the bundled `registry_graph` artifact.
+- Documented that registry graph is bundle-derived while registry diff remains a base/head
+  PR-review artifact.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.10`.
+
 ## [4.8.9] - 2026-06-28
 
 ### Added

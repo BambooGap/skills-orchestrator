@@ -470,6 +470,7 @@ def test_doctor_enterprise_profile_validates_evidence_bundle(tmp_path):
     assert payload["evidence"]["evidence_check_json"]["detail"] == "schema valid"
     assert payload["evidence"]["evidence_ci_explainability"]["detail"] == "schema valid"
     assert payload["evidence"]["evidence_registry"]["detail"] == "schema valid"
+    assert payload["evidence"]["evidence_registry_graph"]["detail"] == "schema valid"
     assert payload["evidence"]["adapter_inspect"]["detail"] == "schema valid"
     assert payload["evidence"]["package_sbom"]["detail"] == "schema valid"
     assert "DOCTOR_ADAPTER_INSPECT" not in {issue["id"] for issue in payload["issues"]}
@@ -827,20 +828,25 @@ def test_evidence_export_writes_bundle(tmp_path, monkeypatch):
     assert (out_dir / "instruction-manifest.json").exists()
     assert (out_dir / "policy-opa-input.json").exists()
     assert (out_dir / "doctor.json").exists()
+    assert (out_dir / "registry-graph.json").exists()
     assert (out_dir / "adapter-inspect.json").exists()
     assert (out_dir / "package-sbom.cdx.json").exists()
     assert json.loads((out_dir / "evidence-manifest.json").read_text())["files"] == bundle["files"]
     assert "ci_explainability" in bundle["files"]
+    assert "registry_graph" in bundle["files"]
     assert "adapter_inspect" in bundle["files"]
     assert "package_sbom" in bundle["files"]
     assert bundle["ledger"]["previous_bundle_hash"] == ""
     assert len(bundle["ledger"]["bundle_hash"]) == 64
     check_hash = hashlib.sha256((out_dir / "check.json").read_bytes()).hexdigest()
     assert bundle["ledger"]["artifact_hashes"]["check_json"]["value"] == check_hash
+    graph_hash = hashlib.sha256((out_dir / "registry-graph.json").read_bytes()).hexdigest()
+    assert bundle["ledger"]["artifact_hashes"]["registry_graph"]["value"] == graph_hash
     assert (
         validate_document("ci-explainability", str(out_dir / "ci-explainability.json")).valid
         is True
     )
+    assert validate_document("registry-graph", str(out_dir / "registry-graph.json")).valid is True
     assert validate_document("evidence", str(out_dir / "evidence-manifest.json")).valid is True
 
 
