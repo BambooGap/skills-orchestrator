@@ -17,6 +17,7 @@ A compatible implementation SHOULD support these stable surfaces:
 | Evidence | Produce evidence manifests that validate against `skills-orchestrator.evidence.v1`. |
 | Registry | Produce registry, registry diff, and registry graph artifacts that validate against their v1 schemas. |
 | Conformance | Pass positive conformance checks and fail the public negative fixtures deterministically. |
+| Agent handoff | Treat `agent-handoff` as a preview artifact contract for supervisor/worker delegation metadata, not as proof that a runtime executed workers. |
 
 Compatible tools MAY add local fields or custom rules. They SHOULD keep custom data additive so
 existing consumers can ignore unknown fields.
@@ -69,6 +70,9 @@ skills-orchestrator schema validate --kind evidence --input evidence/evidence-ma
 skills-orchestrator schema validate --kind registry --input evidence/skill-registry.json
 skills-orchestrator schema validate --kind registry-diff --input evidence/registry-diff.json
 skills-orchestrator schema validate --kind registry-graph --input evidence/registry-graph.json
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/release-review-handoff.json
 ```
 
 When building a compatible consumer, reject artifacts that fail schema validation and ignore

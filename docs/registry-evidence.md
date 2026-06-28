@@ -163,6 +163,9 @@ skills-orchestrator schema validate --kind registry-diff --input evidence/regist
 skills-orchestrator schema validate --kind adapter-inspect --input evidence/adapter-inspect.json
 skills-orchestrator schema validate --kind supply-chain-sbom --input evidence/package-sbom.cdx.json
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/release-review-handoff.json
 skills-orchestrator schema list --format json > evidence/schema-catalog.json
 skills-orchestrator schema validate --kind schema-catalog --input evidence/schema-catalog.json
 skills-orchestrator schema audit --format json > evidence/schema-audit.json
@@ -173,8 +176,15 @@ SARIF and CycloneDX keep using their upstream schemas; Skills Orchestrator only 
 config and artifact contracts. The schema catalog declares each native contract's `contract_id`,
 `stability`, `since`, and intended consumers so platform teams can audit compatibility without
 scraping docs. The schema audit report verifies packaged schema loadability and catalog metadata
-without reading project skill files. The commercial handoff schemas are additive preview contracts
-for future GitHub App, hosted registry, and enterprise dashboard consumers:
+without reading project skill files. The agent handoff and commercial handoff schemas are additive
+preview contracts for future supervised-agent runtimes, GitHub App, hosted registry, and enterprise
+dashboard consumers:
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/release-review-handoff.json
+```
 
 ```bash
 skills-orchestrator schema validate \

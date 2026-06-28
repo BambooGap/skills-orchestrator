@@ -1,0 +1,112 @@
+{
+  "schema_version": "skills-orchestrator.agent-handoff.v1",
+  "handoff": {
+    "id": "release-review-v1",
+    "mode": "manager-agent",
+    "created_at": "2026-06-28T00:00:00Z",
+    "owner": "platform-ai",
+    "status": "authorized",
+    "source": {
+      "repository": "example/payments-service",
+      "commit": "9df52bf449732cc29f8e1573f69efbba2bb5414a",
+      "pull_request": "123"
+    }
+  },
+  "tenant_scope": {
+    "provider": "internal",
+    "tenant": "payments",
+    "project": "payments-prod",
+    "environment": "production",
+    "cluster": "agent-prod-us-east",
+    "namespace": "skillops",
+    "budget_owner": "platform-ai"
+  },
+  "supervisor": {
+    "id": "release-lead",
+    "role": "Plan release review work, delegate bounded tasks, and merge accepted worker outputs.",
+    "allowed_actions": ["plan", "delegate", "evaluate", "merge", "summarize", "reject"],
+    "denied_actions": ["modify-secrets", "bypass-ci"]
+  },
+  "workers": [
+    {
+      "id": "security-reviewer",
+      "purpose": "Review release changes for unsafe tool use, secret exposure, and cross-tenant leakage.",
+      "agent_surface": "claude-code-subagent",
+      "permission_mode": "read-only",
+      "requires_human_approval": false,
+      "allowed_tools": ["Read", "Grep", "Glob"],
+      "denied_tools": ["Write", "Edit", "Bash"],
+      "context": {
+        "isolation": "isolated",
+        "allowed_inputs": [
+          "evidence/check.json",
+          "evidence/ci-explainability.json",
+          "evidence/evidence-manifest.json"
+        ],
+        "forbidden_inputs": ["tenant-secrets", "cross-tenant-memory"]
+      },
+      "required_outputs": ["risk_summary", "blocking_findings", "evidence_paths"]
+    },
+    {
+      "id": "release-smoke-runner",
+      "purpose": "Run approved release smoke commands and report deterministic pass/fail evidence.",
+      "agent_surface": "codex",
+      "permission_mode": "limited-write",
+      "requires_human_approval": false,
+      "allowed_tools": ["Read", "Bash"],
+      "denied_tools": ["Edit", "Write"],
+      "context": {
+        "isolation": "shared-readonly",
+        "allowed_inputs": [
+          "scripts/post_release_smoke.py",
+          "docs/release-verification.md",
+          "evidence/evidence-manifest.json"
+        ],
+        "forbidden_inputs": ["production-api-keys", "customer-data"]
+      },
+      "required_outputs": ["command_log", "post_release_smoke_json", "retry_recommendation"]
+    }
+  ],
+  "task": {
+    "id": "release-v4-8-x-review",
+    "summary": "Validate that a release candidate can be promoted after policy, schema, evidence, and release smoke checks.",
+    "scope": "release candidate only; no production mutation",
+    "inputs": [
+      {
+        "kind": "check-json",
+        "path": "evidence/check.json"
+      },
+      {
+        "kind": "evidence-manifest",
+        "path": "evidence/evidence-manifest.json"
+      }
+    ],
+    "expected_outputs": [
+      "worker_result.security-reviewer.json",
+      "worker_result.release-smoke-runner.json",
+      "supervisor_summary.md"
+    ],
+    "stop_condition": "Stop after one accepted summary or any blocking finding.",
+    "max_retries": 1
+  },
+  "evidence": {
+    "required_artifacts": [
+      "check-json",
+      "ci-explainability",
+      "conformance",
+      "evidence-manifest",
+      "post-release-smoke"
+    ],
+    "produced_artifacts": [
+      {
+        "kind": "agent-handoff",
+        "path": "examples/agent-handoff/release-review-handoff.json"
+      }
+    ]
+  },
+  "evaluation": {
+    "required": true,
+    "gates": ["policy-check", "schema-validate", "conformance", "human-review", "release-smoke"],
+    "reviewers": ["release-owner", "security-owner"]
+  }
+}

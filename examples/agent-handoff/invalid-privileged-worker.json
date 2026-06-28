@@ -1,0 +1,57 @@
+{
+  "schema_version": "skills-orchestrator.agent-handoff.v1",
+  "handoff": {
+    "id": "unsafe-privileged-worker",
+    "mode": "manager-agent",
+    "created_at": "2026-06-28T00:00:00Z",
+    "owner": "platform-ai",
+    "status": "planned"
+  },
+  "tenant_scope": {
+    "provider": "internal",
+    "project": "payments-prod",
+    "environment": "production"
+  },
+  "supervisor": {
+    "id": "release-lead",
+    "role": "Delegate work",
+    "allowed_actions": ["plan", "delegate", "reject"]
+  },
+  "workers": [
+    {
+      "id": "dangerous-release-worker",
+      "purpose": "This worker is intentionally invalid because privileged workers need approval.",
+      "agent_surface": "internal-runtime",
+      "permission_mode": "privileged",
+      "requires_human_approval": false,
+      "allowed_tools": ["Read", "Bash", "Write"],
+      "denied_tools": [],
+      "context": {
+        "isolation": "shared",
+        "allowed_inputs": ["repository"]
+      },
+      "required_outputs": ["release_result"]
+    }
+  ],
+  "task": {
+    "id": "unsafe-release",
+    "summary": "Invalid fixture",
+    "scope": "demo",
+    "inputs": [
+      {
+        "kind": "evidence-manifest",
+        "path": "evidence/evidence-manifest.json"
+      }
+    ],
+    "expected_outputs": ["release_result"],
+    "stop_condition": "Never run this fixture."
+  },
+  "evidence": {
+    "required_artifacts": ["evidence-manifest"],
+    "produced_artifacts": []
+  },
+  "evaluation": {
+    "required": true,
+    "gates": ["schema-validate"]
+  }
+}

@@ -140,6 +140,20 @@
 
 ---
 
+### [Agent Handoff Contract Example](agent-handoff/)
+
+**适合**：多 Agent runtime owner、平台团队、安全团队
+
+**展示内容**：
+- 如何把 supervisor/worker handoff 表达成机器可验证 artifact
+- 如何声明 tenant scope、worker permission mode、tool boundary 和 evaluation gates
+- 如何用负例验证 privileged worker 必须有人类批准
+- 如何让 Skills Orchestrator 治理 handoff contract，而不是运行子 Agent
+
+**时间**：10 分钟
+
+---
+
 ### [Pilot Repository Examples](pilot-repos/)
 
 **适合**：平台团队、开源采用评估、真实仓库试点
