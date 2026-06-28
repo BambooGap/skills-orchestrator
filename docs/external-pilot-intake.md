@@ -113,6 +113,11 @@ jobs:
           comment-registry-diff: true
 ```
 
+Adjust the `branches` value to the repository's real default branch before the first pilot run.
+Many external repositories still use `master` or another protected branch name; leaving the starter
+workflow pinned to `main` can make the SkillOps CI artifact disappear from the pilot path and keep
+`doctor --profile adopter` below 100.
+
 Move to warning gate only after reviewers understand the output:
 
 ```yaml
