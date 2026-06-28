@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.29] - 2026-06-28
+
+### Added
+- Added dual-license project metadata and license files for `MIT OR Apache-2.0`.
+- Added `CODE_OF_CONDUCT.md`, `SUPPORT.md`, `.github/PULL_REQUEST_TEMPLATE.md`,
+  `.github/CODEOWNERS`, and `THIRD_PARTY_NOTICES.md` for external contributor and enterprise
+  open-source office review readiness.
+
 ## [4.8.28] - 2026-06-28
 
 ### Added
