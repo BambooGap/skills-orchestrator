@@ -1,6 +1,6 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.20 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.21 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > external agent runtime image contracts, and consumer-side supply-chain verification.
 >
@@ -139,8 +139,8 @@ system; OPA should be a proof and integration surface, not a second source of tr
 
 Status: implemented across v2.4.0-v4.8.x for Docker smoke, package SBOM, CodeQL, GHCR release
 push, pinned third-party Actions, PyPI artifact attestation, digest-bound container
-SBOM/provenance attestation, keyless GHCR image signing, consumer-side hash-lock smoke, and local
-release artifact verification.
+SBOM/provenance attestation, keyless GHCR image signing, Syft OS/image SBOM attestation,
+consumer-side hash-lock smoke, and local release artifact verification.
 
 Goal: remove adoption friction for enterprise and CI users.
 
@@ -160,10 +160,11 @@ Deliver:
   metadata.
 - GitHub Artifact Attestations for GHCR image provenance and SBOM, bound to the pushed digest.
 - Sigstore Cosign keyless image signatures for GHCR release digests.
+- Syft-generated CycloneDX OS/image SBOM attestation for GHCR release digests.
 - Consumer-side verification guide for PyPI wheel/sdist attestations, GHCR provenance/SBOM
   attestations, offline bundles, and exact-version versus hash-locked install boundaries.
 - Full post-release smoke that verifies consumer-side `--require-hashes` install and GHCR image
-  signature verification.
+  signature plus OS SBOM attestation verification.
 
 Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the next bottleneck;
 distribution and CI integration are.
@@ -190,8 +191,8 @@ Delivered:
 
 Next:
 
-- Full operating-system layer SBOM after the package-level SBOM and GHCR attestation path has been
-  exercised across releases.
+- OS SBOM vulnerability scanning policy after the Syft SBOM attestation path has been exercised
+  across releases.
 - Formal SLSA level mapping only after the release process is audited against that level.
 - SPDX mapping only after a real downstream consumer is tested.
 
