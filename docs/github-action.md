@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.26
+      - uses: BambooGap/skills-orchestrator@v4.8.27
         with:
           config: config/skills.yaml
 ```
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.26
+      - uses: BambooGap/skills-orchestrator@v4.8.27
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -89,7 +89,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v4.8.26
+      - uses: BambooGap/skills-orchestrator@v4.8.27
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -136,7 +136,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: skillops
-        uses: BambooGap/skills-orchestrator@v4.8.26
+        uses: BambooGap/skills-orchestrator@v4.8.27
         with:
           config: config/skills.yaml
           policy-pack: builtin/engineering-grade
@@ -160,7 +160,7 @@ decision data remains in `check.json`, `doctor.json`, `skill-registry.json`, and
 
 ```yaml
 - id: skillops
-  uses: BambooGap/skills-orchestrator@v4.8.26
+  uses: BambooGap/skills-orchestrator@v4.8.27
   with:
     config: config/skills.yaml
     policy-pack: builtin/engineering-grade
@@ -204,7 +204,7 @@ jobs:
 
 `action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
 repository can be used directly with a release tag, for example
-`BambooGap/skills-orchestrator@v4.8.26`, even before the Marketplace listing is public.
+`BambooGap/skills-orchestrator@v4.8.27`, even before the Marketplace listing is public.
 
 Recommended Marketplace positioning:
 
