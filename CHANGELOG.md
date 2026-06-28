@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.25] - 2026-06-28
+
+### Fixed
+- Installed constrained local smoke dependencies before workflow-dispatched Post-release Smoke so
+  `slsa-readiness-report` can use the same schema/runtime dependencies as local verification.
+
 ## [4.8.24] - 2026-06-28
 
 ### Fixed
