@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.24] - 2026-06-28
+
+### Fixed
+- Fixed `scripts/post_release_smoke.py` so workflow-dispatched smoke runs can import the checked-out
+  Skills Orchestrator source tree when validating the SLSA readiness report.
+
 ## [4.8.23] - 2026-06-28
 
 ### Added
