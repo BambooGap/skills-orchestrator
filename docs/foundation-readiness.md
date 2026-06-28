@@ -81,7 +81,8 @@ Until then, the correct claim is:
    OpenSSF Scorecard.
 4. Improve the 10-minute adoption path and migration notes.
 5. Use [External Pilot Intake](external-pilot-intake.md) before counting a repository as an external
-   pilot, and validate the pilot record before asking for public listing permission.
+   pilot, archive a [Pilot Evidence Pack](pilot-evidence-pack.md), and validate the pilot record
+   before asking for public listing permission.
 6. Add more ecosystem round-trip examples only when they preserve the same artifact contracts.
 7. Seek real external pilot repos before expanding governance claims.
 

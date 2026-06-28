@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v4.8.32
+      - uses: BambooGap/skills-orchestrator@v4.8.33
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -198,7 +198,7 @@ The record should use this shape:
     "repository": "owner/repo",
     "pilot_owner": "team-or-person",
     "started_at": "YYYY-MM-DD",
-    "skillops_version": "v4.8.32",
+    "skillops_version": "v4.8.33",
     "ci_system": "github-actions"
   },
   "gate": {
@@ -230,3 +230,14 @@ The record should use this shape:
 Only create or update `ADOPTERS.md` after the repository owner explicitly allows public listing.
 For a runnable synthetic fixture, see
 [`examples/external-pilot-record`](../examples/external-pilot-record/README.md).
+
+## Evidence Pack And Case Study
+
+After the first CI run, collect the artifacts with [Pilot Evidence Pack](pilot-evidence-pack.md).
+That document defines the handoff directory, required artifacts, review agenda, and promotion
+decisions for a real external repository pilot.
+
+If the repository owner approves public listing, use
+[Pilot Case Study Template](pilot-case-study-template.md) to write a public case. Do not publish a
+case study, logo, quote, or `ADOPTERS.md` entry while `public_listing.status` is `not-requested` or
+`denied`.

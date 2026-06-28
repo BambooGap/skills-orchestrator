@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.33] - 2026-06-29
+
+### Added
+- Added `docs/pilot-evidence-pack.md`, a concrete artifact handoff checklist for real external
+  repository pilots.
+- Added `docs/pilot-case-study-template.md`, a consent-aware public case-study template that
+  requires a validated external pilot record before publication.
+- Linked the pilot evidence pack and case-study template from the README, docs index, adoption
+  playbook, external pilot intake, and foundation readiness guidance.
+
 ## [4.8.32] - 2026-06-28
 
 ### Added

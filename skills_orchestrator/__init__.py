@@ -1,3 +1,3 @@
 """Skills Orchestrator - Agent Skills SkillOps 工具"""
 
-__version__ = "4.8.32"
+__version__ = "4.8.33"
