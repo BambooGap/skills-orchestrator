@@ -1,6 +1,6 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.13 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.14 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > and external agent runtime image contracts.
 >
@@ -314,8 +314,8 @@ Next:
 
 ## Phase 13: Agent Runtime Image Contracts
 
-Status: introduced in v4.8.11 as a preview schema and example fixture; current docs refreshed in
-v4.8.13.
+Status: introduced in v4.8.11 as a preview schema and example fixture; runtime-image docs refreshed
+in v4.8.13.
 
 Goal: let platform teams review external containerized agent runtimes without turning the core CLI
 into an agent runtime, tenant administrator, or container launcher.

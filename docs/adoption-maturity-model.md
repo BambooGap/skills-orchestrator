@@ -9,7 +9,7 @@ screenshots or project branding.
 | Level | Name | Recommended gate | Required evidence |
 | --- | --- | --- | --- |
 | 0 | Discovery | None | `schema audit` passes for the installed package. |
-| 1 | Local pilot | Local advisory | `init --template team-standard`, `check`, and `doctor --profile adopter` run locally. |
+| 1 | Local pilot | Local advisory | `init --template team-standard`, `check`, `build --lock`, and `doctor --profile adopter` run locally. |
 | 2 | CI advisory | CI fails on errors only | GitHub Action runs on pull requests and uploads JSON/SARIF artifacts. |
 | 3 | Team warning gate | CI fails on warnings | `builtin/team-standard --fail-on warning`, lock drift, and registry diff are understood by reviewers. |
 | 4 | Engineering gate | CI blocks high-risk instruction assets | `builtin/engineering-grade --fail-on warning`, release trust verification, agent handoff validation, and negative fixtures pass. |
@@ -36,13 +36,15 @@ Exit criteria:
 ```bash
 skills-orchestrator init --template team-standard
 skills-orchestrator check --config config/skills.yaml
+skills-orchestrator build --config config/skills.yaml --lock
 skills-orchestrator doctor --profile adopter --config config/skills.yaml
 skills-orchestrator conformance run --profile core --config config/skills.yaml
 ```
 
 Exit criteria:
 
-- `doctor --profile adopter` is at least `90/100`.
+- `doctor --profile adopter` is `100/100` after `build --lock` creates `AGENTS.md` and
+  `skills.lock.json`.
 - The team can explain each generated starter skill.
 - No blocking policy pack is required yet.
 
@@ -51,7 +53,7 @@ Exit criteria:
 Use the GitHub Action in advisory mode:
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v4.8.13
+- uses: BambooGap/skills-orchestrator@v4.8.14
   with:
     config: config/skills.yaml
     policy-pack: builtin/team-standard

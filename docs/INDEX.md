@@ -56,7 +56,7 @@ Use this page as the team entry point for Skills Orchestrator.
 
 1. Install the CLI from PyPI or Docker.
 2. Run `skills-orchestrator check --config config/skills.yaml`.
-3. Generate and commit or review `skills.lock.json`.
+3. Run `skills-orchestrator build --config config/skills.yaml --lock` and commit or review `AGENTS.md` / `skills.lock.json`.
 4. Add the GitHub Action.
 5. Enable `builtin/team-standard` policy pack.
 6. Run `skills-orchestrator conformance run`.

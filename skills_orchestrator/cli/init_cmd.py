@@ -229,6 +229,13 @@ def _init_team_standard(*, output: str | None, force: bool, hardened_workflow: b
         f"  skills-orchestrator check --config {config_path} --policy-pack builtin/team-standard"
     )
     click.echo(f"  skills-orchestrator build --config {config_path} --lock")
+    click.echo(
+        f"  skills-orchestrator doctor --config {config_path} --profile adopter --fail-under 100"
+    )
+    click.echo(
+        "  note: run build --lock before expecting doctor 100/100; it creates AGENTS.md "
+        "and skills.lock.json."
+    )
 
 
 def _team_standard_config(config_path: Path, skills_dir: Path) -> str:
