@@ -131,6 +131,19 @@ jobs:
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
             "$image@$digest"
 
+      - name: Generate OS layer SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ steps.meta.outputs.image }}@${{ steps.image_digest.outputs.digest }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ github.token }}
+          format: cyclonedx-json
+          output-file: container-os-sbom.cdx.json
+          syft-version: v1.46.0
+          dependency-snapshot: false
+          upload-artifact: false
+          upload-release-assets: false
+
       - name: Generate container SBOM and provenance metadata
         shell: bash
         run: |
@@ -150,6 +163,9 @@ jobs:
             --kind supply-chain-sbom \
             --input container-sbom.cdx.json
           skills-orchestrator schema validate \
+            --kind supply-chain-sbom \
+            --input container-os-sbom.cdx.json
+          skills-orchestrator schema validate \
             --kind container-provenance \
             --input container-provenance.json
 
@@ -166,4 +182,12 @@ jobs:
           subject-name: ${{ steps.meta.outputs.image }}
           subject-digest: ${{ steps.image_digest.outputs.digest }}
           sbom-path: container-sbom.cdx.json
+          push-to-registry: true
+
+      - name: Attest container OS layer SBOM
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ${{ steps.meta.outputs.image }}
+          subject-digest: ${{ steps.image_digest.outputs.digest }}
+          sbom-path: container-os-sbom.cdx.json
           push-to-registry: true

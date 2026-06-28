@@ -64,6 +64,7 @@ jobs:
               --check-pypi-install
               --check-pypi-hash-lock
               --check-ghcr-signature
+              --check-ghcr-os-sbom
               --check-new-user-path
               --python python
             )
