@@ -14,7 +14,7 @@ screenshots or project branding.
 | 3 | Team warning gate | CI fails on warnings | `builtin/team-standard --fail-on warning`, lock drift, and registry diff are understood by reviewers. |
 | 4 | Engineering gate | CI blocks high-risk instruction assets | `builtin/engineering-grade --fail-on warning`, release trust verification, agent handoff validation, and negative fixtures pass. |
 | 5 | Multi-repo governance | Platform-owned rollout | Multiple repositories publish evidence manifests and a multi-repo artifact index validates. |
-| 6 | External adoption | Independent usage | At least one repository not maintained by this project uses SkillOps in public CI or release evidence. |
+| 6 | External adoption | Independent usage | At least one repository not maintained by this project uses SkillOps in public CI or release evidence, with a validated external pilot record. |
 
 ## Promotion Checklist
 
@@ -53,7 +53,7 @@ Exit criteria:
 Use the GitHub Action in advisory mode:
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v4.8.31
+- uses: BambooGap/skills-orchestrator@v4.8.32
   with:
     config: config/skills.yaml
     policy-pack: builtin/team-standard
@@ -131,6 +131,7 @@ Exit criteria:
 Exit criteria:
 
 - A repository outside this maintainer's control uses SkillOps in public CI or release artifacts.
+- A pilot handoff record validates against `external-pilot-record`.
 - The maintainer has permission to cite it.
 - The adopter has enough context to report bugs or compatibility issues.
 

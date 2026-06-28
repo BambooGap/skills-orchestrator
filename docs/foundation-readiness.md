@@ -25,7 +25,7 @@ hosted compliance platform.
 | 3. Production advisory | A production-like repo can run advisory gates without blocking delivery. | `builtin/team-standard` is enabled, lock drift is visible, and PR reviewers understand failures. |
 | 4. Production blocking | A platform-owned repo can block merges on instruction governance. | `builtin/engineering-grade --fail-on warning`, negative conformance, release trust verification, and rollback path are accepted by owners. |
 | 5. Multi-repo governance | Multiple repos publish comparable SkillOps evidence. | `evidence index`, registry graph, dashboard snapshot, and multi-repo artifact schema validation pass from CI artifacts. |
-| 6. External adoption | A repo not owned by the maintainer relies on SkillOps. | Public issue/PR/release evidence from that repo, with permission to list it. |
+| 6. External adoption | A repo not owned by the maintainer relies on SkillOps. | Public issue/PR/release evidence from that repo, a validated external pilot record, and permission to list it. |
 | 7. Foundation candidate | The project has community and governance depth beyond one maintainer. | Multiple maintainers, real external adopters, documented governance, security response history, and regular releases. |
 
 ## Commercial Value Standard
@@ -81,7 +81,7 @@ Until then, the correct claim is:
    OpenSSF Scorecard.
 4. Improve the 10-minute adoption path and migration notes.
 5. Use [External Pilot Intake](external-pilot-intake.md) before counting a repository as an external
-   pilot.
+   pilot, and validate the pilot record before asking for public listing permission.
 6. Add more ecosystem round-trip examples only when they preserve the same artifact contracts.
 7. Seek real external pilot repos before expanding governance claims.
 

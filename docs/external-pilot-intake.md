@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v4.8.31
+      - uses: BambooGap/skills-orchestrator@v4.8.32
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -180,23 +180,53 @@ Stop or keep advisory when:
 
 ## Pilot Handoff Record
 
-For a real external pilot, keep a short record:
+For a real external pilot, keep a short record and validate it before treating the pilot as review
+evidence:
 
-```yaml
-repository: owner/repo
-pilot_owner: team-or-person
-gate_mode: advisory
-started_at: YYYY-MM-DD
-skillops_version: v4.8.31
-ci_system: github-actions
-policy_pack: builtin/team-standard
-artifacts:
-  check_json: present
-  sarif: present
-  registry_diff: present
-  evidence_manifest: present
-promotion_decision: stay-advisory
-next_review: YYYY-MM-DD
+```bash
+skills-orchestrator schema validate \
+  --kind external-pilot-record \
+  --input pilot-record.json
+```
+
+The record should use this shape:
+
+```json
+{
+  "schema_version": "skills-orchestrator.external-pilot-record.v1",
+  "pilot": {
+    "repository": "owner/repo",
+    "pilot_owner": "team-or-person",
+    "started_at": "YYYY-MM-DD",
+    "skillops_version": "v4.8.32",
+    "ci_system": "github-actions"
+  },
+  "gate": {
+    "mode": "advisory",
+    "policy_pack": "builtin/team-standard",
+    "fail_on": "none"
+  },
+  "artifacts": {
+    "check_json": { "status": "present", "path": "artifacts/check.json" },
+    "sarif": { "status": "present", "path": "artifacts/skills-orchestrator.sarif" },
+    "registry_diff": { "status": "present", "path": "artifacts/registry-diff.md" },
+    "evidence_manifest": {
+      "status": "present",
+      "path": "artifacts/evidence/evidence-manifest.json"
+    },
+    "conformance_report": { "status": "present", "path": "artifacts/conformance.json" }
+  },
+  "promotion": {
+    "decision": "stay-advisory",
+    "decided_at": "YYYY-MM-DD",
+    "next_review": "YYYY-MM-DD"
+  },
+  "public_listing": {
+    "status": "not-requested"
+  }
+}
 ```
 
 Only create or update `ADOPTERS.md` after the repository owner explicitly allows public listing.
+For a runnable synthetic fixture, see
+[`examples/external-pilot-record`](../examples/external-pilot-record/README.md).

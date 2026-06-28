@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.32] - 2026-06-28
+
+### Added
+- Added the preview `external-pilot-record` schema for recording external repository pilots,
+  artifact availability, promotion decisions, and public listing consent.
+- Added `examples/external-pilot-record/`, a synthetic fixture proving pilot records are
+  machine-valid artifacts without creating fake adopter claims.
+- Documented schema-validated pilot handoff records in the external pilot intake, docs index,
+  examples index, and README.
+
 ## [4.8.31] - 2026-06-28
 
 ### Fixed

@@ -20,6 +20,7 @@ SkillOps Contract v1 covers eleven artifact families:
 - registry diff JSON and Markdown,
 - evidence bundle manifests,
 - multi-repository artifact indexes,
+- preview external pilot records,
 - preview agent handoff contracts,
 - preview agent runtime image contracts,
 - adapter inspection reports.
@@ -445,6 +446,35 @@ The multi-repo index is derived from evidence manifests and referenced artifacts
 source of truth for skill definitions, CI decisions, hosted registry state, dashboard state, agent
 runs, or runtime orchestration. Consumers that need per-repository detail SHOULD dereference the
 underlying `evidence-manifest.json` path and validate the referenced artifact contracts directly.
+
+## External Pilot Record Contract
+
+The external pilot record contract is a preview artifact for recording repository trials outside
+this project. The registered schema kind is `external-pilot-record`, backed by
+`external-pilot-record.schema.json`.
+
+```bash
+skills-orchestrator schema validate \
+  --kind external-pilot-record \
+  --input examples/external-pilot-record/advisory-pilot-record.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `skills-orchestrator.external-pilot-record.v1`. |
+| `pilot` | Repository, pilot owner, start time, SkillOps version, and CI system. |
+| `gate` | Current gate mode and policy pack used by the pilot. |
+| `artifacts` | Presence map for check JSON, SARIF, registry diff, evidence manifest, conformance report, and optional review artifacts. |
+| `promotion` | Promotion decision, decision time, optional next review, reviewer, and rationale. |
+| `public_listing` | Explicit consent status for public adopter listing. |
+
+Artifact paths MUST be bundle-relative safe paths, not absolute paths, URLs, `..` traversal paths,
+or platform-specific backslash paths. A valid external pilot record is review evidence for a trial;
+it MUST NOT be represented as an adopter claim, endorsement, production success proof, or hosted
+service state. `ADOPTERS.md` MUST only be created or updated after the repository owner explicitly
+approves public listing.
 
 ## Agent Handoff Contract
 

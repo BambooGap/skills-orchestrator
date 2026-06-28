@@ -96,6 +96,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "container-provenance",
         "doctor",
         "evidence",
+        "external-pilot-record",
         "enterprise-dashboard-rollup",
         "enterprise-dashboard-snapshot",
         "github-app-installation",
@@ -128,7 +129,7 @@ def test_supply_chain_sbom_accepts_syft_components_without_version(tmp_path):
                     "component": {
                         "type": "container",
                         "name": "ghcr.io/bamboogap/skills-orchestrator",
-                        "version": "v4.8.31",
+                        "version": "v4.8.32",
                     }
                 },
                 "components": [
@@ -306,6 +307,11 @@ def test_schema_list_json(tmp_path):
         == "skills-orchestrator.claude-skills-export.v1"
     )
     assert schemas["enterprise-dashboard-rollup"]["stability"] == "preview"
+    assert schemas["external-pilot-record"]["stability"] == "preview"
+    assert (
+        schemas["external-pilot-record"]["contract_id"]
+        == "skills-orchestrator.external-pilot-record.v1"
+    )
     catalog_file = tmp_path / "schema-catalog.json"
     catalog_file.write_text(result.output, encoding="utf-8")
     assert validate_document("schema-catalog", str(catalog_file)).valid is True
@@ -371,6 +377,7 @@ def test_schema_audit_json_can_filter_preview_contracts(tmp_path):
     assert payload["summary"]["stable"] == 0
     assert payload["summary"]["preview"] > 0
     assert any(check["kind"] == "agent-handoff" for check in payload["checks"])
+    assert any(check["kind"] == "external-pilot-record" for check in payload["checks"])
     audit_file = tmp_path / "schema-audit-preview.json"
     audit_file.write_text(result.output, encoding="utf-8")
     assert validate_document("schema-audit", str(audit_file)).valid is True
@@ -453,6 +460,75 @@ def test_github_app_installation_rejects_overbroad_permissions(tmp_path):
     assert result.exit_code == 1
     result_payload = json.loads(result.output)
     assert any(error["path"].startswith("$.permissions") for error in result_payload["errors"])
+
+
+def test_external_pilot_record_example_validates():
+    input_file = (
+        Path(__file__).resolve().parents[1]
+        / "examples"
+        / "external-pilot-record"
+        / "advisory-pilot-record.json"
+    )
+
+    result = validate_document("external-pilot-record", str(input_file))
+
+    assert result.valid is True
+
+
+def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
+    payload = {
+        "schema_version": "skills-orchestrator.external-pilot-record.v1",
+        "pilot": {
+            "repository": "org/repo",
+            "pilot_owner": "platform-team",
+            "started_at": "2026-06-28T00:00:00Z",
+            "skillops_version": "v4.8.32",
+            "ci_system": "github-actions",
+        },
+        "gate": {"mode": "advisory", "policy_pack": "builtin/team-standard"},
+        "artifacts": {
+            "check_json": {"status": "present", "path": "../check.json"},
+            "sarif": {"status": "present", "path": "artifacts/skills-orchestrator.sarif"},
+            "registry_diff": {"status": "present", "path": "artifacts/registry-diff.md"},
+            "evidence_manifest": {
+                "status": "present",
+                "path": "artifacts/evidence/evidence-manifest.json",
+            },
+            "conformance_report": {
+                "status": "present",
+                "path": "artifacts/conformance.json",
+            },
+        },
+        "promotion": {
+            "decision": "stay-advisory",
+            "decided_at": "2026-06-28T00:30:00Z",
+        },
+        "public_listing": {"status": "not-requested"},
+    }
+    input_file = tmp_path / "pilot-record.json"
+    input_file.write_text(json.dumps(payload), encoding="utf-8")
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "schema",
+            "validate",
+            "--kind",
+            "external-pilot-record",
+            "--input",
+            str(input_file),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 1
+    result_payload = json.loads(result.output)
+    assert any(
+        error["path"].startswith("$.artifacts.check_json.path")
+        for error in result_payload["errors"]
+    )
 
 
 def test_agent_handoff_rejects_privileged_worker_without_human_approval(tmp_path):

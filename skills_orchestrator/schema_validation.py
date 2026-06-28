@@ -241,6 +241,19 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v3.0.0",
         consumers=("github-app", "hosted-service"),
     ),
+    "external-pilot-record": SchemaDescriptor(
+        kind="external-pilot-record",
+        filename="external-pilot-record.schema.json",
+        title="External Pilot Record",
+        description=(
+            "Preview contract for recording external repository pilots, artifact availability, "
+            "promotion decisions, and public listing consent."
+        ),
+        contract_id="skills-orchestrator.external-pilot-record.v1",
+        stability="preview",
+        since="v4.8.32",
+        consumers=("adoption", "platform-review", "hosted-registry"),
+    ),
     "hosted-registry-ingest": SchemaDescriptor(
         kind="hosted-registry-ingest",
         filename="hosted-registry-ingest.schema.json",
