@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.16] - 2026-06-28
+
+### Added
+- Added `docs/production-adoption.md`, a production CI adoption guide covering full Action SHA
+  pinning, Docker digest execution, PyPI exact-version installs, advisory-to-blocking promotion,
+  evidence retention, rollback, and runtime boundary checks.
+
+### Changed
+- Linked production adoption guidance from README, the documentation index, install docs, GitHub
+  Action docs, and release verification docs so production users do not copy pilot tag examples as
+  high-trust CI defaults.
+
 ## [4.8.15] - 2026-06-28
 
 ### Added

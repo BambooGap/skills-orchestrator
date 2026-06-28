@@ -7,7 +7,7 @@ Use this page as the team entry point for Skills Orchestrator.
 | Role | Start Here | Goal |
 | --- | --- | --- |
 | Repository maintainer | [Install](install.md), [GitHub Action](github-action.md) | Add a working skill check to one repo. |
-| Platform owner | [Adoption Maturity Model](adoption-maturity-model.md), [Adoption Playbook](adoption-playbook.md), [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
+| Platform owner | [Production Adoption](production-adoption.md), [Adoption Maturity Model](adoption-maturity-model.md), [Adoption Playbook](adoption-playbook.md), [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
 | Security reviewer | [Manifest And Policy Exports](manifest-policy-exports.md), [Policy Packs](policy-packs.md), [Compatibility](../COMPATIBILITY.md) | Review instruction assets with machine-readable evidence. |
 | Release owner | [Release Verification](release-verification.md), [Release Rollback](release-rollback.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence and a rollback path. |
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Consume governed context and preserve workflow state. |
@@ -23,6 +23,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Instruction Supply Chain Roadmap](instruction-supply-chain-roadmap.md): long-term ecosystem direction.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
 - [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local pilot to external adoption.
+- [Production Adoption](production-adoption.md): minimum production CI configuration with SHA pins, Docker digests, evidence retention, and runtime boundaries.
 - [Agent Fleet Governance](agent-fleet-governance.md): multi-agent, multi-tenant, and multi-project governance boundary for instruction assets.
 - [Supervisor Governance](supervisor-governance.md): lead agent, worker agent, handoff, permission, and evidence governance model.
 - [Agent Handoff Contract Example](../examples/agent-handoff/README.md): preview schema fixture for supervisor/worker delegation, tenant scope, tool boundaries, evaluation gates, and negative handoff safety cases.

@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.15
+      - uses: BambooGap/skills-orchestrator@v4.8.16
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -75,6 +75,8 @@ jobs:
 ```
 
 See [GitHub Action](github-action.md) for inputs and SARIF permissions.
+For production repositories, use [Production Adoption](production-adoption.md) instead of copying
+the tag-based quickstart; production workflows should pin the action to the full release commit SHA.
 
 For stricter supply-chain environments, generate the starter workflow with pinned
 third-party actions:
@@ -88,7 +90,7 @@ skills-orchestrator init --template team-standard --hardened-workflow
 Use Docker when CI hosts should not install Python packages directly:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.15 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.16 --version
 
 docker build -t skills-orchestrator:local .
 docker run --rm -v "$PWD:/workspace" -w /workspace \
@@ -96,6 +98,8 @@ docker run --rm -v "$PWD:/workspace" -w /workspace \
 ```
 
 See [Docker Usage](docker.md) for more examples.
+For production CI, run the GHCR image by digest instead of a mutable tag. See
+[Production Adoption](production-adoption.md).
 
 ## Local Development
 

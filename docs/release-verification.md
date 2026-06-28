@@ -116,7 +116,7 @@ After PyPI and GHCR workflows finish, run the machine-readable public artifact s
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.15 \
+  --version v4.8.16 \
   --retries 8 \
   --retry-delay 15 \
   --format json > post-release-smoke.json
@@ -130,7 +130,7 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.15 \
+  --version v4.8.16 \
   --retries 8 \
   --retry-delay 20 \
   --check-pypi-install \
@@ -155,7 +155,7 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.8.15`. The workflow runs `full_smoke`
+Use the release tag as the `version` input, for example `v4.8.16`. The workflow runs `full_smoke`
 by default so the retained report covers public artifact metadata, PyPI clean install, the
 starter-kit adopter path, and the default-install MCP extra hint. Disable `full_smoke` only when
 you intentionally want a faster metadata-only check. The workflow uploads `post-release-smoke.json`
@@ -169,6 +169,10 @@ images with digest-bound provenance and SBOM attestations. Image signing, full o
 layer SBOMs, SLSA level claims, and hash-locked Python installs remain future hardening items.
 `verify-container-release` validates local SkillOps release artifacts; it is not a replacement for
 GitHub Artifact Attestation verification against a real GHCR digest.
+
+For consuming repositories, [Production Adoption](production-adoption.md) defines the current
+minimum production posture: full Action SHA pinning, Docker digest execution, PyPI exact-version
+installs, evidence retention, and a staged advisory-to-blocking rollout.
 
 Rollback drills are documented in [Release Rollback](release-rollback.md). The default incident
 response is to publish a fixed patch release and preserve evidence, not to rewrite published
