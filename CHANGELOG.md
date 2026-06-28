@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.22] - 2026-06-28
+
+### Fixed
+- Relaxed the CycloneDX component `version` requirement in the `supply-chain-sbom` schema so
+  Syft-generated OS/image SBOMs with versionless filesystem components validate correctly.
+- Added regression coverage for Syft-style CycloneDX components without a `version` field.
+
 ## [4.8.21] - 2026-06-28
 
 ### Added
