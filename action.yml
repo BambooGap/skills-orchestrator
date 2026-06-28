@@ -34,6 +34,10 @@ inputs:
     description: Optional built-in or local declarative policy pack, for example builtin/team-standard or builtin/engineering-grade.
     default: ""
     required: false
+  schema-audit-stability:
+    description: "Run schema audit before skill checks. Use stable, preview, all, or none."
+    default: stable
+    required: false
   upload-sarif:
     description: "Upload SARIF to GitHub Code Scanning. Requires security-events: write."
     default: "false"
@@ -134,6 +138,26 @@ runs:
       run: |
         set -euo pipefail
         python -m pip install -c "$GITHUB_ACTION_PATH/constraints.txt" "$GITHUB_ACTION_PATH"
+
+    - name: Audit schema contracts
+      shell: bash
+      env:
+        SCHEMA_AUDIT_STABILITY: ${{ inputs.schema-audit-stability }}
+      run: |
+        set -euo pipefail
+        case "$SCHEMA_AUDIT_STABILITY" in
+          none)
+            echo "Skipping schema audit because schema-audit-stability=none"
+            ;;
+          stable|preview|all)
+            skills-orchestrator schema audit --stability "$SCHEMA_AUDIT_STABILITY"
+            ;;
+          *)
+            echo "Invalid schema-audit-stability: $SCHEMA_AUDIT_STABILITY" >&2
+            echo "Expected one of: stable, preview, all, none" >&2
+            exit 2
+            ;;
+        esac
 
     - name: Run skill checks
       id: check

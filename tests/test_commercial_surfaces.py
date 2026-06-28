@@ -344,6 +344,7 @@ def test_action_exposes_reviewer_pack_outputs_and_delays_failure():
 
     assert "reviewer-summary" in action["inputs"]
     assert "dashboard-snapshot" in action["inputs"]
+    assert action["inputs"]["schema-audit-stability"]["default"] == "stable"
     assert "check-json-file" in action["outputs"]
     assert "policy-trace-file" in action["outputs"]
     assert "ci-explainability-file" in action["outputs"]
@@ -353,6 +354,7 @@ def test_action_exposes_reviewer_pack_outputs_and_delays_failure():
     assert "dashboard-snapshot-file" in action["outputs"]
 
     step_names = [step["name"] for step in action["runs"]["steps"]]
+    assert step_names.index("Audit schema contracts") < step_names.index("Run skill checks")
     assert step_names.index("Build reviewer summary") < step_names.index(
         "Fail after SkillOps artifacts"
     )

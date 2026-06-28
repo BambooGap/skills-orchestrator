@@ -9,7 +9,9 @@ examples below are intentionally easy to copy for pilots; production gates shoul
 the full release commit SHA.
 
 The action installs Skills Orchestrator from the checked-out action source, so pinning the action
-version also pins the CLI implementation:
+version also pins the CLI implementation. By default it runs
+`schema audit --stability stable` before skill checks, so a one-line adoption workflow also verifies
+the stable contract surface used by production CI gates:
 
 ```yaml
 name: Skill checks
@@ -24,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.27
+      - uses: BambooGap/skills-orchestrator@v4.8.28
         with:
           config: config/skills.yaml
 ```
@@ -51,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.27
+      - uses: BambooGap/skills-orchestrator@v4.8.28
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -64,6 +66,7 @@ uploads are accepted.
 The action installs the local action source with `constraints.txt`, so the CLI governance dependency
 set is constrained for a given action revision. The optional MCP runtime extra is not installed by
 the action because CI checks do not need to run an MCP server. It is not a hash-locked install yet.
+Set `schema-audit-stability: none` only when a caller has a separate schema audit job.
 
 ## Registry Diff PR Comment
 
@@ -89,7 +92,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v4.8.27
+      - uses: BambooGap/skills-orchestrator@v4.8.28
         with:
           config: config/skills.yaml
           registry-diff: true
@@ -136,7 +139,7 @@ jobs:
         with:
           fetch-depth: 0
       - id: skillops
-        uses: BambooGap/skills-orchestrator@v4.8.27
+        uses: BambooGap/skills-orchestrator@v4.8.28
         with:
           config: config/skills.yaml
           policy-pack: builtin/engineering-grade
@@ -160,7 +163,7 @@ decision data remains in `check.json`, `doctor.json`, `skill-registry.json`, and
 
 ```yaml
 - id: skillops
-  uses: BambooGap/skills-orchestrator@v4.8.27
+  uses: BambooGap/skills-orchestrator@v4.8.28
   with:
     config: config/skills.yaml
     policy-pack: builtin/engineering-grade
@@ -204,7 +207,7 @@ jobs:
 
 `action.yml` includes the `branding` metadata GitHub uses for Marketplace action cards. The
 repository can be used directly with a release tag, for example
-`BambooGap/skills-orchestrator@v4.8.27`, even before the Marketplace listing is public.
+`BambooGap/skills-orchestrator@v4.8.28`, even before the Marketplace listing is public.
 
 Recommended Marketplace positioning:
 
@@ -233,6 +236,7 @@ Reference: [Publishing actions in GitHub Marketplace](https://docs.github.com/ac
 | `fail-on` | `error` | Exit threshold: `error`, `warning`, or `never`. |
 | `max-skill-bytes` | `20000` | Threshold for SO005 oversized-skill diagnostics. |
 | `policy-pack` | empty | Optional built-in or local declarative policy pack, for example `builtin/team-standard` or `builtin/engineering-grade`. |
+| `schema-audit-stability` | `stable` | Run schema audit before skill checks. Use `stable`, `preview`, `all`, or `none`. |
 | `upload-sarif` | `false` | Upload SARIF to GitHub Code Scanning. |
 | `sarif-file` | `skills-orchestrator.sarif` | SARIF file path used for uploads. |
 | `registry-diff` | `false` | Generate a base-vs-head registry diff Markdown artifact. |
