@@ -26,6 +26,7 @@ from skills_orchestrator.schema_validation import (
     validate_document,
 )
 from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
+from skills_orchestrator.supply_chain import build_slsa_readiness, format_slsa_readiness_json
 
 
 def _schema_workspace(tmp_path):
@@ -109,6 +110,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "registry-graph",
         "schema-audit",
         "schema-catalog",
+        "slsa-readiness",
         "supply-chain-sbom",
     }.issubset(kinds)
     for kind in kinds:
@@ -126,7 +128,7 @@ def test_supply_chain_sbom_accepts_syft_components_without_version(tmp_path):
                     "component": {
                         "type": "container",
                         "name": "ghcr.io/bamboogap/skills-orchestrator",
-                        "version": "v4.8.22",
+                        "version": "v4.8.23",
                     }
                 },
                 "components": [
@@ -161,6 +163,7 @@ def test_supply_chain_sbom_accepts_syft_components_without_version(tmp_path):
         ("registry", "skill-registry.json"),
         ("registry-diff", "registry-diff.json"),
         ("registry-graph", "registry-graph.json"),
+        ("slsa-readiness", "slsa-readiness.json"),
         ("adapter-inspect", "adapter-inspect.json"),
         ("claude-skills-export", "claude-skills-export.json"),
         ("supply-chain-sbom", "package-sbom.cdx.json"),
@@ -535,6 +538,15 @@ rules:
     )
     (root / "package-sbom.cdx.json").write_text(
         format_sbom_json(build_python_package_sbom(include_dependencies=False)),
+        encoding="utf-8",
+    )
+    (root / "slsa-readiness.json").write_text(
+        format_slsa_readiness_json(
+            build_slsa_readiness(
+                release_version="v0.0.0",
+                digest="sha256:" + ("b" * 64),
+            )
+        ),
         encoding="utf-8",
     )
     runner = CliRunner()

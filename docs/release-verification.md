@@ -32,6 +32,14 @@ skills-orchestrator supply-chain verify-container-release \
 skills-orchestrator schema validate \
   --kind container-release-verification \
   --input container-release-verification.json
+skills-orchestrator supply-chain slsa-readiness \
+  --version local \
+  --repository BambooGap/skills-orchestrator \
+  --image ghcr.io/bamboogap/skills-orchestrator \
+  --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --output slsa-readiness.json \
+  --force
+skills-orchestrator schema validate --kind slsa-readiness --input slsa-readiness.json
 python -m build
 python -m twine check dist/*
 ```
@@ -74,6 +82,14 @@ skills-orchestrator schema validate --kind container-provenance --input containe
 skills-orchestrator schema validate \
   --kind container-release-verification \
   --input container-release-verification.json
+skills-orchestrator supply-chain slsa-readiness \
+  --version local \
+  --repository BambooGap/skills-orchestrator \
+  --image ghcr.io/bamboogap/skills-orchestrator \
+  --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --output slsa-readiness.json \
+  --force
+skills-orchestrator schema validate --kind slsa-readiness --input slsa-readiness.json
 skills-orchestrator evidence export --config config/skills.yaml --out evidence
 skills-orchestrator schema validate --kind evidence --input evidence/evidence-manifest.json
 skills-orchestrator schema validate \
@@ -113,6 +129,8 @@ Verify:
   [Supply Chain Verification](supply-chain-verification.md) before a production pin is promoted.
 - Local container provenance, SBOM subject, and SBOM hash binding pass
   `supply-chain verify-container-release`.
+- A `slsa-readiness.json` report is generated and schema-valid; it must be archived as a
+  non-certifying readiness map, not as a formal SLSA level claim.
 
 ## Post-Release Smoke
 
@@ -120,7 +138,7 @@ After PyPI and GHCR workflows finish, run the machine-readable public artifact s
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.22 \
+  --version v4.8.23 \
   --retries 8 \
   --retry-delay 15 \
   --format json > post-release-smoke.json
@@ -134,7 +152,7 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.22 \
+  --version v4.8.23 \
   --retries 8 \
   --retry-delay 20 \
   --check-pypi-install \
@@ -160,13 +178,13 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.8.22`. The workflow runs `full_smoke`
+Use the release tag as the `version` input, for example `v4.8.23`. The workflow runs `full_smoke`
 by default so the retained report covers public artifact metadata, PyPI clean install, consumer-side
 hash-locked install, GHCR Cosign signature verification, GHCR OS SBOM attestation verification, the
-starter-kit adopter path, and the default-install MCP extra hint. Disable `full_smoke` only when you
-intentionally want a faster metadata-only check. The workflow uploads `post-release-smoke.json` as a
-retained run artifact so platform teams can review or archive the release verification evidence after
-the job finishes.
+SLSA readiness report schema check, starter-kit adopter path, and the default-install MCP extra
+hint. Disable `full_smoke` only when you intentionally want a faster metadata-only check. The
+workflow uploads `post-release-smoke.json` as a retained run artifact so platform teams can review or
+archive the release verification evidence after the job finishes.
 
 ## Current Boundaries
 
@@ -174,13 +192,14 @@ The release workflow attests Python distribution artifacts and the GHCR workflow
 images with keyless Cosign signatures plus digest-bound provenance, package SBOM, and OS/image SBOM
 attestations.
 [Supply Chain Verification](supply-chain-verification.md) documents consumer-side verification for
-those signatures and attestations.
+those signatures and attestations. [SLSA Readiness](slsa-readiness.md) documents the generated
+readiness map that links this evidence to SLSA build-track concepts without claiming a formal SLSA
+level.
 
-Formal SLSA level claims remain a future hardening item. `skills-orchestrator==4.8.22` is still only
-an exact version pin, but the full post-release smoke now proves the release can be installed from a
-locally generated wheelhouse with `--require-hashes`. `verify-container-release` validates local
-SkillOps release artifacts; it is not a replacement for Cosign or GitHub Artifact Attestation
-verification against a real GHCR digest.
+`skills-orchestrator==4.8.23` is still only an exact version pin, but the full post-release smoke now
+proves the release can be installed from a locally generated wheelhouse with `--require-hashes`.
+`verify-container-release` validates local SkillOps release artifacts; it is not a replacement for
+Cosign or GitHub Artifact Attestation verification against a real GHCR digest.
 
 For consuming repositories, [Production Adoption](production-adoption.md) defines the current
 minimum production posture: full Action SHA pinning, Docker digest execution, PyPI exact-version

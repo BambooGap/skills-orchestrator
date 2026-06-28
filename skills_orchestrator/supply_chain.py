@@ -293,6 +293,162 @@ def format_container_release_verification(report: dict[str, Any]) -> str:
     return json.dumps(report, ensure_ascii=False, indent=2) + "\n"
 
 
+def build_slsa_readiness(
+    *,
+    release_version: str = "",
+    repository: str = "BambooGap/skills-orchestrator",
+    image: str = "ghcr.io/bamboogap/skills-orchestrator",
+    digest: str = "",
+) -> dict[str, Any]:
+    """Build a non-certifying SLSA readiness map for release evidence."""
+    normalized_version = release_version or __version__
+    tag = normalized_version if normalized_version.startswith("v") else f"v{normalized_version}"
+    subject: dict[str, Any] = {
+        "release": tag,
+        "repository": repository,
+        "image": image,
+    }
+    if digest:
+        _validate_digest(digest)
+        subject["digest"] = digest
+
+    controls = [
+        _readiness_control(
+            "build-l1.provenance-exists",
+            "pass",
+            "Release workflows publish provenance attestations for PyPI artifacts and GHCR images.",
+            [
+                "PyPI wheel and sdist artifact attestations",
+                "GHCR build provenance attestation bound to the image digest",
+                "post-release-smoke.json retained as release evidence",
+            ],
+        ),
+        _readiness_control(
+            "build-l1.consistent-build-process",
+            "pass",
+            "Release tags are built by pinned GitHub Actions workflows with pre-publish checks.",
+            [
+                "release-triggered PyPI workflow",
+                "release-triggered GHCR workflow",
+                "CI matrix and package metadata checks before publish",
+            ],
+        ),
+        _readiness_control(
+            "build-l2.hosted-build-platform",
+            "pass",
+            "Release artifacts are produced by GitHub-hosted Actions workflows rather than a local workstation.",
+            [
+                "PyPI trusted publishing workflow",
+                "GHCR publish workflow",
+                "GitHub Artifact Attestations",
+            ],
+        ),
+        _readiness_control(
+            "build-l2.authenticated-provenance",
+            "pass",
+            "Consumers can verify artifact attestations and image signatures against GitHub workflow identity.",
+            [
+                "PyPI artifact attestations",
+                "GHCR provenance and SBOM attestations",
+                "Sigstore Cosign keyless image signature",
+                "gh attestation verify consumer commands",
+            ],
+        ),
+        _readiness_control(
+            "build-l3.hardened-isolation",
+            "not_claimed",
+            "The project has not completed an independent SLSA Build L3 assessment of build-platform isolation.",
+            [],
+            [
+                "No formal SLSA Build L3 claim",
+                "No independent assessment that every provenance field is generated or verified by a trusted control plane",
+                "No claim that build steps are unable to influence all future build state beyond GitHub-hosted runner guarantees",
+            ],
+        ),
+        _readiness_control(
+            "source-track",
+            "not_claimed",
+            "The project does not currently claim SLSA Source track conformance.",
+            [],
+            [
+                "No machine-readable source-track verification summary attestation",
+                "No formal source-control-system assessment",
+            ],
+        ),
+    ]
+
+    return {
+        "schema_version": "skills-orchestrator.slsa-readiness.v1",
+        "tool": {"name": "skills-orchestrator", "version": __version__},
+        "generated_at": _now_iso(),
+        "standard": {
+            "name": "SLSA",
+            "version": "v1.2",
+            "url": "https://slsa.dev/spec/v1.2/build-requirements",
+        },
+        "subject": subject,
+        "status": "readiness-mapped",
+        "summary": {
+            "build_l1": "evidence-ready",
+            "build_l2": "evidence-ready",
+            "build_l3": "not-claimed",
+            "source_track": "not-claimed",
+            "formal_claim": False,
+        },
+        "controls": controls,
+        "consumer_verification": [
+            {
+                "id": "pypi-attestations",
+                "description": "Verify PyPI wheel and sdist artifact attestations before promoting a production pin.",
+                "document": "docs/supply-chain-verification.md#verify-pypi-artifacts",
+            },
+            {
+                "id": "ghcr-provenance",
+                "description": "Verify GHCR provenance attestation against the release tag and workflow identity.",
+                "document": "docs/supply-chain-verification.md#verify-ghcr-provenance-and-sbom",
+            },
+            {
+                "id": "ghcr-signature",
+                "description": "Verify the GHCR digest Cosign signature against the release workflow identity.",
+                "document": "docs/supply-chain-verification.md#verify-ghcr-image-signature",
+            },
+            {
+                "id": "post-release-smoke",
+                "description": "Retain the full post-release smoke report with zero failed checks.",
+                "document": "docs/release-verification.md#post-release-smoke",
+            },
+        ],
+        "not_claimed": [
+            "formal SLSA certification or level declaration",
+            "SLSA Build L3 hardened builder assessment",
+            "SLSA Source track conformance",
+            "runtime admission control",
+            "tenant, budget, secret, or worker isolation",
+        ],
+    }
+
+
+def format_slsa_readiness_json(report: dict[str, Any]) -> str:
+    """Render SLSA readiness JSON with stable formatting."""
+    return json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+
+
+def _readiness_control(
+    control_id: str,
+    status: str,
+    description: str,
+    evidence: list[str],
+    gaps: list[str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "id": control_id,
+        "status": status,
+        "description": description,
+        "evidence": evidence,
+        "gaps": gaps or [],
+    }
+
+
 def _installed_dependencies(project_name: str) -> list[tuple[str, str]]:
     try:
         dist = metadata.distribution(project_name)

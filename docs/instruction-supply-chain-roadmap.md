@@ -1,6 +1,6 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.22 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.23 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > external agent runtime image contracts, and consumer-side supply-chain verification.
 >
@@ -140,7 +140,8 @@ system; OPA should be a proof and integration surface, not a second source of tr
 Status: implemented across v2.4.0-v4.8.x for Docker smoke, package SBOM, CodeQL, GHCR release
 push, pinned third-party Actions, PyPI artifact attestation, digest-bound container
 SBOM/provenance attestation, keyless GHCR image signing, Syft OS/image SBOM attestation,
-consumer-side hash-lock smoke, and local release artifact verification.
+consumer-side hash-lock smoke, local release artifact verification, and non-certifying SLSA
+readiness mapping.
 
 Goal: remove adoption friction for enterprise and CI users.
 
@@ -165,6 +166,8 @@ Deliver:
   attestations, offline bundles, and exact-version versus hash-locked install boundaries.
 - Full post-release smoke that verifies consumer-side `--require-hashes` install and GHCR image
   signature plus OS SBOM attestation verification.
+- `supply-chain slsa-readiness` report that maps release evidence to SLSA build-track concepts
+  while explicitly keeping formal SLSA level claims out of scope.
 
 Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the next bottleneck;
 distribution and CI integration are.
@@ -193,7 +196,8 @@ Next:
 
 - OS SBOM vulnerability scanning policy after the Syft SBOM attestation path has been exercised
   across releases.
-- Formal SLSA level mapping only after the release process is audited against that level.
+- Formal SLSA level claims only after the release process is independently audited against that
+  level; the current readiness report is an adoption review artifact, not a certification.
 - SPDX mapping only after a real downstream consumer is tested.
 
 ## Phase 7: PR Review Automation

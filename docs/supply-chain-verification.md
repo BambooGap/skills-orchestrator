@@ -26,7 +26,7 @@ docker login ghcr.io
 Set the release version and repository:
 
 ```bash
-VERSION=v4.8.22
+VERSION=v4.8.23
 PYPI_VERSION="${VERSION#v}"
 REPO=BambooGap/skills-orchestrator
 IMAGE=ghcr.io/bamboogap/skills-orchestrator
@@ -182,9 +182,33 @@ gh attestation download \
 
 Store the downloaded JSONL bundle with the release evidence bundle and `post-release-smoke.json`.
 
+## Generate SLSA Readiness Map
+
+After verifying the PyPI attestations, GHCR provenance/SBOM attestations, image signature, and
+post-release smoke report, generate a non-certifying readiness map:
+
+```bash
+skills-orchestrator supply-chain slsa-readiness \
+  --version "${VERSION}" \
+  --repository "${REPO}" \
+  --image "${IMAGE}" \
+  --digest "${IMAGE_DIGEST}" \
+  --output slsa-readiness.json \
+  --force
+
+skills-orchestrator schema validate \
+  --kind slsa-readiness \
+  --input slsa-readiness.json
+```
+
+This report answers "which SLSA build-track controls have release evidence attached?" It does not
+turn the release into a formal SLSA-certified artifact. The report deliberately keeps Build L3,
+Source track, runtime admission, tenant isolation, budget enforcement, secret isolation, and worker
+isolation in the `not_claimed` section.
+
 ## Consumer-Side Hash-Locked Install
 
-`skills-orchestrator==4.8.22` is an exact version pin, not a hash-locked install. Repositories that
+`skills-orchestrator==4.8.23` is an exact version pin, not a hash-locked install. Repositories that
 require hash locking should create and own a requirements lock that includes every transitive
 dependency hash.
 
@@ -194,7 +218,7 @@ platform by downloading a wheelhouse, generating a temporary hash lock, and inst
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.22 \
+  --version v4.8.23 \
   --check-pypi-hash-lock \
   --python python3.12
 ```
@@ -205,7 +229,7 @@ One common pattern is:
 python3.12 -m pip install pip-tools
 
 cat > requirements.in <<'EOF'
-skills-orchestrator==4.8.22
+skills-orchestrator==4.8.23
 EOF
 
 pip-compile \
@@ -229,9 +253,11 @@ For a production CI rollout, keep evidence that:
 - GHCR provenance and CycloneDX SBOM attestations verify against `ghcr.yml` and the release tag;
 - GHCR image signature verifies against the `ghcr.yml` workflow identity;
 - `post-release-smoke.json` passes schema validation with `failed: 0`;
+- `slsa-readiness.json` passes schema validation and remains explicitly non-certifying;
 - full post-release smoke includes `pypi-hash-lock-install`, `pypi-hash-lock-pip-check`, and
   `ghcr-cosign-signature`;
 - full post-release smoke includes `ghcr-os-sbom-attestation`;
+- full post-release smoke includes `slsa-readiness-report`;
 - the consuming repo has its own dependency hash-locking policy if direct PyPI installation is used;
 - runtime enforcement remains outside SkillOps and is owned by the agent platform/provider.
 
@@ -246,7 +272,9 @@ Implemented:
 - GHCR digest-bound CycloneDX package SBOM attestation.
 - GHCR digest-bound Syft CycloneDX OS/image SBOM attestation.
 - Post-release smoke for GitHub Release, PyPI, GHCR, Cosign signature verification, default install,
-  hash-locked install, OS SBOM attestation verification, and starter-kit path.
+  hash-locked install, OS SBOM attestation verification, SLSA readiness report validation, and
+  starter-kit path.
+- Non-certifying SLSA readiness map for release-evidence review.
 
 Not claimed:
 

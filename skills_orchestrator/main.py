@@ -1907,6 +1907,86 @@ def supply_chain_verify_container_release(
         raise SystemExit(1)
 
 
+@supply_chain.command("slsa-readiness")
+@click.option(
+    "--version",
+    "release_version",
+    default=__version__,
+    show_default=True,
+    help="Release version to describe, for example v4.8.23.",
+)
+@click.option(
+    "--repository",
+    default="BambooGap/skills-orchestrator",
+    show_default=True,
+    help="Source repository, for example org/repo.",
+)
+@click.option(
+    "--image",
+    default="ghcr.io/bamboogap/skills-orchestrator",
+    show_default=True,
+    help="Release image name.",
+)
+@click.option("--digest", default="", help="Optional immutable image digest, sha256:<hex>.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    show_default=True,
+)
+@click.option("--output", "-o", default=None, help="Write JSON report to this path.")
+@click.option("--force", is_flag=True, help="覆盖已存在的输出文件")
+def supply_chain_slsa_readiness(
+    release_version: str,
+    repository: str,
+    image: str,
+    digest: str,
+    output_format: str,
+    output: str | None,
+    force: bool,
+):
+    """Emit a non-certifying SLSA readiness map for release evidence."""
+    from skills_orchestrator.supply_chain import (
+        build_slsa_readiness,
+        format_slsa_readiness_json,
+    )
+
+    try:
+        report = build_slsa_readiness(
+            release_version=release_version,
+            repository=repository,
+            image=image,
+            digest=digest,
+        )
+        rendered = format_slsa_readiness_json(report)
+        if output:
+            output_path = Path(output)
+            if output_path.exists() and not force:
+                raise click.ClickException(
+                    f"输出文件已存在，未覆盖: {output_path}（如需覆盖请加 --force）"
+                )
+            output_path.write_text(rendered, encoding="utf-8")
+            click.echo(_ok(f"SLSA readiness report written: {output_path}"))
+            return
+        if output_format == "json":
+            click.echo(console_safe_text(rendered), nl=False)
+            return
+        summary = report["summary"]
+        click.echo("SLSA readiness: readiness-mapped")
+        click.echo(f"Release: {report['subject']['release']}")
+        click.echo(f"Build L1: {summary['build_l1']}")
+        click.echo(f"Build L2: {summary['build_l2']}")
+        click.echo(f"Build L3: {summary['build_l3']}")
+        click.echo(f"Source track: {summary['source_track']}")
+        click.echo("Formal claim: no")
+        for control in report["controls"]:
+            click.echo(f"  [{control['status']}] {control['id']}")
+    except Exception as exc:
+        click.echo(_err(str(exc)), err=True)
+        raise SystemExit(1)
+
+
 # ──────────────────────── Pipeline 子命令 ────────────────────────
 
 

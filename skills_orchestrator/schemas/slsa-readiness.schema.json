@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/slsa-readiness.schema.json",
+  "title": "SLSA Readiness Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool",
+    "generated_at",
+    "standard",
+    "subject",
+    "status",
+    "summary",
+    "controls",
+    "consumer_verification",
+    "not_claimed"
+  ],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.slsa-readiness.v1" },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "skills-orchestrator" },
+        "version": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "standard": {
+      "type": "object",
+      "required": ["name", "version", "url"],
+      "properties": {
+        "name": { "const": "SLSA" },
+        "version": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": true
+    },
+    "subject": {
+      "type": "object",
+      "required": ["release", "repository", "image"],
+      "properties": {
+        "release": { "type": "string", "minLength": 1 },
+        "repository": { "type": "string", "minLength": 1 },
+        "image": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "status": { "const": "readiness-mapped" },
+    "summary": {
+      "type": "object",
+      "required": ["build_l1", "build_l2", "build_l3", "source_track", "formal_claim"],
+      "properties": {
+        "build_l1": { "type": "string", "minLength": 1 },
+        "build_l2": { "type": "string", "minLength": 1 },
+        "build_l3": { "type": "string", "minLength": 1 },
+        "source_track": { "type": "string", "minLength": 1 },
+        "formal_claim": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "description", "evidence", "gaps"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "partial", "missing", "not_claimed"]
+          },
+          "description": { "type": "string", "minLength": 1 },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "gaps": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "consumer_verification": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "document"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "document": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "not_claimed": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}

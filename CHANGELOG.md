@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.23] - 2026-06-28
+
+### Added
+- Added `supply-chain slsa-readiness`, a non-certifying release evidence map that explains which
+  SLSA build-track controls are evidence-ready and which controls remain explicitly not claimed.
+- Added the preview `slsa-readiness` schema for platform teams that want to archive the readiness
+  map beside post-release smoke, PyPI attestation, GHCR signature, and SBOM evidence.
+- Added SLSA readiness and production release cadence guidance to the release and supply-chain
+  verification docs.
+
+### Changed
+- Production adoption guidance now treats SLSA readiness as a generated review artifact, not a
+  formal SLSA level declaration.
+
 ## [4.8.22] - 2026-06-28
 
 ### Fixed
