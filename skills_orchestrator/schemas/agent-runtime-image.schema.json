@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/agent-runtime-image.schema.json",
+  "title": "Skills Orchestrator Agent Runtime Image Contract",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "runtime",
+    "image",
+    "tenant_scope",
+    "permission_boundary",
+    "agent_surfaces",
+    "evidence",
+    "evaluation"
+  ],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.agent-runtime-image.v1" },
+    "runtime": {
+      "type": "object",
+      "required": ["id", "name", "kind", "owner", "purpose"],
+      "properties": {
+        "id": { "$ref": "#/$defs/non_empty_string" },
+        "name": { "$ref": "#/$defs/non_empty_string" },
+        "kind": {
+          "enum": [
+            "codex",
+            "claude-code",
+            "openai-agents-sdk",
+            "mcp-server",
+            "a2a-agent",
+            "queue-worker",
+            "internal-runtime"
+          ]
+        },
+        "owner": { "$ref": "#/$defs/non_empty_string" },
+        "purpose": { "$ref": "#/$defs/non_empty_string" },
+        "entrypoint": { "$ref": "#/$defs/non_empty_string" }
+      },
+      "additionalProperties": true
+    },
+    "image": {
+      "type": "object",
+      "required": ["reference", "digest", "platforms", "provenance"],
+      "properties": {
+        "reference": { "$ref": "#/$defs/non_empty_string" },
+        "digest": { "$ref": "#/$defs/sha256_digest" },
+        "platforms": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": ["linux/amd64", "linux/arm64", "linux/arm/v7", "linux/s390x", "linux/ppc64le"]
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "required": ["path", "schema_kind"],
+          "properties": {
+            "path": { "$ref": "#/$defs/non_empty_string" },
+            "schema_kind": { "const": "container-provenance" }
+          },
+          "additionalProperties": true
+        },
+        "sbom": {
+          "type": "object",
+          "required": ["path", "schema_kind"],
+          "properties": {
+            "path": { "$ref": "#/$defs/non_empty_string" },
+            "schema_kind": { "const": "supply-chain-sbom" },
+            "sha256": { "$ref": "#/$defs/sha256_hex" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "tenant_scope": { "$ref": "#/$defs/tenant_scope" },
+    "permission_boundary": {
+      "type": "object",
+      "required": ["network", "filesystem", "secrets", "human_approval"],
+      "properties": {
+        "network": {
+          "type": "object",
+          "required": ["mode"],
+          "properties": {
+            "mode": { "enum": ["disabled", "allowlist", "egress-controlled", "unrestricted"] },
+            "allowed_hosts": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/non_empty_string" }
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "mode": { "const": "allowlist" } },
+                "required": ["mode"]
+              },
+              "then": { "required": ["allowed_hosts"] }
+            }
+          ],
+          "additionalProperties": true
+        },
+        "filesystem": {
+          "type": "object",
+          "required": ["mode", "workspace_root"],
+          "properties": {
+            "mode": { "enum": ["read-only", "limited-write", "workspace-write", "privileged"] },
+            "workspace_root": { "$ref": "#/$defs/non_empty_string" },
+            "allowed_paths": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/non_empty_string" }
+            },
+            "denied_paths": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/non_empty_string" }
+            }
+          },
+          "additionalProperties": true
+        },
+        "secrets": {
+          "type": "object",
+          "required": ["mode"],
+          "properties": {
+            "mode": { "enum": ["none", "runtime-injected", "service-account"] },
+            "allowed_secret_refs": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/non_empty_string" }
+            }
+          },
+          "additionalProperties": true
+        },
+        "human_approval": {
+          "type": "object",
+          "required": ["required_for"],
+          "properties": {
+            "required_for": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "privileged-filesystem",
+                  "network-unrestricted",
+                  "secret-access",
+                  "production-write",
+                  "release-publish"
+                ]
+              }
+            },
+            "reviewers": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/non_empty_string" }
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "filesystem": {
+                "properties": { "mode": { "const": "privileged" } },
+                "required": ["mode"]
+              }
+            },
+            "required": ["filesystem"]
+          },
+          "then": {
+            "properties": {
+              "human_approval": {
+                "properties": {
+                  "required_for": { "contains": { "const": "privileged-filesystem" } }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "network": {
+                "properties": { "mode": { "const": "unrestricted" } },
+                "required": ["mode"]
+              }
+            },
+            "required": ["network"]
+          },
+          "then": {
+            "properties": {
+              "human_approval": {
+                "properties": {
+                  "required_for": { "contains": { "const": "network-unrestricted" } }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "secrets": {
+                "properties": { "mode": { "enum": ["runtime-injected", "service-account"] } },
+                "required": ["mode"]
+              }
+            },
+            "required": ["secrets"]
+          },
+          "then": {
+            "properties": {
+              "human_approval": {
+                "properties": {
+                  "required_for": { "contains": { "const": "secret-access" } }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "agent_surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["kind", "path", "status"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "agents-md",
+              "claude-skills",
+              "mcp-client-config",
+              "openai-agents-sdk",
+              "a2a-agent-card",
+              "internal-runtime-config"
+            ]
+          },
+          "path": { "$ref": "#/$defs/non_empty_string" },
+          "status": { "enum": ["required", "optional", "not-used"] },
+          "schema_kind": { "$ref": "#/$defs/non_empty_string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["required_artifacts", "produced_artifacts"],
+      "properties": {
+        "required_artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "adapter-inspect",
+              "agent-handoff",
+              "check-json",
+              "ci-explainability",
+              "conformance",
+              "container-provenance",
+              "evidence-manifest",
+              "registry",
+              "registry-graph",
+              "supply-chain-sbom"
+            ]
+          }
+        },
+        "produced_artifacts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/artifact_ref" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "handoff": {
+      "type": "object",
+      "required": ["required"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "contract_path": { "$ref": "#/$defs/non_empty_string" },
+        "schema_kind": { "const": "agent-handoff" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "required": { "const": true } },
+            "required": ["required"]
+          },
+          "then": { "required": ["contract_path", "schema_kind"] }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "evaluation": {
+      "type": "object",
+      "required": ["gates", "runtime_claims"],
+      "properties": {
+        "gates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "schema-validate",
+              "policy-check",
+              "conformance",
+              "adapter-inspect",
+              "container-release-verify",
+              "post-release-smoke",
+              "human-review"
+            ]
+          }
+        },
+        "runtime_claims": {
+          "type": "object",
+          "required": ["executes_agents", "enforces_tenants", "manages_provider_keys"],
+          "properties": {
+            "executes_agents": { "type": "boolean" },
+            "enforces_tenants": { "type": "boolean" },
+            "manages_provider_keys": { "type": "boolean" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "non_empty_string": { "type": "string", "minLength": 1 },
+    "sha256_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "sha256_hex": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "tenant_scope": {
+      "type": "object",
+      "required": ["provider", "project", "environment"],
+      "properties": {
+        "provider": { "$ref": "#/$defs/non_empty_string" },
+        "project": { "$ref": "#/$defs/non_empty_string" },
+        "environment": { "$ref": "#/$defs/non_empty_string" },
+        "tenant": { "$ref": "#/$defs/non_empty_string" },
+        "cluster": { "$ref": "#/$defs/non_empty_string" },
+        "namespace": { "$ref": "#/$defs/non_empty_string" },
+        "budget_owner": { "$ref": "#/$defs/non_empty_string" }
+      },
+      "additionalProperties": true
+    },
+    "artifact_ref": {
+      "type": "object",
+      "required": ["kind", "path"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/non_empty_string" },
+        "path": { "$ref": "#/$defs/non_empty_string" },
+        "sha256": { "$ref": "#/$defs/sha256_hex" },
+        "schema_kind": { "$ref": "#/$defs/non_empty_string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

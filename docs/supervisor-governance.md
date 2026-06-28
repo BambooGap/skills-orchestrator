@@ -1,6 +1,6 @@
 # Supervisor Governance Model
 
-> Status: v4.8.10 adoption guidance.
+> Status: v4.8.11 adoption guidance.
 >
 > Scope: how a lead agent can coordinate specialized agents without turning Skills Orchestrator
 > into a runtime scheduler.
@@ -148,6 +148,19 @@ skills-orchestrator schema validate \
   --format json
 ```
 
+If the worker is packaged as a container image, validate the runtime image boundary separately:
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-runtime-image \
+  --input examples/agent-runtime-image/codex-worker-image.json
+```
+
+This keeps the control split clear: the supervisor can delegate work, the runtime can start worker
+containers, and SkillOps can verify that the declared image digest, SBOM/provenance, adapter
+surfaces, tenant scope, permissions, handoff requirements, and evaluation gates are reviewable
+before execution.
+
 ## Handoff Lifecycle
 
 Use this lifecycle when designing multi-agent workflows:
@@ -191,6 +204,8 @@ control plane.
 - Document supervisor and worker governance boundaries.
 - Keep `agent-handoff` as a preview schema-backed fixture for concrete supervisor/worker handoff
   review.
+- Keep `agent-runtime-image` as a preview schema-backed fixture for reviewing containerized worker
+  images without making the CLI start those images.
 - Keep all supervisor, tenant, and cluster fields optional guidance until real adopters need schema
   enforcement.
 

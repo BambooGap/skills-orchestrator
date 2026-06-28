@@ -85,6 +85,7 @@ def test_schema_resources_are_packaged_and_loadable():
 
     assert {
         "agent-handoff",
+        "agent-runtime-image",
         "adapter-inspect",
         "check",
         "claude-skills-export",
@@ -154,6 +155,10 @@ def test_schema_resources_are_packaged_and_loadable():
         (
             "agent-handoff",
             "examples/agent-handoff/release-review-handoff.json",
+        ),
+        (
+            "agent-runtime-image",
+            "examples/agent-runtime-image/codex-worker-image.json",
         ),
     ],
 )
@@ -252,12 +257,18 @@ def test_schema_list_json(tmp_path):
     assert payload["schema_version"] == "skills-orchestrator.schema-catalog.v1"
     schemas = {schema["kind"]: schema for schema in payload["schemas"]}
     assert "agent-handoff" in schemas
+    assert "agent-runtime-image" in schemas
     assert "claude-skills-export" in schemas
     assert "config" in schemas
     assert schemas["config"]["stability"] == "stable"
     assert schemas["config"]["contract_id"] == "skills-orchestrator.config.v1"
     assert schemas["agent-handoff"]["stability"] == "preview"
     assert schemas["agent-handoff"]["contract_id"] == "skills-orchestrator.agent-handoff.v1"
+    assert schemas["agent-runtime-image"]["stability"] == "preview"
+    assert (
+        schemas["agent-runtime-image"]["contract_id"]
+        == "skills-orchestrator.agent-runtime-image.v1"
+    )
     assert schemas["claude-skills-export"]["stability"] == "stable"
     assert (
         schemas["claude-skills-export"]["contract_id"]
@@ -541,5 +552,12 @@ rules:
     repo_handoff_examples = Path(__file__).resolve().parents[1] / "examples" / "agent-handoff"
     (agent_handoff / "release-review-handoff.json").write_text(
         (repo_handoff_examples / "release-review-handoff.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    agent_runtime = root / "examples" / "agent-runtime-image"
+    agent_runtime.mkdir(parents=True)
+    repo_runtime_examples = Path(__file__).resolve().parents[1] / "examples" / "agent-runtime-image"
+    (agent_runtime / "codex-worker-image.json").write_text(
+        (repo_runtime_examples / "codex-worker-image.json").read_text(encoding="utf-8"),
         encoding="utf-8",
     )

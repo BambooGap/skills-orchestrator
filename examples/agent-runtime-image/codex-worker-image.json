@@ -1,0 +1,122 @@
+{
+  "schema_version": "skills-orchestrator.agent-runtime-image.v1",
+  "runtime": {
+    "id": "codex-release-reviewer",
+    "name": "Codex Release Reviewer",
+    "kind": "codex",
+    "owner": "platform-ai",
+    "purpose": "Run bounded release-review tasks with governed SkillOps instruction artifacts.",
+    "entrypoint": "codex --profile release-review"
+  },
+  "image": {
+    "reference": "ghcr.io/example/agent-runtimes/codex-release-reviewer:v1.2.3@sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "platforms": ["linux/amd64", "linux/arm64"],
+    "provenance": {
+      "path": "evidence/container-provenance.json",
+      "schema_kind": "container-provenance"
+    },
+    "sbom": {
+      "path": "evidence/container-sbom.cdx.json",
+      "schema_kind": "supply-chain-sbom",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  },
+  "tenant_scope": {
+    "provider": "internal",
+    "project": "payments-agent-prod",
+    "environment": "production",
+    "tenant": "payments",
+    "cluster": "agent-prod-us-east",
+    "namespace": "release-review",
+    "budget_owner": "platform-ai"
+  },
+  "permission_boundary": {
+    "network": {
+      "mode": "allowlist",
+      "allowed_hosts": ["api.github.com", "pypi.org", "ghcr.io"]
+    },
+    "filesystem": {
+      "mode": "limited-write",
+      "workspace_root": "/workspace",
+      "allowed_paths": ["/workspace", "/tmp/skillops"],
+      "denied_paths": ["/workspace/.env", "/workspace/secrets"]
+    },
+    "secrets": {
+      "mode": "runtime-injected",
+      "allowed_secret_refs": ["github-app-installation-token"]
+    },
+    "human_approval": {
+      "required_for": ["secret-access", "release-publish"],
+      "reviewers": ["platform-ai", "security-team"]
+    }
+  },
+  "agent_surfaces": [
+    {
+      "kind": "agents-md",
+      "path": "AGENTS.md",
+      "status": "required"
+    },
+    {
+      "kind": "mcp-client-config",
+      "path": ".mcp.json",
+      "status": "optional",
+      "schema_kind": "adapter-inspect"
+    },
+    {
+      "kind": "openai-agents-sdk",
+      "path": "evidence/openai_skillops_agent.py",
+      "status": "optional"
+    }
+  ],
+  "evidence": {
+    "required_artifacts": [
+      "adapter-inspect",
+      "agent-handoff",
+      "check-json",
+      "ci-explainability",
+      "conformance",
+      "container-provenance",
+      "evidence-manifest",
+      "registry-graph",
+      "supply-chain-sbom"
+    ],
+    "produced_artifacts": [
+      {
+        "kind": "agent-handoff",
+        "path": "examples/agent-handoff/release-review-handoff.json",
+        "schema_kind": "agent-handoff"
+      },
+      {
+        "kind": "container-provenance",
+        "path": "evidence/container-provenance.json",
+        "schema_kind": "container-provenance"
+      },
+      {
+        "kind": "evidence-manifest",
+        "path": "evidence/evidence-manifest.json",
+        "schema_kind": "evidence"
+      }
+    ]
+  },
+  "handoff": {
+    "required": true,
+    "contract_path": "examples/agent-handoff/release-review-handoff.json",
+    "schema_kind": "agent-handoff"
+  },
+  "evaluation": {
+    "gates": [
+      "schema-validate",
+      "policy-check",
+      "conformance",
+      "adapter-inspect",
+      "container-release-verify",
+      "human-review"
+    ],
+    "runtime_claims": {
+      "executes_agents": false,
+      "enforces_tenants": false,
+      "manages_provider_keys": false
+    }
+  }
+}

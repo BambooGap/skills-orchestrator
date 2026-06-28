@@ -1,0 +1,67 @@
+{
+  "schema_version": "skills-orchestrator.agent-runtime-image.v1",
+  "runtime": {
+    "id": "unsafe-floating-agent",
+    "name": "Unsafe Floating Agent",
+    "kind": "internal-runtime",
+    "owner": "platform-ai",
+    "purpose": "Demonstrate why runtime image references must be pinned to an immutable digest."
+  },
+  "image": {
+    "reference": "ghcr.io/example/agent-runtimes/unsafe-floating-agent:latest",
+    "digest": "latest",
+    "platforms": ["linux/amd64"],
+    "provenance": {
+      "path": "evidence/container-provenance.json",
+      "schema_kind": "container-provenance"
+    }
+  },
+  "tenant_scope": {
+    "provider": "internal",
+    "project": "payments-agent-prod",
+    "environment": "production"
+  },
+  "permission_boundary": {
+    "network": {
+      "mode": "unrestricted"
+    },
+    "filesystem": {
+      "mode": "privileged",
+      "workspace_root": "/workspace"
+    },
+    "secrets": {
+      "mode": "service-account"
+    },
+    "human_approval": {
+      "required_for": []
+    }
+  },
+  "agent_surfaces": [
+    {
+      "kind": "agents-md",
+      "path": "AGENTS.md",
+      "status": "required"
+    }
+  ],
+  "evidence": {
+    "required_artifacts": ["container-provenance", "evidence-manifest"],
+    "produced_artifacts": [
+      {
+        "kind": "evidence-manifest",
+        "path": "evidence/evidence-manifest.json",
+        "schema_kind": "evidence"
+      }
+    ]
+  },
+  "handoff": {
+    "required": false
+  },
+  "evaluation": {
+    "gates": ["schema-validate"],
+    "runtime_claims": {
+      "executes_agents": false,
+      "enforces_tenants": false,
+      "manages_provider_keys": false
+    }
+  }
+}

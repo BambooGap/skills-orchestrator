@@ -1,8 +1,8 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.10 adoption slice: CI explainability, schema audit, release trust, adapter
-> evidence, multi-repo artifact contracts, agent fleet governance, and supervisor governance
-> guidance.
+> Status: v4.8.11 adoption slice: CI explainability, schema audit, release trust, adapter
+> evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
+> and external agent runtime image contracts.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
 > by existing CI and supply-chain tooling.
@@ -311,6 +311,30 @@ Next:
 - Keep worker scheduling, queues, retries, and provider permissions outside the core CLI.
 - Treat future supervisor manifests as preview contracts until at least two adapter surfaces need
   the same metadata.
+
+## Phase 13: Agent Runtime Image Contracts
+
+Status: introduced in v4.8.11 as a preview schema and example fixture.
+
+Goal: let platform teams review external containerized agent runtimes without turning the core CLI
+into an agent runtime, tenant administrator, or container launcher.
+
+Delivered:
+
+- `agent-runtime-image` preview schema for immutable image digests, SBOM/provenance references,
+  tenant/project/cluster scope, permission boundaries, adapter surfaces, handoff requirements, and
+  evaluation gates.
+- `examples/agent-runtime-image/` with a valid runtime image contract and a negative fixture for
+  floating tags plus unapproved privileged access.
+- README, SPEC, CONFORMANCE, documentation index, agent fleet governance, supervisor governance,
+  and third-party implementation guidance.
+
+Next:
+
+- Add adopter-driven runtime image fixtures for real external consumers such as devcontainer
+  workers, OpenAI Agents SDK workers, A2A-facing services, or queue workers.
+- Keep runtime image fields preview until at least two downstream consumers need the same metadata.
+- Do not bundle, endorse, or launch an official agent runtime image from the core CLI.
 
 ## Phase 5: Community Narrative
 
