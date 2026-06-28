@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.34] - 2026-06-29
+
+### Fixed
+- Documented that copied pilot and production starter workflows must adjust `branches: [main]` to
+  the target repository's real default branch, such as `main`, `master`, or a team-protected branch.
+- Kept the external pilot guidance neutral: no adopter, case-study, or public listing claim is made
+  without repository owner approval.
+
 ## [4.8.33] - 2026-06-29
 
 ### Added

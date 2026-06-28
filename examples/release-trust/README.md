@@ -44,7 +44,7 @@ mkdir -p evidence
 
 skills-orchestrator supply-chain container-release \
   --image ghcr.io/bamboogap/skills-orchestrator \
-  --tag v4.8.33 \
+  --tag v4.8.34 \
   --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
   --repository BambooGap/skills-orchestrator \
   --commit local-fixture \
@@ -58,7 +58,7 @@ skills-orchestrator supply-chain verify-container-release \
   --provenance evidence/container-provenance.json \
   --sbom evidence/container-sbom.cdx.json \
   --image ghcr.io/bamboogap/skills-orchestrator \
-  --tag v4.8.33 \
+  --tag v4.8.34 \
   --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ```
 
