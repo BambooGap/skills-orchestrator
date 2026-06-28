@@ -32,6 +32,13 @@ sources, lifecycle metadata, and review windows for each skill.
    skills-orchestrator init --template team-standard
    ```
 
+   For repositories that require pinned third-party GitHub Actions, generate the
+   stricter starter workflow instead:
+
+   ```bash
+   skills-orchestrator init --template team-standard --hardened-workflow
+   ```
+
 3. Run the first local gate:
 
    ```bash
@@ -83,7 +90,7 @@ sources, lifecycle metadata, and review windows for each skill.
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: BambooGap/skills-orchestrator@v4.8.6
+         - uses: BambooGap/skills-orchestrator@v4.8.7
            with:
              config: config/skills.yaml
              policy-pack: builtin/team-standard
@@ -93,6 +100,9 @@ sources, lifecycle metadata, and review windows for each skill.
              dashboard-snapshot: true
              comment-registry-diff: true
    ```
+
+   Strict supply-chain environments can replace the checkout line with the
+   pinned value emitted by `init --template team-standard --hardened-workflow`.
 
 ## Promotion Criteria
 

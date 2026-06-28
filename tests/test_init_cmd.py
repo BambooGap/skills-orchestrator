@@ -206,6 +206,22 @@ def test_init_team_standard_template_generates_portable_scaffold(tmp_path, monke
     assert report.diagnostics == []
 
 
+def test_init_team_standard_hardened_workflow_pins_checkout(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    runner = CliRunner()
+
+    result = runner.invoke(init, ["--template", "team-standard", "--hardened-workflow"])
+
+    assert result.exit_code == 0
+    workflow = (tmp_path / ".github" / "workflows" / "skills-orchestrator.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "--hardened-workflow" in workflow
+    assert "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0" in workflow
+    assert "actions/checkout@v4" not in workflow
+    assert "BambooGap/skills-orchestrator@" in workflow
+
+
 def test_init_team_standard_custom_output_writes_relative_skill_dirs(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
