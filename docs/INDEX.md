@@ -8,8 +8,8 @@ Use this page as the team entry point for Skills Orchestrator.
 | --- | --- | --- |
 | Repository maintainer | [Install](install.md), [GitHub Action](github-action.md) | Add a working skill check to one repo. |
 | Platform owner | [Production Adoption](production-adoption.md), [Adoption Maturity Model](adoption-maturity-model.md), [Adoption Playbook](adoption-playbook.md), [Team Standardization](team-standardization.md), [CI/CD](CI_CD.md), [Conformance](../CONFORMANCE.md) | Roll the same contract across multiple repos. |
-| Security reviewer | [Supply Chain Verification](supply-chain-verification.md), [Manifest And Policy Exports](manifest-policy-exports.md), [Policy Packs](policy-packs.md), [Compatibility](../COMPATIBILITY.md) | Review instruction assets with machine-readable evidence. |
-| Release owner | [Release Verification](release-verification.md), [Supply Chain Verification](supply-chain-verification.md), [Release Rollback](release-rollback.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence and a rollback path. |
+| Security reviewer | [Supply Chain Verification](supply-chain-verification.md), [SLSA Readiness](slsa-readiness.md), [Manifest And Policy Exports](manifest-policy-exports.md), [Policy Packs](policy-packs.md), [Compatibility](../COMPATIBILITY.md) | Review instruction assets with machine-readable evidence. |
+| Release owner | [Release Verification](release-verification.md), [Supply Chain Verification](supply-chain-verification.md), [SLSA Readiness](slsa-readiness.md), [Release Rollback](release-rollback.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence and a rollback path. |
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Consume governed context and preserve workflow state. |
 | External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Third-party Implementation](third-party-implementation.md), [Negative Conformance Fixtures](../examples/negative-conformance/README.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
 | Pilot team | [External Pilot Intake](external-pilot-intake.md), [Adoption Playbook](adoption-playbook.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo. |
@@ -25,6 +25,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local pilot to external adoption.
 - [Production Adoption](production-adoption.md): minimum production CI configuration with SHA pins, Docker digests, evidence retention, and runtime boundaries.
 - [Supply Chain Verification](supply-chain-verification.md): consumer-side verification for PyPI attestations, GHCR provenance/SBOM attestations, digest pins, and hash-lock boundaries.
+- [SLSA Readiness](slsa-readiness.md): non-certifying build-track readiness map for release evidence; records what is evidence-ready and what is not claimed.
 - [Agent Fleet Governance](agent-fleet-governance.md): multi-agent, multi-tenant, and multi-project governance boundary for instruction assets.
 - [Supervisor Governance](supervisor-governance.md): lead agent, worker agent, handoff, permission, and evidence governance model.
 - [Agent Handoff Contract Example](../examples/agent-handoff/README.md): preview schema fixture for supervisor/worker delegation, tenant scope, tool boundaries, evaluation gates, and negative handoff safety cases.
@@ -67,11 +68,12 @@ Use this page as the team entry point for Skills Orchestrator.
 9. Export manifest, registry graph, and evidence bundle for releases.
 10. Verify external skill trust metadata and container release evidence.
 11. Verify PyPI and GHCR release attestations before promoting a production CI pin.
-12. Document the release rollback path.
-13. Enable and review OpenSSF Scorecard results.
-14. Build a multi-repo artifact index from repository evidence manifests.
-15. Validate external consumer payloads for hosted registry or GitHub App pilots.
-16. Map governed instruction artifacts to agent surfaces and tenant/project scopes as metadata.
-17. Validate lead/worker handoff and evidence expectations before running supervised agents.
-18. Validate external agent runtime image contracts when workers are packaged as containers.
-19. Enable MCP task-scoped routing when static checks are stable.
+12. Generate and archive a non-certifying SLSA readiness map beside the release smoke report.
+13. Document the release rollback path.
+14. Enable and review OpenSSF Scorecard results.
+15. Build a multi-repo artifact index from repository evidence manifests.
+16. Validate external consumer payloads for hosted registry or GitHub App pilots.
+17. Map governed instruction artifacts to agent surfaces and tenant/project scopes as metadata.
+18. Validate lead/worker handoff and evidence expectations before running supervised agents.
+19. Validate external agent runtime image contracts when workers are packaged as containers.
+20. Enable MCP task-scoped routing when static checks are stable.

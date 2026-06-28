@@ -12,6 +12,7 @@ from scripts.post_release_smoke import (
     pypi_install_smoke,
     parse_imagetools_output,
     pypi_release_check,
+    slsa_readiness_report_check,
     supports_optional_mcp_runtime,
     wheel_requirement_line,
 )
@@ -219,7 +220,7 @@ def test_ghcr_os_sbom_attestation_check_requires_syft_tool(monkeypatch):
         image="ghcr.io/example/project",
         digest=digest,
         repo="example/project",
-        version="4.8.22",
+        version="4.8.23",
         timeout=42,
     )
 
@@ -237,7 +238,7 @@ def test_ghcr_os_sbom_attestation_check_requires_syft_tool(monkeypatch):
         "--signer-workflow",
         "example/project/.github/workflows/ghcr.yml",
         "--source-ref",
-        "refs/tags/v4.8.22",
+        "refs/tags/v4.8.23",
         "--bundle-from-oci",
         "--predicate-type",
         "https://cyclonedx.org/bom",
@@ -262,7 +263,7 @@ def test_ghcr_os_sbom_attestation_check_flags_missing_syft_tool(monkeypatch):
                                     {
                                         "name": "skills-orchestrator",
                                         "vendor": "BambooGap",
-                                        "version": "4.8.22",
+                                        "version": "4.8.23",
                                     }
                                 ]
                             }
@@ -279,12 +280,55 @@ def test_ghcr_os_sbom_attestation_check_flags_missing_syft_tool(monkeypatch):
         image="ghcr.io/example/project",
         digest="sha256:" + "b" * 64,
         repo="example/project",
-        version="4.8.22",
+        version="4.8.23",
         timeout=30,
     )
 
     assert checks == [
         Check("ghcr-os-sbom-attestation", False, "found 1 CycloneDX attestations; syft=False")
+    ]
+
+
+def test_slsa_readiness_report_check_generates_schema_valid_report():
+    checks = slsa_readiness_report_check(
+        version="4.8.23",
+        repo="BambooGap/skills-orchestrator",
+        image="ghcr.io/bamboogap/skills-orchestrator",
+        digest="sha256:" + "c" * 64,
+    )
+
+    assert checks == [Check("slsa-readiness-report", True, "schema valid; formal_claim=false")]
+
+
+def test_collect_checks_flags_slsa_readiness_without_ghcr_digest():
+    args = smoke.argparse.Namespace(
+        version="4.8.23",
+        repo="BambooGap/skills-orchestrator",
+        package="skills-orchestrator",
+        image="ghcr.io/bamboogap/skills-orchestrator",
+        timeout=30,
+        skip_github=True,
+        skip_pypi=True,
+        skip_ghcr=True,
+        check_pypi_install=False,
+        check_pypi_hash_lock=False,
+        check_ghcr_signature=False,
+        check_ghcr_os_sbom=False,
+        check_slsa_readiness=True,
+        check_new_user_path=False,
+        python="python3.12",
+        require_platform=["linux/amd64", "linux/arm64"],
+        no_ghcr_attestations=False,
+    )
+
+    checks = smoke.collect_checks(args)
+
+    assert checks == [
+        Check(
+            "slsa-readiness-report",
+            False,
+            "could not resolve GHCR digest for SLSA readiness subject",
+        )
     ]
 
 
@@ -335,12 +379,12 @@ def test_supports_optional_mcp_runtime_starts_at_4_8_0():
 
 
 def test_wheel_requirement_line_generates_pip_hash(tmp_path):
-    wheel = tmp_path / "skills_orchestrator-4.8.22-py3-none-any.whl"
+    wheel = tmp_path / "skills_orchestrator-4.8.23-py3-none-any.whl"
     wheel.write_bytes(b"fake wheel bytes")
 
     line = wheel_requirement_line(wheel)
 
-    assert line.startswith("skills-orchestrator==4.8.22 --hash=sha256:")
+    assert line.startswith("skills-orchestrator==4.8.23 --hash=sha256:")
     assert len(line.rsplit(":", 1)[1]) == 64
 
 
@@ -392,7 +436,7 @@ def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
         del cwd, timeout
         if command[1:4] == ["-m", "pip", "download"]:
             wheelhouse = command[command.index("--dest") + 1]
-            (smoke.Path(wheelhouse) / "skills_orchestrator-4.8.22-py3-none-any.whl").write_bytes(
+            (smoke.Path(wheelhouse) / "skills_orchestrator-4.8.23-py3-none-any.whl").write_bytes(
                 b"skillops"
             )
             (smoke.Path(wheelhouse) / "click-8.4.2-py3-none-any.whl").write_bytes(b"click")
@@ -405,7 +449,7 @@ def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
             assert "--no-index" in command
             lock_file = smoke.Path(command[command.index("-r") + 1])
             lock_text = lock_file.read_text(encoding="utf-8")
-            assert "skills-orchestrator==4.8.22 --hash=sha256:" in lock_text
+            assert "skills-orchestrator==4.8.23 --hash=sha256:" in lock_text
             assert "click==8.4.2 --hash=sha256:" in lock_text
             return smoke.subprocess.CompletedProcess(command, 0, "installed\n", "")
         if command[1:4] == ["-m", "pip", "check"]:
@@ -414,7 +458,7 @@ def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
             )
         if command[-1] == "--version":
             return smoke.subprocess.CompletedProcess(
-                command, 0, "skills-orchestrator, version 4.8.22\n", ""
+                command, 0, "skills-orchestrator, version 4.8.23\n", ""
             )
         raise AssertionError(f"unexpected command: {command}")
 
@@ -422,7 +466,7 @@ def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
 
     checks = pypi_hash_locked_install_smoke(
         package="skills-orchestrator",
-        version="4.8.22",
+        version="4.8.23",
         python="python3.12",
         timeout=30,
     )

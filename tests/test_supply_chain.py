@@ -5,7 +5,11 @@ from click.testing import CliRunner
 
 from skills_orchestrator.main import cli
 from skills_orchestrator.schema_validation import validate_document
-from skills_orchestrator.supply_chain import build_container_image_sbom, verify_container_release
+from skills_orchestrator.supply_chain import (
+    build_container_image_sbom,
+    build_slsa_readiness,
+    verify_container_release,
+)
 
 
 def test_container_image_sbom_binds_to_digest():
@@ -62,6 +66,69 @@ def test_container_release_cli_writes_schema_valid_artifacts(tmp_path):
     assert provenance["image"]["digest"] == digest
     assert provenance["attestations"]["provenance_subject"]["subject_digest"] == digest
     assert provenance["sbom"]["sha256"]
+
+
+def test_slsa_readiness_report_is_schema_valid(tmp_path):
+    digest = "sha256:" + ("e" * 64)
+
+    report = build_slsa_readiness(
+        release_version="4.8.23",
+        repository="BambooGap/skills-orchestrator",
+        image="ghcr.io/bamboogap/skills-orchestrator",
+        digest=digest,
+    )
+
+    assert report["status"] == "readiness-mapped"
+    assert report["subject"]["release"] == "v4.8.23"
+    assert report["subject"]["digest"] == digest
+    assert report["summary"]["formal_claim"] is False
+    assert any(control["id"] == "build-l3.hardened-isolation" for control in report["controls"])
+    output = tmp_path / "slsa-readiness.json"
+    output.write_text(json.dumps(report), encoding="utf-8")
+    assert validate_document("slsa-readiness", str(output)).valid is True
+
+
+def test_slsa_readiness_cli_writes_json_report(tmp_path):
+    output = tmp_path / "slsa-readiness.json"
+    digest = "sha256:" + ("f" * 64)
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "slsa-readiness",
+            "--version",
+            "v4.8.23",
+            "--digest",
+            digest,
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "SLSA readiness report written" in result.output
+    assert validate_document("slsa-readiness", str(output)).valid is True
+
+
+def test_slsa_readiness_cli_rejects_invalid_digest():
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "slsa-readiness",
+            "--digest",
+            "latest",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "sha256" in result.output
 
 
 def test_container_release_cli_rejects_non_digest_subject(tmp_path):

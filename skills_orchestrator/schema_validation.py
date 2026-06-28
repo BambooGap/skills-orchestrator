@@ -363,6 +363,16 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v2.9.0",
         consumers=("supply-chain", "ci", "audit"),
     ),
+    "slsa-readiness": SchemaDescriptor(
+        kind="slsa-readiness",
+        filename="slsa-readiness.schema.json",
+        title="SLSA Readiness Report",
+        description="Non-certifying map from release evidence to SLSA build-readiness controls.",
+        contract_id="skills-orchestrator.slsa-readiness.v1",
+        stability="preview",
+        since="v4.8.23",
+        consumers=("supply-chain", "release-gate", "platform-review"),
+    ),
 }
 
 

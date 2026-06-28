@@ -247,6 +247,53 @@ def ghcr_os_sbom_attestation_check(
     ]
 
 
+def slsa_readiness_report_check(
+    *,
+    version: str,
+    repo: str,
+    image: str,
+    digest: str,
+) -> list[Check]:
+    """Generate and schema-validate the non-certifying SLSA readiness report."""
+    try:
+        from skills_orchestrator.schema_validation import validate_document
+        from skills_orchestrator.supply_chain import (
+            build_slsa_readiness,
+            format_slsa_readiness_json,
+        )
+    except Exception as exc:
+        return [Check("slsa-readiness-report", False, f"could not import SkillOps CLI: {exc}")]
+
+    try:
+        report = build_slsa_readiness(
+            release_version=version,
+            repository=repo,
+            image=image,
+            digest=digest,
+        )
+        with tempfile.TemporaryDirectory(prefix="skillops-slsa-readiness-") as temp_dir:
+            report_path = Path(temp_dir) / "slsa-readiness.json"
+            report_path.write_text(format_slsa_readiness_json(report), encoding="utf-8")
+            validation = validate_document("slsa-readiness", str(report_path))
+    except Exception as exc:
+        return [Check("slsa-readiness-report", False, str(exc))]
+
+    if not validation.valid:
+        messages = "; ".join(error.message for error in validation.errors[:3])
+        return [Check("slsa-readiness-report", False, messages)]
+
+    formal_claim = report.get("summary", {}).get("formal_claim")
+    return [
+        Check(
+            "slsa-readiness-report",
+            formal_claim is False,
+            "schema valid; formal_claim=false"
+            if formal_claim is False
+            else f"formal_claim={formal_claim!r}",
+        )
+    ]
+
+
 def run_command(
     command: list[str], *, cwd: Path | None = None, timeout: float = 120
 ) -> subprocess.CompletedProcess[str]:
@@ -629,6 +676,7 @@ def collect_checks(args: argparse.Namespace) -> list[Check]:
     checks: list[Check] = []
     version = normalize_version(args.version)
     tag = tag_for_version(version)
+    ghcr_digest: str | None = None
 
     if not args.skip_github:
         try:
@@ -669,6 +717,7 @@ def collect_checks(args: argparse.Namespace) -> list[Check]:
                     )
                 else:
                     digest, _, _ = parse_imagetools_output(cp.stdout)
+                    ghcr_digest = digest
                     checks.extend(
                         ghcr_manifest_check(
                             cp.stdout,
@@ -714,6 +763,25 @@ def collect_checks(args: argparse.Namespace) -> list[Check]:
                                 )
                             )
 
+    if args.check_slsa_readiness:
+        if ghcr_digest is None:
+            checks.append(
+                Check(
+                    "slsa-readiness-report",
+                    False,
+                    "could not resolve GHCR digest for SLSA readiness subject",
+                )
+            )
+        else:
+            checks.extend(
+                slsa_readiness_report_check(
+                    version=version,
+                    repo=args.repo,
+                    image=args.image,
+                    digest=ghcr_digest,
+                )
+            )
+
     if args.check_pypi_install:
         checks.extend(
             pypi_install_smoke(
@@ -754,6 +822,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--check-pypi-hash-lock", action="store_true")
     parser.add_argument("--check-ghcr-signature", action="store_true")
     parser.add_argument("--check-ghcr-os-sbom", action="store_true")
+    parser.add_argument("--check-slsa-readiness", action="store_true")
     parser.add_argument("--check-new-user-path", action="store_true")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument(
