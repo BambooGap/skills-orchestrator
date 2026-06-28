@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.19-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.20-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -14,9 +14,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.19` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.19` release tag | `BambooGap/skills-orchestrator@v4.8.19` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.19` |
+| OSS CLI | `v4.8.20` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.20` release tag | `BambooGap/skills-orchestrator@v4.8.20` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.20` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -80,7 +80,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.19 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.20 --version
 ```
 
 ### 初始化项目
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.19
+      - uses: BambooGap/skills-orchestrator@v4.8.20
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -826,11 +826,12 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - v4.8.17：补齐 supply-chain verification 文档，把 PyPI artifact attestation、GHCR provenance/SBOM attestation、offline bundle 和 consumer-side hash lock 写成可执行验证路径。
 - v4.8.18：修正 supply-chain verification 的 PyPI 下载命令，明确 wheel 和 sdist 需要分别下载后再验证 attestation。
 - v4.8.19：把 consumer-side hash-locked PyPI install 纳入 post-release smoke，可验证发布包能通过 `--require-hashes` 从本地 wheelhouse 安装。
+- v4.8.20：给 GHCR release digest 增加 Sigstore Cosign keyless image signature，并把签名验证纳入 full post-release smoke。
 
 ### 下一阶段
 
 - 增加更多真实生态 adapter examples，包括跨仓 MCP client config、OpenAI Agents SDK scaffold 和 Claude Skills bundle 的负例 fixtures。
-- 继续推进 image signing、full OS layer SBOM 和 OpenSSF Scorecard hygiene；自动化 `pip install`
+- 继续推进 full OS layer SBOM、formal SLSA 前置条件和 OpenSSF Scorecard hygiene；自动化 `pip install`
   路径已经由 `constraints.txt` gate 覆盖，发布后 hash-locked install 已由 smoke 可选检查覆盖。
 - 围绕 [Agent Fleet Governance](docs/agent-fleet-governance.md) 增加真实 adopter 需要的 adapter fixtures，
   但不把 CLI 扩展成 agent runtime、tenant admin tool 或 multi-agent queue。

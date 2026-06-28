@@ -4,6 +4,7 @@ from scripts.post_release_smoke import (
     build_report,
     fetch_json,
     ghcr_manifest_check,
+    ghcr_signature_check,
     github_token_from_env,
     github_release_check,
     pypi_hash_locked_install_smoke,
@@ -134,6 +135,53 @@ Digest:    sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     assert failed == {"ghcr-required-platforms"}
 
 
+def test_ghcr_signature_check_requires_cosign_cli(monkeypatch):
+    monkeypatch.setattr(smoke.shutil, "which", lambda _name: None)
+
+    checks = ghcr_signature_check(
+        image="ghcr.io/example/project",
+        digest="sha256:" + "a" * 64,
+        repo="example/project",
+        timeout=30,
+    )
+
+    assert checks == [Check("ghcr-cosign-cli", False, "cosign CLI is not available")]
+
+
+def test_ghcr_signature_check_verifies_digest_identity(monkeypatch):
+    captured = {}
+    digest = "sha256:" + "a" * 64
+
+    monkeypatch.setattr(smoke.shutil, "which", lambda _name: "/usr/local/bin/cosign")
+
+    def fake_run_command(command, *, cwd=None, timeout=120):
+        del cwd
+        captured["command"] = command
+        captured["timeout"] = timeout
+        return smoke.subprocess.CompletedProcess(command, 0, "Verified OK\n", "")
+
+    monkeypatch.setattr(smoke, "run_command", fake_run_command)
+
+    checks = ghcr_signature_check(
+        image="ghcr.io/example/project",
+        digest=digest,
+        repo="example/project",
+        timeout=42,
+    )
+
+    assert checks == [Check("ghcr-cosign-signature", True, "cosign signature verified")]
+    assert captured["timeout"] == 42
+    assert captured["command"] == [
+        "cosign",
+        "verify",
+        "--certificate-identity-regexp",
+        r"^https://github\.com/example/project/\.github/workflows/ghcr\.yml@refs/(tags|heads)/.+$",
+        "--certificate-oidc-issuer",
+        "https://token.actions.githubusercontent.com",
+        f"ghcr.io/example/project@{digest}",
+    ]
+
+
 def test_main_retries_until_checks_pass(monkeypatch):
     attempts = []
 
@@ -181,12 +229,12 @@ def test_supports_optional_mcp_runtime_starts_at_4_8_0():
 
 
 def test_wheel_requirement_line_generates_pip_hash(tmp_path):
-    wheel = tmp_path / "skills_orchestrator-4.8.19-py3-none-any.whl"
+    wheel = tmp_path / "skills_orchestrator-4.8.20-py3-none-any.whl"
     wheel.write_bytes(b"fake wheel bytes")
 
     line = wheel_requirement_line(wheel)
 
-    assert line.startswith("skills-orchestrator==4.8.19 --hash=sha256:")
+    assert line.startswith("skills-orchestrator==4.8.20 --hash=sha256:")
     assert len(line.rsplit(":", 1)[1]) == 64
 
 
@@ -238,7 +286,7 @@ def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
         del cwd, timeout
         if command[1:4] == ["-m", "pip", "download"]:
             wheelhouse = command[command.index("--dest") + 1]
-            (smoke.Path(wheelhouse) / "skills_orchestrator-4.8.19-py3-none-any.whl").write_bytes(
+            (smoke.Path(wheelhouse) / "skills_orchestrator-4.8.20-py3-none-any.whl").write_bytes(
                 b"skillops"
             )
             (smoke.Path(wheelhouse) / "click-8.4.2-py3-none-any.whl").write_bytes(b"click")
@@ -251,7 +299,7 @@ def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
             assert "--no-index" in command
             lock_file = smoke.Path(command[command.index("-r") + 1])
             lock_text = lock_file.read_text(encoding="utf-8")
-            assert "skills-orchestrator==4.8.19 --hash=sha256:" in lock_text
+            assert "skills-orchestrator==4.8.20 --hash=sha256:" in lock_text
             assert "click==8.4.2 --hash=sha256:" in lock_text
             return smoke.subprocess.CompletedProcess(command, 0, "installed\n", "")
         if command[1:4] == ["-m", "pip", "check"]:
@@ -260,7 +308,7 @@ def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
             )
         if command[-1] == "--version":
             return smoke.subprocess.CompletedProcess(
-                command, 0, "skills-orchestrator, version 4.8.19\n", ""
+                command, 0, "skills-orchestrator, version 4.8.20\n", ""
             )
         raise AssertionError(f"unexpected command: {command}")
 
@@ -268,7 +316,7 @@ def test_pypi_hash_locked_install_smoke_builds_local_wheelhouse(monkeypatch):
 
     checks = pypi_hash_locked_install_smoke(
         package="skills-orchestrator",
-        version="4.8.19",
+        version="4.8.20",
         python="python3.12",
         timeout=30,
     )

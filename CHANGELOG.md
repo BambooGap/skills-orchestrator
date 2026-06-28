@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.20] - 2026-06-28
+
+### Added
+- Added Sigstore Cosign keyless signing for GHCR release image digests and verified the signature in
+  the GHCR publishing workflow.
+- Added a `--check-ghcr-signature` post-release smoke option that verifies the release image digest
+  against the repository's `ghcr.yml` workflow identity.
+
+### Changed
+- The GitHub Actions `Post-release Smoke` workflow now installs Cosign and includes GHCR signature
+  verification when `full_smoke` is enabled.
+- Updated supply-chain, Docker, release verification, and production adoption docs to describe
+  image signature verification while keeping formal SLSA level and runtime enforcement out of scope.
+
 ## [4.8.19] - 2026-06-28
 
 ### Added

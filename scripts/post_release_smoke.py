@@ -136,6 +136,43 @@ def ghcr_manifest_check(
     return checks
 
 
+def ghcr_signature_check(
+    *,
+    image: str,
+    digest: str,
+    repo: str,
+    timeout: float,
+) -> list[Check]:
+    """Verify a GHCR image digest has a keyless cosign signature from this repo."""
+    if not shutil.which("cosign"):
+        return [Check("ghcr-cosign-cli", False, "cosign CLI is not available")]
+
+    image_ref = f"{image}@{digest}"
+    identity_regexp = (
+        rf"^https://github\.com/{re.escape(repo)}/\.github/workflows/ghcr\.yml@"
+        r"refs/(tags|heads)/.+$"
+    )
+    try:
+        cp = run_command(
+            [
+                "cosign",
+                "verify",
+                "--certificate-identity-regexp",
+                identity_regexp,
+                "--certificate-oidc-issuer",
+                "https://token.actions.githubusercontent.com",
+                image_ref,
+            ],
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return [Check("ghcr-cosign-signature", False, f"timed out after {timeout:.0f}s")]
+
+    output = (cp.stdout or cp.stderr).strip()
+    message = "cosign signature verified" if cp.returncode == 0 else output
+    return [Check("ghcr-cosign-signature", cp.returncode == 0, message)]
+
+
 def run_command(
     command: list[str], *, cwd: Path | None = None, timeout: float = 120
 ) -> subprocess.CompletedProcess[str]:
@@ -557,6 +594,7 @@ def collect_checks(args: argparse.Namespace) -> list[Check]:
                         )
                     )
                 else:
+                    digest, _, _ = parse_imagetools_output(cp.stdout)
                     checks.extend(
                         ghcr_manifest_check(
                             cp.stdout,
@@ -564,6 +602,24 @@ def collect_checks(args: argparse.Namespace) -> list[Check]:
                             require_attestations=not args.no_ghcr_attestations,
                         )
                     )
+                    if args.check_ghcr_signature:
+                        if digest is None:
+                            checks.append(
+                                Check(
+                                    "ghcr-cosign-signature",
+                                    False,
+                                    f"could not resolve digest for {ref}",
+                                )
+                            )
+                        else:
+                            checks.extend(
+                                ghcr_signature_check(
+                                    image=args.image,
+                                    digest=digest,
+                                    repo=args.repo,
+                                    timeout=args.timeout,
+                                )
+                            )
 
     if args.check_pypi_install:
         checks.extend(
@@ -603,6 +659,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-ghcr", action="store_true")
     parser.add_argument("--check-pypi-install", action="store_true")
     parser.add_argument("--check-pypi-hash-lock", action="store_true")
+    parser.add_argument("--check-ghcr-signature", action="store_true")
     parser.add_argument("--check-new-user-path", action="store_true")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument(
