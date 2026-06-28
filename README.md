@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.32-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.33-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -17,9 +17,9 @@ on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.32` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.32` release tag | `BambooGap/skills-orchestrator@v4.8.32` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.32` |
+| OSS CLI | `v4.8.33` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.33` release tag | `BambooGap/skills-orchestrator@v4.8.33` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.33` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -83,7 +83,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.32 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.33 --version
 ```
 
 ### 初始化项目
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.32
+      - uses: BambooGap/skills-orchestrator@v4.8.33
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -208,7 +208,9 @@ enterprise gate：
 - [Production Adoption](docs/production-adoption.md): 生产 CI 接入的 SHA pin、Docker digest、PyPI version pin、证据保留和 runtime 边界。
 - [Supply Chain Verification](docs/supply-chain-verification.md): 验证 PyPI wheel/sdist attestations、GHCR provenance/SBOM attestations、digest 和 hash-lock 边界。
 - [External Pilot Intake](docs/external-pilot-intake.md): 外部仓库试点前的 go / no-go 清单。
+- [Pilot Evidence Pack](docs/pilot-evidence-pack.md): 真实外部仓库试点的 artifact handoff、review agenda 和 promotion decision 清单。
 - [External Pilot Record](examples/external-pilot-record/README.md): 用 schema-valid artifact 记录外部试点、promotion decision 和公开 listing consent。
+- [Pilot Case Study Template](docs/pilot-case-study-template.md): 只有在 public listing consent 获批后才使用的公开案例模板。
 - [Adoption Maturity Model](docs/adoption-maturity-model.md): 从本地试点到多仓治理的分级准入标准。
 - [Agent Fleet Governance](docs/agent-fleet-governance.md): 多 Agent、多租户、多项目指令资产治理边界。
 - [Supervisor Governance](docs/supervisor-governance.md): 总控 Agent、子 Agent、交接、权限和证据的治理模型。
@@ -858,9 +860,13 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
   GitHub 侧按 MIT 检测、Apache-2.0 仍通过 `LICENSE-APACHE` 提供，减少双许可第一眼误读。
 - v4.8.32：增加 `external-pilot-record` preview schema 和示例，把外部仓库试点交接记录、
   promotion decision 与公开 adopter listing consent 做成可验证 artifact。
+- v4.8.33：增加 pilot evidence pack 和 public case-study template，把真实外部仓库试点的
+  artifact handoff、review agenda、promotion decision 与公开引用授权流程写成可执行材料。
 
 ### 下一阶段
 
+- 优先把 `docs/pilot-evidence-pack.md` 用在真实外部仓库 pilot，生成 validated
+  `external-pilot-record`，并在 public listing consent 获批后沉淀真实 case study。
 - 增加更多真实生态 adapter examples，包括跨仓 MCP client config、OpenAI Agents SDK scaffold 和 Claude Skills bundle 的负例 fixtures。
 - 继续推进 formal SLSA 前置条件、OS SBOM 漏洞扫描策略和 OpenSSF Scorecard hygiene；SLSA readiness
   map 已可生成和 schema validate，但不等同于 formal SLSA level。

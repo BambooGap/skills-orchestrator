@@ -12,7 +12,7 @@ Use this page as the team entry point for Skills Orchestrator.
 | Release owner | [Release Verification](release-verification.md), [Supply Chain Verification](supply-chain-verification.md), [SLSA Readiness](slsa-readiness.md), [Release Rollback](release-rollback.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence and a rollback path. |
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Consume governed context and preserve workflow state. |
 | External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Third-party Implementation](third-party-implementation.md), [Negative Conformance Fixtures](../examples/negative-conformance/README.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
-| Pilot team | [External Pilot Intake](external-pilot-intake.md), [Adoption Playbook](adoption-playbook.md), [External Pilot Record](../examples/external-pilot-record/README.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo and record pilot decisions. |
+| Pilot team | [External Pilot Intake](external-pilot-intake.md), [Pilot Evidence Pack](pilot-evidence-pack.md), [Adoption Playbook](adoption-playbook.md), [External Pilot Record](../examples/external-pilot-record/README.md), [Pilot Case Study Template](pilot-case-study-template.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Copy a realistic starter pack into one production-like repo, retain review evidence, and record pilot decisions. |
 | Agent ecosystem integrator | [Agent Fleet Governance](agent-fleet-governance.md), [Supervisor Governance](supervisor-governance.md), [Agent Handoff Contract Example](../examples/agent-handoff/README.md), [Agent Runtime Image Contract Example](../examples/agent-runtime-image/README.md), [Adapters](adapters.md), [Adapter Evidence Example](../examples/adapter-evidence/README.md), [Conformance](../CONFORMANCE.md) | Generate governed agent-surface, handoff, and runtime-image evidence from one SkillOps config. |
 | Commercial product owner | [Open-core Boundary](open-core-boundary.md), [GitHub App Blueprint](github-app.md), [Hosted Registry](hosted-registry.md), [Enterprise Dashboard](enterprise-dashboard.md) | Build hosted products around OSS artifact contracts. |
 
@@ -49,7 +49,9 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Demo Repo](../examples/demo-repo/README.md): runnable end-to-end demo for PR review and evidence generation.
 - [Adoption Playbook](adoption-playbook.md): 15-minute pilot path and promotion criteria from advisory to blocking gates.
 - [External Pilot Intake](external-pilot-intake.md): go / no-go checklist for repositories outside this project.
+- [Pilot Evidence Pack](pilot-evidence-pack.md): artifact handoff package for real external repository pilots.
 - [External Pilot Record Example](../examples/external-pilot-record/README.md): machine-valid pilot handoff record that separates technical success from public adopter consent.
+- [Pilot Case Study Template](pilot-case-study-template.md): public case-study structure that requires validated pilot evidence and listing consent.
 - [Pilot Repository Examples](../examples/pilot-repos/README.md): copyable starter packs for Healthchecks, Umami, and Woodpecker-style repositories.
 - [Open-core Boundary](open-core-boundary.md): what stays open-source and what belongs in hosted/enterprise layers.
 - [Commercial Handoff Examples](../examples/commercial-handoff/README.md): schema-valid example payloads for future hosted consumers.
@@ -75,7 +77,9 @@ Use this page as the team entry point for Skills Orchestrator.
 15. Build a multi-repo artifact index from repository evidence manifests.
 16. Validate external consumer payloads for hosted registry or GitHub App pilots.
 17. Validate an external pilot record before counting the pilot as review evidence.
-18. Map governed instruction artifacts to agent surfaces and tenant/project scopes as metadata.
-19. Validate lead/worker handoff and evidence expectations before running supervised agents.
-20. Validate external agent runtime image contracts when workers are packaged as containers.
-21. Enable MCP task-scoped routing when static checks are stable.
+18. Retain a pilot evidence pack before asking for public adopter listing permission.
+19. Use the pilot case-study template only after listing consent is approved.
+20. Map governed instruction artifacts to agent surfaces and tenant/project scopes as metadata.
+21. Validate lead/worker handoff and evidence expectations before running supervised agents.
+22. Validate external agent runtime image contracts when workers are packaged as containers.
+23. Enable MCP task-scoped routing when static checks are stable.
