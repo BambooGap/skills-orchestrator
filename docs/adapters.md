@@ -28,11 +28,17 @@ skills-orchestrator adapters export claude-skills \
   --config config/skills.yaml \
   --output-dir .claude/skills \
   --manifest-output claude-skills-export.json
+
+skills-orchestrator schema validate \
+  --kind claude-skills-export \
+  --input claude-skills-export.json
 ```
 
 The exporter writes one `*/SKILL.md` bundle per SkillOps skill and preserves governance metadata
 such as `owner`, `source`, `version`, `license`, review windows, and import `provenance` in
-frontmatter. Those bundles can be read back through `skill_dirs` for round-trip fixture tests.
+frontmatter. The manifest is a registered SkillOps schema contract, so CI can prove the export
+surface before a downstream agent runtime imports the generated bundles. Those bundles can be read
+back through `skill_dirs` for round-trip fixture tests.
 
 This is a file-format bridge only. It does not call Claude, install Claude Code, or assume runtime
 reload semantics.
@@ -89,10 +95,18 @@ skills-orchestrator adapters export openai-agents-sdk \
   --output evidence/openai_skillops_agent.py \
   --force
 
-python -m py_compile evidence/openai_skillops_agent.py
+python3.12 -m py_compile evidence/openai_skillops_agent.py
 
 skills-orchestrator adapters inspect --path . --format json \
   > evidence/adapter-inspect.json
+
+skills-orchestrator schema validate \
+  --kind claude-skills-export \
+  --input evidence/claude-skills-export.json
+
+skills-orchestrator schema validate \
+  --kind adapter-inspect \
+  --input evidence/adapter-inspect.json
 ```
 
 The fixture proves adapter artifact generation and inspection. It deliberately avoids runtime model

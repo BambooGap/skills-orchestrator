@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/claude-skills-export.schema.json",
+  "title": "Skills Orchestrator Claude Skills Export Manifest",
+  "type": "object",
+  "required": ["schema_version", "config", "output_dir", "summary", "skills"],
+  "properties": {
+    "schema_version": { "const": "skills-orchestrator.claude-skills-export.v1" },
+    "config": { "type": "string", "minLength": 1 },
+    "output_dir": { "type": "string", "minLength": 1 },
+    "summary": {
+      "type": "object",
+      "required": ["exported"],
+      "properties": {
+        "exported": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "path"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+          },
+          "source": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "summary": {
+            "properties": {
+              "exported": { "const": 0 }
+            },
+            "required": ["exported"]
+          }
+        },
+        "required": ["summary"]
+      },
+      "then": {
+        "properties": {
+          "skills": { "maxItems": 0 }
+        }
+      }
+    }
+  ],
+  "additionalProperties": true
+}

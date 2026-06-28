@@ -509,6 +509,36 @@ Supported surface ids in v1:
 | `mcp-client-config` | Valid MCP client JSON config with an `mcpServers` object. |
 | `openai-agents-sdk` | Declared OpenAI Agents SDK dependency surface. |
 
+## Claude Skills Export Manifest Contract
+
+Claude Skills export writes generated `*/SKILL.md` bundles and may emit a manifest. The registered
+schema kind is `claude-skills-export`, backed by `claude-skills-export.schema.json`.
+
+```bash
+skills-orchestrator adapters export claude-skills \
+  --config config/skills.yaml \
+  --output-dir .claude/skills \
+  --manifest-output claude-skills-export.json \
+  --force
+
+skills-orchestrator schema validate \
+  --kind claude-skills-export \
+  --input claude-skills-export.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `skills-orchestrator.claude-skills-export.v1`. |
+| `config` | Source SkillOps config path used for export. |
+| `output_dir` | Directory containing generated Claude-style skill bundles. |
+| `summary.exported` | Number of exported skills. |
+| `skills[]` | Exported skill entries with `id`, source path, and generated bundle path. |
+
+This manifest proves file-format export coverage. It MUST NOT be treated as proof that Claude Code
+or another runtime loaded the generated bundles.
+
 ## Supply-chain SBOM Contract
 
 The package SBOM command emits CycloneDX JSON for the Python package distribution surface. The

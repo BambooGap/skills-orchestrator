@@ -116,7 +116,7 @@ After PyPI and GHCR workflows finish, run the machine-readable public artifact s
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.8 \
+  --version v4.8.9 \
   --retries 8 \
   --retry-delay 15 \
   --format json > post-release-smoke.json
@@ -130,7 +130,7 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.8 \
+  --version v4.8.9 \
   --retries 8 \
   --retry-delay 20 \
   --check-pypi-install \
@@ -155,7 +155,7 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.8.8`. The workflow runs `full_smoke`
+Use the release tag as the `version` input, for example `v4.8.9`. The workflow runs `full_smoke`
 by default so the retained report covers public artifact metadata, PyPI clean install, the
 starter-kit adopter path, and the default-install MCP extra hint. Disable `full_smoke` only when
 you intentionally want a faster metadata-only check. The workflow uploads `post-release-smoke.json`

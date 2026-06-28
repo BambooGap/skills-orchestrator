@@ -44,10 +44,14 @@ skills-orchestrator adapters export openai-agents-sdk \
   --output evidence/openai_skillops_agent.py \
   --force
 
-python -m py_compile evidence/openai_skillops_agent.py
+python3.12 -m py_compile evidence/openai_skillops_agent.py
 
 skills-orchestrator adapters inspect --path . --format json \
   > evidence/adapter-inspect.json
+
+skills-orchestrator schema validate \
+  --kind claude-skills-export \
+  --input evidence/claude-skills-export.json
 
 skills-orchestrator schema validate \
   --kind adapter-inspect \

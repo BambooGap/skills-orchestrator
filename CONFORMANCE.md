@@ -192,6 +192,10 @@ skills-orchestrator adapters export claude-skills \
   --output-dir .claude/skills \
   --manifest-output evidence/claude-skills-export.json \
   --force
+
+skills-orchestrator schema validate \
+  --kind claude-skills-export \
+  --input evidence/claude-skills-export.json
 ```
 
 Projects using OpenAI Agents SDK MAY generate a scaffold and compile it:
@@ -201,7 +205,7 @@ skills-orchestrator adapters export openai-agents-sdk \
   --config config/skills.yaml \
   --output evidence/openai_skillops_agent.py
 
-python -m py_compile evidence/openai_skillops_agent.py
+python3.12 -m py_compile evidence/openai_skillops_agent.py
 ```
 
 ### Level 5: Multi-repo Artifact Index

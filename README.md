@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.8-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.9-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -14,9 +14,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.8` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.8` release tag | `BambooGap/skills-orchestrator@v4.8.8` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.8` |
+| OSS CLI | `v4.8.9` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.9` release tag | `BambooGap/skills-orchestrator@v4.8.9` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.9` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -80,7 +80,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.8 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.9 --version
 ```
 
 ### 初始化项目
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.8
+      - uses: BambooGap/skills-orchestrator@v4.8.9
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -330,8 +330,9 @@ SkillOps CI workflow、lock 和 `AGENTS.md` 证据；`maintainer` profile 才额
 多仓场景下，`evidence index` 会把多个仓库的 evidence manifest 聚合成
 `multi-repo-artifacts.json`，供平台团队和 hosted registry 类外部消费者读取。
 `schema validate` 可单独验证 config、check、CI explainability、manifest、policy OPA input、
-doctor、registry、registry graph、registry diff、multi-repo artifacts、adapter inspection、SBOM、dashboard snapshot/rollup、
-agent handoff 和 commercial handoff 文件合同。`schema list --format json` 现在输出可验证的
+doctor、registry、registry graph、registry diff、multi-repo artifacts、adapter inspection、
+Claude Skills export manifest、SBOM、dashboard snapshot/rollup、agent handoff 和 commercial
+handoff 文件合同。`schema list --format json` 现在输出可验证的
 `schema-catalog`，包含每个合同的 `contract_id`、`stability`、`since` 和目标消费者，
 适合平台团队做自动发现和兼容性审计；`schema audit` 会自检所有打包 schema 和
 catalog 元数据，是 v4 线的合同自审计 gate。
@@ -348,6 +349,16 @@ skills-orchestrator adapters inspect --path . --format json \
 skills-orchestrator adapters export mcp-client-config \
   --config config/skills.yaml \
   --output mcp-client.json
+
+skills-orchestrator adapters export claude-skills \
+  --config config/skills.yaml \
+  --output-dir .claude/skills \
+  --manifest-output claude-skills-export.json \
+  --force
+
+skills-orchestrator schema validate \
+  --kind claude-skills-export \
+  --input claude-skills-export.json
 
 skills-orchestrator adapters export openai-agents-sdk \
   --config config/skills.yaml \
