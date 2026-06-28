@@ -85,6 +85,19 @@ class ValidationResult:
 
 
 SCHEMAS: dict[str, SchemaDescriptor] = {
+    "agent-handoff": SchemaDescriptor(
+        kind="agent-handoff",
+        filename="agent-handoff.schema.json",
+        title="Agent Handoff Contract",
+        description=(
+            "Preview contract for supervisor-to-worker delegation, tenant scope, tool boundaries, "
+            "evaluation gates, and evidence requirements."
+        ),
+        contract_id="skills-orchestrator.agent-handoff.v1",
+        stability="preview",
+        since="v4.8.8",
+        consumers=("agent-runtime", "ci", "platform-review"),
+    ),
     "adapter-inspect": SchemaDescriptor(
         kind="adapter-inspect",
         filename="adapter-inspect.schema.json",

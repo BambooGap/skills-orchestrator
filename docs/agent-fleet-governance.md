@@ -1,6 +1,6 @@
 # Agent Fleet Governance
 
-> Status: v4.8.7 adoption guidance.
+> Status: v4.8.8 adoption guidance.
 >
 > Scope: governance for AI instruction artifacts used by multi-agent, multi-tenant, and
 > multi-project systems. This is not a runtime orchestration specification.
@@ -190,8 +190,16 @@ The v4.x rule is intentionally conservative:
 
 - document these concepts,
 - keep current schema stable,
-- add fixtures only after a real adapter or adopter needs them,
+- add preview fixtures for concrete review surfaces without claiming runtime enforcement,
 - do not force all teams to model tenants and clusters before they have them.
+
+The preview `agent-handoff` contract is the first concrete fixture for this layer:
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/release-review-handoff.json
+```
 
 ## A2A And Protocol Strategy
 
@@ -252,6 +260,8 @@ Exit criteria:
 - Each production agent surface has an owner and evidence manifest.
 - Each externally imported skill has provenance, license, source commit, and review metadata.
 - Each project or cluster has a documented policy pack and evidence export path.
+- Lead/worker handoffs validate against the preview `agent-handoff` schema when supervised agents
+  are in scope.
 - CI explains why an instruction artifact was blocked before runtime.
 
 ## v4.x And v5.x Roadmap Boundary

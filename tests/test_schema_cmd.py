@@ -83,6 +83,7 @@ def test_schema_resources_are_packaged_and_loadable():
     kinds = {descriptor.kind for descriptor in list_schema_descriptors()}
 
     assert {
+        "agent-handoff",
         "adapter-inspect",
         "check",
         "ci-explainability",
@@ -146,6 +147,10 @@ def test_schema_resources_are_packaged_and_loadable():
         (
             "enterprise-dashboard-rollup",
             "examples/commercial-handoff/dashboard-rollup.json",
+        ),
+        (
+            "agent-handoff",
+            "examples/agent-handoff/release-review-handoff.json",
         ),
     ],
 )
@@ -243,9 +248,12 @@ def test_schema_list_json(tmp_path):
     payload = json.loads(result.output)
     assert payload["schema_version"] == "skills-orchestrator.schema-catalog.v1"
     schemas = {schema["kind"]: schema for schema in payload["schemas"]}
+    assert "agent-handoff" in schemas
     assert "config" in schemas
     assert schemas["config"]["stability"] == "stable"
     assert schemas["config"]["contract_id"] == "skills-orchestrator.config.v1"
+    assert schemas["agent-handoff"]["stability"] == "preview"
+    assert schemas["agent-handoff"]["contract_id"] == "skills-orchestrator.agent-handoff.v1"
     assert schemas["enterprise-dashboard-rollup"]["stability"] == "preview"
     catalog_file = tmp_path / "schema-catalog.json"
     catalog_file.write_text(result.output, encoding="utf-8")
@@ -343,6 +351,37 @@ def test_github_app_installation_rejects_overbroad_permissions(tmp_path):
     assert result.exit_code == 1
     result_payload = json.loads(result.output)
     assert any(error["path"].startswith("$.permissions") for error in result_payload["errors"])
+
+
+def test_agent_handoff_rejects_privileged_worker_without_human_approval(tmp_path):
+    input_file = (
+        Path(__file__).resolve().parents[1]
+        / "examples"
+        / "agent-handoff"
+        / "invalid-privileged-worker.json"
+    )
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "schema",
+            "validate",
+            "--kind",
+            "agent-handoff",
+            "--input",
+            str(input_file),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 1
+    result_payload = json.loads(result.output)
+    assert any(
+        error["path"] == "$.workers[0].requires_human_approval"
+        for error in result_payload["errors"]
+    )
 
 
 def _write_artifacts(config, root):
@@ -479,3 +518,10 @@ rules:
             (repo_examples / name).read_text(encoding="utf-8"),
             encoding="utf-8",
         )
+    agent_handoff = root / "examples" / "agent-handoff"
+    agent_handoff.mkdir(parents=True)
+    repo_handoff_examples = Path(__file__).resolve().parents[1] / "examples" / "agent-handoff"
+    (agent_handoff / "release-review-handoff.json").write_text(
+        (repo_handoff_examples / "release-review-handoff.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )

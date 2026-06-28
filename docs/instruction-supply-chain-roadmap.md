@@ -1,6 +1,6 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.7 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.8 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, and supervisor governance
 > guidance.
 >
@@ -298,13 +298,15 @@ enforce permission, tenant, budget, timeout, evidence, and audit boundaries.
 Delivered:
 
 - `docs/supervisor-governance.md` as the lead/worker/handoff/evidence boundary model.
+- `agent-handoff` preview schema and `examples/agent-handoff/` fixtures for machine-checkable
+  supervisor/worker delegation, tenant scope, tool boundary, evidence, and evaluation gates.
 - README, documentation index, and agent fleet governance links.
 - Roadmap language that distinguishes a conversational thread list from a real supervisor control
   loop.
 
 Next:
 
-- Add lead/worker/handoff fixtures only when a downstream runtime or adopter can consume them.
+- Expand lead/worker/handoff fixtures only when a downstream runtime or adopter can consume them.
 - Keep worker scheduling, queues, retries, and provider permissions outside the core CLI.
 - Treat future supervisor manifests as preview contracts until at least two adapter surfaces need
   the same metadata.

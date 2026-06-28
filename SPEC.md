@@ -10,7 +10,7 @@ Normative terms use RFC 2119 meanings: MUST, MUST NOT, SHOULD, MAY.
 
 ## Scope
 
-SkillOps Contract v1 covers nine artifact families:
+SkillOps Contract v1 covers ten artifact families:
 
 - skill metadata in `skills.yaml` and skill frontmatter,
 - schema catalog metadata for public contract discovery,
@@ -20,6 +20,7 @@ SkillOps Contract v1 covers nine artifact families:
 - registry diff JSON and Markdown,
 - evidence bundle manifests,
 - multi-repository artifact indexes,
+- preview agent handoff contracts,
 - adapter inspection reports.
 
 SARIF, CycloneDX, OPA/Rego, MCP, and AGENTS.md remain upstream or adjacent standards. This contract
@@ -443,6 +444,35 @@ The multi-repo index is derived from evidence manifests and referenced artifacts
 source of truth for skill definitions, CI decisions, hosted registry state, dashboard state, agent
 runs, or runtime orchestration. Consumers that need per-repository detail SHOULD dereference the
 underlying `evidence-manifest.json` path and validate the referenced artifact contracts directly.
+
+## Agent Handoff Contract
+
+The agent handoff contract is a preview artifact for supervisor-to-worker delegation metadata. The
+registered schema kind is `agent-handoff`, backed by `agent-handoff.schema.json`.
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/release-review-handoff.json
+```
+
+The root object MUST include:
+
+| Field | Constraint |
+| --- | --- |
+| `schema_version` | MUST be `skills-orchestrator.agent-handoff.v1`. |
+| `handoff` | Handoff id, mode, owner, creation time, source, and status. |
+| `tenant_scope` | Provider, project, environment, and optional tenant / cluster metadata. |
+| `supervisor` | Lead agent identity, role, allowed actions, and denied actions. |
+| `workers` | One or more worker contracts with purpose, permission mode, allowed tools, denied tools, context, and required outputs. |
+| `task` | Delegated work id, summary, scope, inputs, expected outputs, stop condition, and retry limit. |
+| `evidence` | Required and produced SkillOps artifacts for the handoff. |
+| `evaluation` | Gates and reviewers required before accepting worker output. |
+
+Privileged workers MUST explicitly set `requires_human_approval: true`. Implementations MUST NOT
+treat a valid `agent-handoff` artifact as proof that a runtime executed workers, enforced tenant
+boundaries, or applied provider budgets. It is a reviewable contract that runtimes and CI can
+consume before execution.
 
 ## Adapter Inspection Contract
 

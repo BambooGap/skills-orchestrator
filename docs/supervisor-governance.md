@@ -1,6 +1,6 @@
 # Supervisor Governance Model
 
-> Status: v4.8.7 adoption guidance.
+> Status: v4.8.8 adoption guidance.
 >
 > Scope: how a lead agent can coordinate specialized agents without turning Skills Orchestrator
 > into a runtime scheduler.
@@ -126,10 +126,27 @@ supervisor_contract:
       - evidence-manifest
 ```
 
-Skills Orchestrator should treat this kind of structure as a future adapter or manifest surface, not
-as a mandatory v4 schema. The immediate value is that teams can reason about agent governance with
-the same nouns across Codex, Claude Code, OpenAI Agents SDK, A2A-facing services, queues, or their
-own internal runtime.
+Skills Orchestrator now treats this structure as a preview artifact contract through
+`agent-handoff` schema validation. It is still not a runtime scheduler: the immediate value is that
+teams can reason about agent governance with the same nouns across Codex, Claude Code, OpenAI
+Agents SDK, A2A-facing services, queues, or their own internal runtime.
+
+Validate the example contract:
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/release-review-handoff.json
+```
+
+The negative fixture intentionally fails when a privileged worker lacks explicit human approval:
+
+```bash
+skills-orchestrator schema validate \
+  --kind agent-handoff \
+  --input examples/agent-handoff/invalid-privileged-worker.json \
+  --format json
+```
 
 ## Handoff Lifecycle
 
@@ -172,7 +189,8 @@ control plane.
 - Keep `check`, `schema`, `evidence`, `registry`, `conformance`, `release trust`, adapters, and
   post-release smoke as the core.
 - Document supervisor and worker governance boundaries.
-- Add fixtures only for concrete adapter surfaces.
+- Keep `agent-handoff` as a preview schema-backed fixture for concrete supervisor/worker handoff
+  review.
 - Keep all supervisor, tenant, and cluster fields optional guidance until real adopters need schema
   enforcement.
 

@@ -241,7 +241,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.7
+      - uses: BambooGap/skills-orchestrator@v4.8.8
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -261,6 +261,10 @@ the same commands in `examples/demo-repo/README.md`.
 `examples/adapter-evidence/` is the Level 4 adapter evidence fixture. It generates Claude Skills
 bundles, an MCP client config, and an OpenAI Agents SDK scaffold from one SkillOps config, then
 validates adapter inspection evidence.
+
+`examples/agent-handoff/` is the preview supervisor/worker handoff fixture. It validates tenant
+scope, worker permission mode, tool boundaries, evidence requirements, and evaluation gates without
+claiming that Skills Orchestrator runs worker agents.
 
 ## Claims
 

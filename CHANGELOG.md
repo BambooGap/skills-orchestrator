@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.8] - 2026-06-28
+
+### Added
+- Added the preview `agent-handoff` schema for supervisor-to-worker delegation metadata,
+  tenant scope, tool boundaries, evidence requirements, and evaluation gates.
+- Added `examples/agent-handoff/` with a valid release-review handoff fixture and an invalid
+  privileged-worker fixture that must fail without explicit human approval.
+- Documented the agent handoff preview contract in README, SPEC, Supervisor Governance, Agent
+  Fleet Governance, registry/evidence docs, and third-party implementation guidance.
+
+### Changed
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.8`.
+
 ## [4.8.7] - 2026-06-28
 
 ### Added
