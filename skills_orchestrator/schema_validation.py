@@ -108,6 +108,16 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v3.0.0",
         consumers=("ci", "platform-review", "agent-adapters"),
     ),
+    "claude-skills-export": SchemaDescriptor(
+        kind="claude-skills-export",
+        filename="claude-skills-export.schema.json",
+        title="Claude Skills Export Manifest",
+        description="Manifest emitted by adapters export claude-skills for round-trip fixtures.",
+        contract_id="skills-orchestrator.claude-skills-export.v1",
+        stability="stable",
+        since="v4.8.9",
+        consumers=("ci", "platform-review", "agent-adapters"),
+    ),
     "config": SchemaDescriptor(
         kind="config",
         filename="skills-config.schema.json",

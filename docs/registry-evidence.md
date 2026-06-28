@@ -173,12 +173,12 @@ skills-orchestrator schema validate --kind schema-audit --input evidence/schema-
 ```
 
 SARIF and CycloneDX keep using their upstream schemas; Skills Orchestrator only owns its native
-config and artifact contracts. The schema catalog declares each native contract's `contract_id`,
-`stability`, `since`, and intended consumers so platform teams can audit compatibility without
-scraping docs. The schema audit report verifies packaged schema loadability and catalog metadata
-without reading project skill files. The agent handoff and commercial handoff schemas are additive
-preview contracts for future supervised-agent runtimes, GitHub App, hosted registry, and enterprise
-dashboard consumers:
+config and artifact contracts, including adapter inspection and Claude Skills export manifests.
+The schema catalog declares each native contract's `contract_id`, `stability`, `since`, and
+intended consumers so platform teams can audit compatibility without scraping docs. The schema
+audit report verifies packaged schema loadability and catalog metadata without reading project
+skill files. The agent handoff and commercial handoff schemas are additive preview contracts for
+future supervised-agent runtimes, GitHub App, hosted registry, and enterprise dashboard consumers:
 
 ```bash
 skills-orchestrator schema validate \

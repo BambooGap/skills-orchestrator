@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.9] - 2026-06-28
+
+### Added
+- Added the stable `claude-skills-export` schema for Claude Skills export manifests.
+- Validated generated Claude Skills export manifests in the adapter evidence fixture and schema
+  contract tests.
+
+### Changed
+- Documented Claude Skills export manifest validation in README, SPEC, CONFORMANCE, adapter docs,
+  and the adapter evidence example.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.9`.
+
 ## [4.8.8] - 2026-06-28
 
 ### Added

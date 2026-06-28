@@ -1,6 +1,6 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.8 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.9 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, and supervisor governance
 > guidance.
 >
@@ -219,6 +219,7 @@ Delivered:
 - `adapters export claude-skills` with governance metadata preserved in generated `*/SKILL.md`
   bundles.
 - Adapter inspection JSON Schema.
+- Claude Skills export manifest JSON Schema.
 - Claude Skills export unit coverage.
 - `examples/adapter-evidence/` as an executable fixture for Claude Skills export, MCP client
   config, OpenAI Agents SDK scaffold, and adapter inspection evidence.

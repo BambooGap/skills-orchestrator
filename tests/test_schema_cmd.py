@@ -5,6 +5,7 @@ import pytest
 from click.testing import CliRunner
 
 from skills_orchestrator.adapters import inspect_adapters
+from skills_orchestrator.adapters.scaffolds import export_claude_skill_bundles
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.conformance import run_conformance
 from skills_orchestrator.compiler import Parser, Resolver
@@ -86,6 +87,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "agent-handoff",
         "adapter-inspect",
         "check",
+        "claude-skills-export",
         "ci-explainability",
         "config",
         "conformance",
@@ -131,6 +133,7 @@ def test_schema_resources_are_packaged_and_loadable():
         ("registry-diff", "registry-diff.json"),
         ("registry-graph", "registry-graph.json"),
         ("adapter-inspect", "adapter-inspect.json"),
+        ("claude-skills-export", "claude-skills-export.json"),
         ("supply-chain-sbom", "package-sbom.cdx.json"),
         (
             "github-app-installation",
@@ -249,11 +252,17 @@ def test_schema_list_json(tmp_path):
     assert payload["schema_version"] == "skills-orchestrator.schema-catalog.v1"
     schemas = {schema["kind"]: schema for schema in payload["schemas"]}
     assert "agent-handoff" in schemas
+    assert "claude-skills-export" in schemas
     assert "config" in schemas
     assert schemas["config"]["stability"] == "stable"
     assert schemas["config"]["contract_id"] == "skills-orchestrator.config.v1"
     assert schemas["agent-handoff"]["stability"] == "preview"
     assert schemas["agent-handoff"]["contract_id"] == "skills-orchestrator.agent-handoff.v1"
+    assert schemas["claude-skills-export"]["stability"] == "stable"
+    assert (
+        schemas["claude-skills-export"]["contract_id"]
+        == "skills-orchestrator.claude-skills-export.v1"
+    )
     assert schemas["enterprise-dashboard-rollup"]["stability"] == "preview"
     catalog_file = tmp_path / "schema-catalog.json"
     catalog_file.write_text(result.output, encoding="utf-8")
@@ -474,6 +483,15 @@ rules:
     assert index_result.exit_code == 0
     (root / "adapter-inspect.json").write_text(
         json.dumps(inspect_adapters(root), ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    claude_export = export_claude_skill_bundles(
+        str(config),
+        root / ".claude" / "skills",
+        force=True,
+    )
+    (root / "claude-skills-export.json").write_text(
+        json.dumps(claude_export, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     (root / "package-sbom.cdx.json").write_text(

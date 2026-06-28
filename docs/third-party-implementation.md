@@ -16,6 +16,7 @@ A compatible implementation SHOULD support these stable surfaces:
 | Policy packs | Preserve the meaning of built-in policy pack ids such as `builtin/team-standard` and `builtin/engineering-grade` when claiming parity. |
 | Evidence | Produce evidence manifests that validate against `skills-orchestrator.evidence.v1`. |
 | Registry | Produce registry, registry diff, and registry graph artifacts that validate against their v1 schemas. |
+| Claude Skills export | Produce or consume Claude Skills export manifests that validate against `skills-orchestrator.claude-skills-export.v1` when claiming Claude Skills round-trip compatibility. |
 | Conformance | Pass positive conformance checks and fail the public negative fixtures deterministically. |
 | Agent handoff | Treat `agent-handoff` as a preview artifact contract for supervisor/worker delegation metadata, not as proof that a runtime executed workers. |
 
@@ -70,6 +71,9 @@ skills-orchestrator schema validate --kind evidence --input evidence/evidence-ma
 skills-orchestrator schema validate --kind registry --input evidence/skill-registry.json
 skills-orchestrator schema validate --kind registry-diff --input evidence/registry-diff.json
 skills-orchestrator schema validate --kind registry-graph --input evidence/registry-graph.json
+skills-orchestrator schema validate \
+  --kind claude-skills-export \
+  --input evidence/claude-skills-export.json
 skills-orchestrator schema validate \
   --kind agent-handoff \
   --input examples/agent-handoff/release-review-handoff.json

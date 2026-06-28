@@ -13,6 +13,7 @@ from skills_orchestrator.adapters import (
 )
 from skills_orchestrator.compiler import Parser
 from skills_orchestrator.main import cli
+from skills_orchestrator.schema_validation import validate_document
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -319,6 +320,10 @@ def test_adapter_evidence_example_generates_all_surfaces(tmp_path):
 
     manifest = json.loads((evidence / "claude-skills-export.json").read_text(encoding="utf-8"))
     assert manifest["summary"]["exported"] == 2
+    assert validate_document(
+        "claude-skills-export",
+        str(evidence / "claude-skills-export.json"),
+    ).valid
     exported_skill = example / ".claude" / "skills" / "release-trust" / "SKILL.md"
     assert "owner: release-team" in exported_skill.read_text(encoding="utf-8")
 
