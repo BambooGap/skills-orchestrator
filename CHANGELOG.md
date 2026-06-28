@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.28] - 2026-06-28
+
+### Added
+- GitHub Action now runs `schema audit --stability stable` before skill checks by default, so
+  one-line CI adoption also verifies the stable schema contract surface.
+- Added `schema-audit-stability` Action input with `stable`, `preview`, `all`, and `none` modes.
+
 ## [4.8.27] - 2026-06-28
 
 ### Added
