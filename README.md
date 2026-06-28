@@ -5,18 +5,21 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.30-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.31-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
 
 它不替代 Codex、Claude Code、Omnigent、CodeGraph、Superpowers 或业务记忆系统；它位于这些工具之间，负责回答团队最实际的问题：哪些 skills 可以用、谁负责、来源是否可信、CI 是否能阻断、审计证据在哪里，以及下游 agent runtime 应消费哪些经过治理的指令资产。
 
+License: `MIT OR Apache-2.0` at your option. The top-level `LICENSE` keeps GitHub license detection
+on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE-APACHE).
+
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.30` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.30` release tag | `BambooGap/skills-orchestrator@v4.8.30` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.30` |
+| OSS CLI | `v4.8.31` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.31` release tag | `BambooGap/skills-orchestrator@v4.8.31` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.31` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -80,7 +83,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.30 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.31 --version
 ```
 
 ### 初始化项目
@@ -159,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.30
+      - uses: BambooGap/skills-orchestrator@v4.8.31
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -850,6 +853,8 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - v4.8.30：让顶层 `LICENSE` 回到 GitHub 可识别的标准 MIT 文本，同时保留
   `MIT OR Apache-2.0` package metadata 和 `LICENSE-APACHE`；并提高本地 post-release smoke
   默认超时，减少 GHCR attestation 查询的误报。
+- v4.8.31：README 顶部 license badge 改为指向 License section，并在首页顶部说明
+  GitHub 侧按 MIT 检测、Apache-2.0 仍通过 `LICENSE-APACHE` 提供，减少双许可第一眼误读。
 
 ### 下一阶段
 
