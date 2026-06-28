@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.18] - 2026-06-28
+
+### Fixed
+- Corrected the PyPI artifact download commands in `docs/supply-chain-verification.md` so wheel and
+  source distribution files are both downloaded before running `gh attestation verify`.
+
 ## [4.8.17] - 2026-06-28
 
 ### Added
