@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.15-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.16-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -14,9 +14,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.15` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.15` release tag | `BambooGap/skills-orchestrator@v4.8.15` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.15` |
+| OSS CLI | `v4.8.16` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.16` release tag | `BambooGap/skills-orchestrator@v4.8.16` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.16` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -80,7 +80,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.15 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.16 --version
 ```
 
 ### 初始化项目
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.15
+      - uses: BambooGap/skills-orchestrator@v4.8.16
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -202,6 +202,7 @@ enterprise gate：
 - [Demo Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
 - [Negative Conformance Fixtures](examples/negative-conformance/README.md): 可复制的坏输入样本，证明高风险 instruction artifacts 会稳定失败。
 - [Adoption Playbook](docs/adoption-playbook.md): 从 advisory CI 到 blocking gate 的试点路径。
+- [Production Adoption](docs/production-adoption.md): 生产 CI 接入的 SHA pin、Docker digest、PyPI version pin、证据保留和 runtime 边界。
 - [External Pilot Intake](docs/external-pilot-intake.md): 外部仓库试点前的 go / no-go 清单。
 - [Adoption Maturity Model](docs/adoption-maturity-model.md): 从本地试点到多仓治理的分级准入标准。
 - [Agent Fleet Governance](docs/agent-fleet-governance.md): 多 Agent、多租户、多项目指令资产治理边界。
@@ -820,6 +821,7 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 - v4.8.13：修正公开 README / PyPI 长描述中的版本归因，让 runtime image contract 和 release hygiene 的阶段记录保持可信。
 - v4.8.14：打磨新用户 onboarding，明确 `init --template team-standard` 后需要先 `build --lock` 再期待 `doctor` 满分。
 - v4.8.15：收紧 `agent-handoff` preview contract，增加 privileged worker / production handoff 负例 fixtures 和 schema 测试。
+- v4.8.16：补齐 production adoption 文档，把生产 CI 的 Action SHA、Docker digest、PyPI version pin、advisory→blocking 和 runtime 边界写成可执行接入标准。
 
 ### 下一阶段
 

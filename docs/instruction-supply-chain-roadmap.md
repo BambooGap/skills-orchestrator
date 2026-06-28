@@ -1,6 +1,6 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.15 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.16 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > and external agent runtime image contracts.
 >
