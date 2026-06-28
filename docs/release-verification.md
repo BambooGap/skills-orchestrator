@@ -107,6 +107,8 @@ Verify:
 - CodeQL workflow completed or is intentionally skipped for the tag.
 - GHCR workflow published the release image when container publishing is enabled.
 - GHCR image provenance and SBOM attestations are attached to the resolved image digest.
+- PyPI wheel/sdist attestations and GHCR provenance/SBOM attestations verify with
+  [Supply Chain Verification](supply-chain-verification.md) before a production pin is promoted.
 - Local container provenance, SBOM subject, and SBOM hash binding pass
   `supply-chain verify-container-release`.
 
@@ -116,7 +118,7 @@ After PyPI and GHCR workflows finish, run the machine-readable public artifact s
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.16 \
+  --version v4.8.17 \
   --retries 8 \
   --retry-delay 15 \
   --format json > post-release-smoke.json
@@ -130,7 +132,7 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.16 \
+  --version v4.8.17 \
   --retries 8 \
   --retry-delay 20 \
   --check-pypi-install \
@@ -155,20 +157,24 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.8.16`. The workflow runs `full_smoke`
+Use the release tag as the `version` input, for example `v4.8.17`. The workflow runs `full_smoke`
 by default so the retained report covers public artifact metadata, PyPI clean install, the
 starter-kit adopter path, and the default-install MCP extra hint. Disable `full_smoke` only when
 you intentionally want a faster metadata-only check. The workflow uploads `post-release-smoke.json`
 as a retained run artifact so platform teams can review or archive the release verification evidence
 after the job finishes.
 
-## Current Gaps
+## Current Boundaries
 
 The release workflow attests Python distribution artifacts and the GHCR workflow publishes release
-images with digest-bound provenance and SBOM attestations. Image signing, full operating-system
-layer SBOMs, SLSA level claims, and hash-locked Python installs remain future hardening items.
-`verify-container-release` validates local SkillOps release artifacts; it is not a replacement for
-GitHub Artifact Attestation verification against a real GHCR digest.
+images with digest-bound provenance and SBOM attestations. [Supply Chain Verification](supply-chain-verification.md)
+documents consumer-side verification for those attestations.
+
+Image signing, full operating-system layer SBOMs, formal SLSA level claims, and a first-party
+hash-locked Python constraints workflow remain future hardening items. `skills-orchestrator==4.8.17`
+is an exact version pin, not a hash-locked install. `verify-container-release` validates local
+SkillOps release artifacts; it is not a replacement for GitHub Artifact Attestation verification
+against a real GHCR digest.
 
 For consuming repositories, [Production Adoption](production-adoption.md) defines the current
 minimum production posture: full Action SHA pinning, Docker digest execution, PyPI exact-version

@@ -36,24 +36,27 @@ For production CI, pin every moving part:
 | Surface | Minimum production rule |
 | --- | --- |
 | GitHub Action | Pin `actions/checkout` and `BambooGap/skills-orchestrator` to full commit SHAs. |
-| PyPI CLI | Pin an exact version such as `skills-orchestrator==4.8.16`. |
-| Docker image | Pin the GHCR digest, not only `:v4.8.16`. |
+| PyPI CLI | Pin an exact version such as `skills-orchestrator==4.8.17`. |
+| Docker image | Pin the GHCR digest, not only `:v4.8.17`. |
 | Policy pack | Start with `builtin/team-standard`; promote to `builtin/engineering-grade` when owners accept external import and license requirements. |
 | Evidence | Retain `check.json`, SARIF, `ci-explainability.json`, registry outputs, `evidence-manifest.json`, and post-release smoke output. |
 | Rollback | Keep a documented rollback owner and downgrade path before enabling blocking gates. |
+
+Use [Supply Chain Verification](supply-chain-verification.md) before promoting a new SkillOps
+release pin in production CI.
 
 ## Resolve Release Pins
 
 Resolve the action commit from the release tag:
 
 ```bash
-git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.16
+git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.17
 ```
 
 Resolve the image digest:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/bamboogap/skills-orchestrator:v4.8.16
+docker buildx imagetools inspect ghcr.io/bamboogap/skills-orchestrator:v4.8.17
 ```
 
 Use the returned SHA and digest in production workflows. Keep the tag in comments or documentation
@@ -87,7 +90,7 @@ jobs:
           fetch-depth: 0
 
       # Resolve with:
-      # git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.16
+      # git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.17
       - id: skillops
         uses: BambooGap/skills-orchestrator@<skills-orchestrator-release-commit-sha>
         with:
@@ -167,17 +170,18 @@ docker run --rm \
   check --config config/skills.yaml --policy-pack builtin/team-standard --fail-on warning
 ```
 
-The release workflow publishes GHCR SBOM/provenance attestations. `verify-container-release`
-validates local SkillOps container release artifacts, but it is not a substitute for runtime
-admission control, image signing policy, or artifact attestation verification in your deployment
-platform.
+The release workflow publishes GHCR SBOM/provenance attestations. Use
+[Supply Chain Verification](supply-chain-verification.md) to verify the released digest with GitHub
+Artifact Attestations. `verify-container-release` validates local SkillOps container release
+artifacts, but it is not a substitute for runtime admission control, image signing policy, or
+artifact attestation verification in your deployment platform.
 
 ## PyPI In Production CI
 
 For CI hosts that install the CLI directly, pin the version:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator==4.8.16"
+python3.12 -m pip install "skills-orchestrator==4.8.17"
 skills-orchestrator schema audit
 skills-orchestrator check --config config/skills.yaml --policy-pack builtin/team-standard --fail-on warning
 ```
@@ -185,8 +189,12 @@ skills-orchestrator check --config config/skills.yaml --policy-pack builtin/team
 Use the optional MCP extra only when the CI job intentionally runs MCP smoke checks:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator[mcp]==4.8.16"
+python3.12 -m pip install "skills-orchestrator[mcp]==4.8.17"
 ```
+
+Exact version pins are not hash-locked installs. If the organization requires hash locking, generate
+and own a consumer-side lock file as described in
+[Supply Chain Verification](supply-chain-verification.md#consumer-side-hash-locked-install).
 
 ## Runtime Boundary Checklist
 

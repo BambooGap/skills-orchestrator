@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.17] - 2026-06-28
+
+### Added
+- Added `docs/supply-chain-verification.md`, a consumer-side verification guide for PyPI wheel/sdist
+  attestations, GHCR provenance/SBOM attestations, offline attestation bundles, digest resolution,
+  and hash-locked install boundaries.
+
+### Changed
+- Linked supply-chain verification guidance from README, documentation index, Docker docs,
+  production adoption, and release verification so production users can verify artifacts instead of
+  only trusting release tags.
+- Clarified that exact PyPI version pins are not hash-locked installs, and that image signing,
+  formal SLSA level claims, full OS layer SBOMs, and runtime enforcement remain out of scope.
+
 ## [4.8.16] - 2026-06-28
 
 ### Added
