@@ -321,6 +321,7 @@ def _enterprise_evidence(
         "opa_input": "policy-opa-input",
         "doctor": "doctor",
         "registry": "registry",
+        "registry_graph": "registry-graph",
     }
     files = bundle.get("files") or {}
     for label, schema_kind in expected_schema.items():

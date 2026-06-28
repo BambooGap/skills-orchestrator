@@ -13,7 +13,6 @@ from skills_orchestrator import __version__
 from skills_orchestrator.adapters import inspect_adapters
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.evidence import export_evidence_bundle
-from skills_orchestrator.org_registry import build_registry_graph
 from skills_orchestrator.schema_validation import validate_document
 
 
@@ -136,21 +135,13 @@ def run_conformance(
                 )
             )
 
-        registry_artifact = bundle["files"].get("registry")
-        registry_graph_path = Path(temp_dir) / "registry-graph.json"
-        if registry_artifact:
-            registry_payload = json.loads(Path(registry_artifact).read_text(encoding="utf-8"))
-            registry_graph_path.write_text(
-                json.dumps(build_registry_graph(registry_payload), ensure_ascii=False, indent=2)
-                + "\n",
-                encoding="utf-8",
-            )
+        registry_graph_artifact = bundle["files"].get("registry_graph")
         steps.append(
             _schema_step(
                 "registry-graph",
                 "Registry graph contract",
                 "registry-graph",
-                registry_graph_path,
+                registry_graph_artifact or "",
                 artifact_label="evidence/registry-graph.json",
             )
         )

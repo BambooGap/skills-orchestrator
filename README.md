@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.9-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.10-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -14,9 +14,9 @@
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.9` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.9` release tag | `BambooGap/skills-orchestrator@v4.8.9` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.9` |
+| OSS CLI | `v4.8.10` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.10` release tag | `BambooGap/skills-orchestrator@v4.8.10` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.10` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -80,7 +80,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.9 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.10 --version
 ```
 
 ### 初始化项目
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.9
+      - uses: BambooGap/skills-orchestrator@v4.8.10
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -325,8 +325,9 @@ SkillOps CI workflow、lock 和 `AGENTS.md` 证据；`maintainer` profile 才额
 读取 evidence bundle 并验证核心 artifact schema，适合平台团队试点。`evidence export` 写出
 `check.json`、`check.sarif`、`ci-explainability.json`、`instruction-manifest.json`、
 `policy-opa-input.json`、`policy-proof.rego`、`doctor.json`、`skill-registry.json`、
-`adapter-inspect.json` 和 `package-sbom.cdx.json`，并在 `evidence-manifest.json` 中记录 artifact SHA-256、
-`bundle_hash` 和可选 `previous_bundle_hash`，适合 CI artifact、审计归档或客户交付。
+`registry-graph.json`、`adapter-inspect.json` 和 `package-sbom.cdx.json`，并在
+`evidence-manifest.json` 中记录 artifact SHA-256、`bundle_hash` 和可选
+`previous_bundle_hash`，适合 CI artifact、审计归档或客户交付。
 多仓场景下，`evidence index` 会把多个仓库的 evidence manifest 聚合成
 `multi-repo-artifacts.json`，供平台团队和 hosted registry 类外部消费者读取。
 `schema validate` 可单独验证 config、check、CI explainability、manifest、policy OPA input、

@@ -223,6 +223,7 @@ The bundle writes:
 - `policy-proof.rego`
 - `doctor.json`
 - `skill-registry.json`
+- `registry-graph.json`
 - `adapter-inspect.json`
 - `package-sbom.cdx.json`
 - `evidence-manifest.json`
@@ -230,6 +231,10 @@ The bundle writes:
 `evidence-manifest.json` includes a `ledger` object with `artifact_hashes`, `bundle_hash`, and
 `previous_bundle_hash`. These hashes are useful for release comparison and audit continuity. They
 are not a replacement for signed provenance or external attestation.
+
+`registry-graph.json` is now part of the evidence bundle because it is derived from the same
+registry snapshot. `registry-diff.json` still requires a base and head registry and remains a
+separate PR-review artifact.
 
 Use the folder as a CI artifact or release attachment. It contains metadata and hashes, not raw
 runtime task text.
