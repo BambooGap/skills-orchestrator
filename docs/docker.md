@@ -13,7 +13,7 @@ docker run --rm skills-orchestrator:local --version
 Use the published release image when a CI host should not build the project first:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.18 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.19 --version
 ```
 
 ## Run Against A Repository
@@ -24,7 +24,7 @@ Mount the repository at `/workspace` and run commands from that directory:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.18 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.19 \
   check --config config/skills.yaml
 ```
 
@@ -34,7 +34,7 @@ Generate audit artifacts:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.18 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.19 \
   manifest --config config/skills.yaml --format cyclonedx \
   --output instruction-manifest.cdx.json
 ```
@@ -42,10 +42,10 @@ docker run --rm \
 ## Dependency Policy
 
 The image installs the project with `constraints.txt`. This constrains the dependency set for the
-build, but it is not a hash-locked supply-chain install yet. CI runs
-`scripts/check_pip_constraints.py` so automation cannot accidentally add an unconstrained
-`pip install` path. The image does not run an unpinned pip upgrade step and runs the CLI as a
-non-root user.
+build, while post-release smoke verifies that the published PyPI package can also install from a
+consumer-side `--require-hashes` wheelhouse. CI runs `scripts/check_pip_constraints.py` so automation
+cannot accidentally add an unconstrained `pip install` path. The image does not run an unpinned pip
+upgrade step and runs the CLI as a non-root user.
 
 The Docker base image is pinned to the `python:3.12.13-slim-trixie` manifest-list digest in the
 Dockerfile. CI runs `scripts/check_docker_base_digest.py` so future Dockerfile changes cannot
@@ -79,5 +79,4 @@ See [Supply Chain Verification](supply-chain-verification.md) for the consuming-
 that verify the GHCR provenance and CycloneDX SBOM attestations against the release tag and
 workflow identity.
 
-Future hardening should add independent image signing and move Docker/CI to a first-party
-hash-locked constraints workflow.
+Future hardening should add independent image signing and a full operating-system layer SBOM.

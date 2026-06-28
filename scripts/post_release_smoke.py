@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -139,6 +140,17 @@ def run_command(
     command: list[str], *, cwd: Path | None = None, timeout: float = 120
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, cwd=cwd, text=True, capture_output=True, timeout=timeout)
+
+
+def wheel_requirement_line(path: Path) -> str:
+    """Return a hash-locked requirement line for a downloaded wheel file."""
+    parts = path.name.split("-")
+    if len(parts) < 5 or not path.name.endswith(".whl"):
+        raise ValueError(f"not a wheel filename: {path.name}")
+    name = parts[0].replace("_", "-")
+    version = parts[1]
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    return f"{name}=={version} --hash=sha256:{digest}"
 
 
 def supports_optional_mcp_runtime(version: str) -> bool:
@@ -334,6 +346,146 @@ def pypi_install_smoke(
     return checks
 
 
+def pypi_hash_locked_install_smoke(
+    *,
+    package: str,
+    version: str,
+    python: str,
+    timeout: float,
+) -> list[Check]:
+    """Verify a released package can install from a local wheelhouse with pip hashes."""
+    normalized = normalize_version(version)
+    checks: list[Check] = []
+    with tempfile.TemporaryDirectory(prefix="skillops-hash-lock-") as temp_dir:
+        root = Path(temp_dir)
+        wheelhouse = root / "wheelhouse"
+        wheelhouse.mkdir()
+        lock_file = root / "requirements.lock"
+        try:
+            download = run_command(
+                [
+                    python,
+                    "-m",
+                    "pip",
+                    "download",
+                    "--only-binary=:all:",
+                    "--dest",
+                    str(wheelhouse),
+                    f"{package}=={normalized}",
+                ],
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return [Check("pypi-hash-lock-download", False, f"timed out after {timeout:.0f}s")]
+        wheels = sorted(wheelhouse.glob("*.whl"))
+        checks.append(
+            Check(
+                "pypi-hash-lock-download",
+                download.returncode == 0 and bool(wheels),
+                f"downloaded {len(wheels)} wheels"
+                if download.returncode == 0
+                else (download.stderr or download.stdout).strip(),
+            )
+        )
+        if download.returncode != 0 or not wheels:
+            return checks
+
+        try:
+            lock_file.write_text(
+                "\n".join(wheel_requirement_line(path) for path in wheels) + "\n",
+                encoding="utf-8",
+            )
+        except ValueError as exc:
+            return [*checks, Check("pypi-hash-lock-file", False, str(exc))]
+        checks.append(
+            Check(
+                "pypi-hash-lock-file",
+                True,
+                f"generated {lock_file.name} with {len(wheels)} hashes",
+            )
+        )
+
+        venv = root / "venv"
+        try:
+            cp = run_command([python, "-m", "venv", str(venv)], timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return [
+                *checks,
+                Check("pypi-hash-lock-venv", False, f"timed out after {timeout:.0f}s"),
+            ]
+        if cp.returncode != 0:
+            return [
+                *checks,
+                Check("pypi-hash-lock-venv", False, cp.stderr.strip() or cp.stdout.strip()),
+            ]
+
+        py = venv / "bin" / "python"
+        cli = venv / "bin" / "skills-orchestrator"
+        try:
+            install = run_command(
+                [
+                    str(py),
+                    "-m",
+                    "pip",
+                    "install",
+                    "--no-index",
+                    "--find-links",
+                    str(wheelhouse),
+                    "--require-hashes",
+                    "-r",
+                    str(lock_file),
+                ],
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return [
+                *checks,
+                Check("pypi-hash-lock-install", False, f"timed out after {timeout:.0f}s"),
+            ]
+        checks.append(
+            Check(
+                "pypi-hash-lock-install",
+                install.returncode == 0,
+                "installed from local wheelhouse with --require-hashes"
+                if install.returncode == 0
+                else (install.stderr or install.stdout).strip().splitlines()[-1],
+            )
+        )
+        if install.returncode != 0:
+            return checks
+
+        try:
+            version_cp = run_command([str(cli), "--version"], timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return [
+                *checks,
+                Check("pypi-hash-lock-cli-version", False, f"timed out after {timeout:.0f}s"),
+            ]
+        checks.append(
+            Check(
+                "pypi-hash-lock-cli-version",
+                version_cp.returncode == 0 and normalized in version_cp.stdout,
+                version_cp.stdout.strip() or version_cp.stderr.strip(),
+            )
+        )
+
+        try:
+            pip_check = run_command([str(py), "-m", "pip", "check"], timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return [
+                *checks,
+                Check("pypi-hash-lock-pip-check", False, f"timed out after {timeout:.0f}s"),
+            ]
+        checks.append(
+            Check(
+                "pypi-hash-lock-pip-check",
+                pip_check.returncode == 0,
+                pip_check.stdout.strip() or pip_check.stderr.strip(),
+            )
+        )
+    return checks
+
+
 def print_checks(checks: list[Check], *, as_json: bool) -> None:
     if as_json:
         print(json.dumps(build_report(checks), indent=2, ensure_ascii=False))
@@ -424,6 +576,16 @@ def collect_checks(args: argparse.Namespace) -> list[Check]:
             )
         )
 
+    if args.check_pypi_hash_lock:
+        checks.extend(
+            pypi_hash_locked_install_smoke(
+                package=args.package,
+                version=version,
+                python=args.python,
+                timeout=max(args.timeout, 300),
+            )
+        )
+
     return checks
 
 
@@ -440,6 +602,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-pypi", action="store_true")
     parser.add_argument("--skip-ghcr", action="store_true")
     parser.add_argument("--check-pypi-install", action="store_true")
+    parser.add_argument("--check-pypi-hash-lock", action="store_true")
     parser.add_argument("--check-new-user-path", action="store_true")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument(

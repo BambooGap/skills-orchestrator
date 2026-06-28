@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.19] - 2026-06-28
+
+### Added
+- Added a `--check-pypi-hash-lock` post-release smoke option that downloads the released package
+  and dependency wheelhouse, generates a local `--require-hashes` requirements lock, installs from
+  the wheelhouse, and runs `pip check`.
+
+### Changed
+- The GitHub Actions `Post-release Smoke` workflow now includes the hash-locked PyPI install check
+  when `full_smoke` is enabled.
+
 ## [4.8.18] - 2026-06-28
 
 ### Fixed
