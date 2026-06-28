@@ -1,8 +1,8 @@
 # Skills Orchestrator Roadmap: SkillOps for Agent Instructions
 
-> Status: v4.8.16 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.17 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
-> and external agent runtime image contracts.
+> external agent runtime image contracts, and consumer-side supply-chain verification.
 >
 > Product direction: make agent instructions checkable, reproducible, routable, and consumable
 > by existing CI and supply-chain tooling.
@@ -158,6 +158,8 @@ Deliver:
 - Release checklist that verifies GitHub Release, PyPI, wheel, sdist, CLI version, and package
   metadata.
 - GitHub Artifact Attestations for GHCR image provenance and SBOM, bound to the pushed digest.
+- Consumer-side verification guide for PyPI wheel/sdist attestations, GHCR provenance/SBOM
+  attestations, offline bundles, and exact-version versus hash-locked install boundaries.
 
 Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the next bottleneck;
 distribution and CI integration are.
@@ -184,7 +186,9 @@ Delivered:
 
 Next:
 
-- Hash-locked dependency install after the constraints workflow is stable.
+- First-party hash-locked dependency workflow after the constraints workflow is stable. Consumer
+  repositories can already generate their own hash-locked requirements from the documented
+  verification guide.
 - Image signing after digest-bound attestation has been exercised across releases.
 - SPDX mapping only after a real downstream consumer is tested.
 

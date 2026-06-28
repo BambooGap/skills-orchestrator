@@ -13,7 +13,7 @@ docker run --rm skills-orchestrator:local --version
 Use the published release image when a CI host should not build the project first:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.16 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.17 --version
 ```
 
 ## Run Against A Repository
@@ -24,7 +24,7 @@ Mount the repository at `/workspace` and run commands from that directory:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.16 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.17 \
   check --config config/skills.yaml
 ```
 
@@ -34,7 +34,7 @@ Generate audit artifacts:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.16 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.17 \
   manifest --config config/skills.yaml --format cyclonedx \
   --output instruction-manifest.cdx.json
 ```
@@ -75,4 +75,9 @@ Both the build provenance and SBOM are attested with GitHub Artifact Attestation
 describes the SkillOps package dependency surface inside the image; it is not a full operating-system
 layer scan.
 
-Future hardening should add image signing and move Docker/CI to a hash-locked constraints workflow.
+See [Supply Chain Verification](supply-chain-verification.md) for the consuming-repository commands
+that verify the GHCR provenance and CycloneDX SBOM attestations against the release tag and
+workflow identity.
+
+Future hardening should add independent image signing and move Docker/CI to a first-party
+hash-locked constraints workflow.
