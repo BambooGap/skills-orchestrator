@@ -25,7 +25,7 @@ docker login ghcr.io
 Set the release version and repository:
 
 ```bash
-VERSION=v4.8.17
+VERSION=v4.8.18
 PYPI_VERSION="${VERSION#v}"
 REPO=BambooGap/skills-orchestrator
 IMAGE=ghcr.io/bamboogap/skills-orchestrator
@@ -47,13 +47,20 @@ Production workflows should execute the resolved commit SHA and image digest, no
 
 ## Verify PyPI Artifacts
 
-Download the release artifacts from PyPI:
+Download the release wheel and source distribution from PyPI:
 
 ```bash
 rm -rf /tmp/skillops-pypi-verify
 mkdir -p /tmp/skillops-pypi-verify
 
 python3.12 -m pip download \
+  --only-binary=:all: \
+  --no-deps \
+  --dest /tmp/skillops-pypi-verify \
+  "skills-orchestrator==${PYPI_VERSION}"
+
+python3.12 -m pip download \
+  --no-binary=:all: \
   --no-deps \
   --dest /tmp/skillops-pypi-verify \
   "skills-orchestrator==${PYPI_VERSION}"
@@ -138,7 +145,7 @@ Store the downloaded JSONL bundle with the release evidence bundle and `post-rel
 
 ## Consumer-Side Hash-Locked Install
 
-`skills-orchestrator==4.8.17` is an exact version pin, not a hash-locked install. Repositories that
+`skills-orchestrator==4.8.18` is an exact version pin, not a hash-locked install. Repositories that
 require hash locking should create and own a requirements lock that includes every transitive
 dependency hash.
 
@@ -148,7 +155,7 @@ One common pattern is:
 python3.12 -m pip install pip-tools
 
 cat > requirements.in <<'EOF'
-skills-orchestrator==4.8.17
+skills-orchestrator==4.8.18
 EOF
 
 pip-compile \

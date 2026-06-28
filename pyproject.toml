@@ -1,6 +1,6 @@
 [project]
 name = "skills-orchestrator"
-version = "4.8.17"
+version = "4.8.18"
 description = "CI-native SkillOps governance for AI-agent instruction artifacts: policy packs, registries, evidence bundles, SARIF/CI, adapters, and MCP bridges."
 readme = "README.md"
 requires-python = ">=3.12"
