@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.6
+      - uses: BambooGap/skills-orchestrator@v4.8.7
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -26,6 +26,15 @@ jobs:
 option if Code Scanning is not enabled.
 `comment-registry-diff: true` requires `pull-requests: write` and updates one marker-based PR
 comment per pull request.
+
+If the repository requires pinned third-party actions, bootstrap CI with:
+
+```bash
+skills-orchestrator init --template team-standard --hardened-workflow
+```
+
+The default starter keeps `actions/checkout@v4` for readability; the hardened
+starter pins checkout to the audited SHA used by this project.
 
 ## Plain CLI
 

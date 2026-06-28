@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.7] - 2026-06-28
+
+### Added
+- Added `init --template team-standard --hardened-workflow` for teams that want the generated
+  starter workflow to pin third-party GitHub Actions where practical.
+
+### Changed
+- Documented that the final Post-release Smoke run for a release must be green before treating the
+  release as verified.
+- Added `--force` to repeated registry diff examples so demo users can rerun local diff flows
+  without hitting existing-output safeguards.
+- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.7`.
+
 ## [4.8.6] - 2026-06-28
 
 ### Changed

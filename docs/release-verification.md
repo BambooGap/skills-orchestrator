@@ -97,6 +97,8 @@ If Docker is unavailable, record it as skipped with the daemon error.
 Verify:
 
 - CI is green for the release commit.
+- The latest Post-release Smoke run for the released version is green. Older failed runs may remain
+  in history, but the final run attached to the release decision must pass.
 - Publish workflow used Trusted Publishing.
 - GitHub Release points to the intended tag and commit.
 - PyPI shows the intended version as latest.
@@ -114,7 +116,7 @@ After PyPI and GHCR workflows finish, run the machine-readable public artifact s
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.6 \
+  --version v4.8.7 \
   --retries 8 \
   --retry-delay 15 \
   --format json > post-release-smoke.json
@@ -128,7 +130,7 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.6 \
+  --version v4.8.7 \
   --retries 8 \
   --retry-delay 20 \
   --check-pypi-install \
@@ -140,6 +142,10 @@ skills-orchestrator schema validate \
   --input post-release-smoke-full.json
 ```
 
+Treat this as the final release hygiene gate: if a previous post-release smoke
+failed, rerun it after the fix and use the latest successful run as the release
+record.
+
 The default smoke checks:
 
 - GitHub Release tag, draft, and prerelease state,
@@ -149,7 +155,7 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.8.6`. The workflow runs `full_smoke`
+Use the release tag as the `version` input, for example `v4.8.7`. The workflow runs `full_smoke`
 by default so the retained report covers public artifact metadata, PyPI clean install, the
 starter-kit adopter path, and the default-install MCP extra hint. Disable `full_smoke` only when
 you intentionally want a faster metadata-only check. The workflow uploads `post-release-smoke.json`

@@ -33,12 +33,18 @@ from .helpers import _ok, _warn, _parse_frontmatter
     default=None,
     help="生成团队标准化 starter kit，而不是扫描现有 skills 目录",
 )
+@click.option(
+    "--hardened-workflow",
+    is_flag=True,
+    help="template 模式生成供应链更严格的 pinned GitHub Actions workflow",
+)
 @click.option("--force", is_flag=True, help="覆盖 template 已存在的目标文件")
 def init(
     skills_dir: str,
     output: str | None,
     non_interactive: bool,
     template: str | None,
+    hardened_workflow: bool,
     force: bool,
 ):
     """初始化，从本地 skills 目录生成 skills.yaml
@@ -48,7 +54,7 @@ def init(
     仅对缺少 frontmatter 的字段使用默认值。
     """
     if template == "team-standard":
-        _init_team_standard(output=output, force=force)
+        _init_team_standard(output=output, force=force, hardened_workflow=hardened_workflow)
         return
 
     skills_path = Path(skills_dir)
@@ -181,7 +187,7 @@ def init(
     click.echo(f"  skills-orchestrator build --config {output_path}")
 
 
-def _init_team_standard(*, output: str | None, force: bool) -> None:
+def _init_team_standard(*, output: str | None, force: bool, hardened_workflow: bool) -> None:
     """Generate a team-standard starter kit using the existing init entrypoint."""
     project_root = Path.cwd().resolve()
     config_path = _template_config_path(output, project_root)
@@ -197,7 +203,9 @@ def _init_team_standard(*, output: str | None, force: bool) -> None:
         team_skills_dir / "code-review.md": _team_code_review_skill(),
         team_skills_dir / "release-checklist.md": _team_release_checklist_skill(),
         pipelines_dir / "team-review.yaml": _team_review_pipeline(),
-        workflows_dir / "skills-orchestrator.yml": _team_standard_workflow(),
+        workflows_dir / "skills-orchestrator.yml": _team_standard_workflow(
+            hardened=hardened_workflow
+        ),
         evidence_dir / ".gitkeep": "",
     }
 
@@ -344,8 +352,18 @@ def _team_review_pipeline() -> str:
     return yaml.dump(pipeline, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
 
-def _team_standard_workflow() -> str:
-    return f"""name: skills-orchestrator
+def _team_standard_workflow(*, hardened: bool = False) -> str:
+    checkout_ref = (
+        "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0"
+        if hardened
+        else "actions/checkout@v4"
+    )
+    hardening_note = (
+        "\n# Generated with --hardened-workflow: third-party actions are pinned where practical.\n"
+        if hardened
+        else ""
+    )
+    return f"""name: skills-orchestrator{hardening_note}
 
 on:
   pull_request:
@@ -359,7 +377,7 @@ jobs:
   skillops:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: {checkout_ref}
       - uses: BambooGap/skills-orchestrator@v{__version__}
         with:
           config: config/skills.yaml

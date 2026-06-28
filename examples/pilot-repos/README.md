@@ -53,7 +53,8 @@ skills-orchestrator registry diff \
   evidence/registry-before.json \
   evidence/registry-after.json \
   --format markdown \
-  --output evidence/registry-diff.md
+  --output evidence/registry-diff.md \
+  --force
 
 skills-orchestrator registry comment-body \
   evidence/registry-diff.md \
