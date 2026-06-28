@@ -1,10 +1,10 @@
 [project]
 name = "skills-orchestrator"
-version = "4.8.28"
+version = "4.8.29"
 description = "CI-native SkillOps governance for AI-agent instruction artifacts: policy packs, registries, evidence bundles, SARIF/CI, adapters, and MCP bridges."
 readme = "README.md"
 requires-python = ">=3.12"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 keywords = [
     "claude",
     "agents",

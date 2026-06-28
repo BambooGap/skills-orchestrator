@@ -1,0 +1,10 @@
+# Default ownership for review routing.
+* @BambooGap
+
+# Contract and release surfaces should always route to the maintainer.
+/SPEC.md @BambooGap
+/CONFORMANCE.md @BambooGap
+/skills_orchestrator/schemas/ @BambooGap
+/action.yml @BambooGap
+/.github/workflows/ @BambooGap
+/scripts/ @BambooGap

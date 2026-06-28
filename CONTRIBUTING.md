@@ -25,6 +25,11 @@ ruff format --check skills_orchestrator/ tests/
   formats.
 - Do not add adopter claims, foundation claims, or governance claims without public evidence.
 
+## Licensing Of Contributions
+
+Unless you explicitly state otherwise, contributions intentionally submitted for inclusion in this
+project are licensed under either MIT or Apache-2.0, at the recipient's option, matching `LICENSE`.
+
 ## Skill Contributions
 
 Skill files are Markdown files with frontmatter. Shared team skills should include governance
