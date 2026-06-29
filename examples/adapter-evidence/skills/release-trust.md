@@ -19,7 +19,6 @@ provenance:
   source_url: https://github.com/BambooGap/skills-orchestrator/blob/main/examples/adapter-evidence/skills/release-trust.md
   source_ref: main
   source_commit: local-fixture
-  content_hash: sha256:fixture
   fetched_at: 2026-06-24T00:00:00Z
 ---
 # Release Trust
@@ -35,4 +34,3 @@ Use this skill when reviewing package, container, or adapter evidence for a Skil
 ## Output
 
 Write a short release-trust note with the artifact paths reviewed.
-

@@ -7,6 +7,7 @@ Validates two layers:
 
 from __future__ import annotations
 
+import hashlib
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -192,6 +193,85 @@ class TestMcpTestCLI:
 
         assert result.exit_code != 0
         assert "skills-orchestrator[mcp]" in result.output
+
+    def _write_provenance_workspace(
+        self, tmp_path, *, content: str, expected_hash: str | None = None
+    ):
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        skill_path = skills_dir / "external.md"
+        skill_path.write_text(content, encoding="utf-8")
+        actual_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+        config_dir = tmp_path / "config"
+        config_dir.mkdir()
+        config_path = config_dir / "skills.yaml"
+        config_path.write_text(
+            f"""
+version: "2.0"
+skills:
+  - id: external-skill
+    name: External Skill
+    path: skills/external.md
+    summary: Imported skill
+    tags: [external]
+    load_policy: require
+    priority: 100
+    zones: [default]
+    owner: platform
+    source: https://raw.githubusercontent.com/example/repo/0123456789abcdef0123456789abcdef01234567/external.md
+    version: 1.0.0
+    lifecycle: active
+    approvers: [platform]
+    reviewed_at: 2026-06-30
+    expires_at: 2026-12-27
+    license: MIT
+    provenance:
+      source_url: https://raw.githubusercontent.com/example/repo/0123456789abcdef0123456789abcdef01234567/external.md
+      source_ref: 0123456789abcdef0123456789abcdef01234567
+      source_commit: 0123456789abcdef0123456789abcdef01234567
+      content_hash: sha256:{expected_hash or actual_hash}
+      fetched_at: 2026-06-30T00:00:00Z
+zones:
+  - id: default
+    name: Default
+    load_policy: free
+    rules: []
+""",
+            encoding="utf-8",
+        )
+        return config_path
+
+    def test_mcp_get_skill_allows_matching_provenance_content_hash(self, tmp_path):
+        content = "---\nid: external-skill\n---\n# External Skill\n\nTrusted content.\n"
+        config_path = self._write_provenance_workspace(tmp_path, content=content)
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["mcp-test", "get_skill", '{"id":"external-skill"}', "-c", str(config_path)],
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Trusted content" in result.output
+
+    def test_mcp_get_skill_rejects_mismatched_hash_without_leaking_content(self, tmp_path):
+        content = (
+            "---\nid: external-skill\n---\n# External Skill\n\nTAMPERED CONTENT SHOULD NOT LEAK.\n"
+        )
+        config_path = self._write_provenance_workspace(
+            tmp_path, content=content, expected_hash="a" * 64
+        )
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cli,
+            ["mcp-test", "get_skill", '{"id":"external-skill"}', "-c", str(config_path)],
+        )
+
+        assert result.exit_code != 0
+        assert "provenance.content_hash mismatch" in result.output
+        assert "TAMPERED CONTENT SHOULD NOT LEAK" not in result.output
 
 
 def test_serve_missing_optional_dependency_shows_extra_hint(monkeypatch, tmp_path):

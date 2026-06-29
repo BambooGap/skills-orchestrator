@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from skills_orchestrator.compiler.parser import Parser
+from skills_orchestrator.compiler.provenance import validate_provenance_content_hash
 from skills_orchestrator.compiler.resolver import Resolver
 from skills_orchestrator.models import SkillMeta, Config, Combo
 
@@ -123,6 +124,7 @@ class SkillRegistry:
             return f"> 文件不存在: {skill.path}"
 
         raw = path.read_text(encoding="utf-8")
+        validate_provenance_content_hash(skill, raw)
 
         if skill.base:
             if skill.base in chain:

@@ -15,6 +15,8 @@ import logging
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
+from skills_orchestrator.compiler.provenance import validate_provenance_content_hash
+
 if TYPE_CHECKING:
     from skills_orchestrator.models import SkillMeta
     from skills_orchestrator.mcp.registry import SkillRegistry
@@ -86,6 +88,7 @@ class SkillContentResolver:
             return result
 
         raw = path.read_text(encoding="utf-8")
+        validate_provenance_content_hash(skill, raw)
 
         # base 继承合并
         if skill.base:

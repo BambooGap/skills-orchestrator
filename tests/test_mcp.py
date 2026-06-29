@@ -1,6 +1,7 @@
 """MCP 模块测试 — Registry、Search、Tools"""
 
 import json
+import hashlib
 from pathlib import Path
 import pytest
 
@@ -614,6 +615,48 @@ skill_dirs:
             < content.index("# B Content")
             < content.index("# A Content")
         )
+
+    def test_provenance_hash_checks_raw_child_before_base_merge(self, tmp_path):
+        """provenance hash 绑定原始 child 文件，而不是 base 合并后的内容。"""
+        base_content = "---\nid: base\nname: Base\nsummary: s\n---\n# Base Content\n"
+        child_content = (
+            "---\nid: child\nname: Child\nsummary: s\nbase: base\n---\n# Child Content\n"
+        )
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        (skills_dir / "base.md").write_text(base_content, encoding="utf-8")
+        (skills_dir / "child.md").write_text(child_content, encoding="utf-8")
+        child_hash = hashlib.sha256(child_content.encode("utf-8")).hexdigest()
+        config_file = tmp_path / "skills.yaml"
+        config_file.write_text(
+            f"""
+version: "2.0"
+skills:
+  - id: base
+    name: Base
+    path: skills/base.md
+    summary: s
+  - id: child
+    name: Child
+    path: skills/child.md
+    summary: s
+    base: base
+    provenance:
+      content_hash: sha256:{child_hash}
+zones:
+  - id: default
+    name: Default
+    load_policy: free
+    rules: []
+""",
+            encoding="utf-8",
+        )
+        reg = SkillRegistry(str(config_file))
+
+        content = reg.get_content("child")
+
+        assert "# Base Content" in content
+        assert "# Child Content" in content
 
 
 class TestSkillRegistryZoneIsolation:
