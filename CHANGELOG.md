@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.43] - 2026-06-30
+
+### Added
+- Added `--state-dir` and `SKILLS_ORCHESTRATOR_STATE_DIR` for project-scoped pipeline run state.
+- Added AGENTS.md build safeguards for oversized forced skills and obvious secret-like fields.
+- Added MCP tool aliases for `skill_id` and `task` to reduce client integration friction.
+
+### Changed
+- Documented project-scoped pipeline state usage and the no-floating-`latest` GHCR policy.
+
+### Fixed
+- Fixed `pipeline advance --run-id <id>` so explicit run IDs load the requested run state instead
+  of crashing before pipeline advancement.
+- Fixed missing-run handling for explicit pipeline run IDs so the CLI exits non-zero with a clear
+  error.
+
 ## [4.8.42] - 2026-06-30
 
 ### Changed
