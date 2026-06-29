@@ -65,7 +65,7 @@ Before those conditions are met, the correct claim is:
 
 ## What Not To Do
 
-- Do not create `ADOPTERS.md` with internal examples or demo repositories.
+- Do not create `ADOPTERS.md` from internal examples or reference fixtures.
 - Do not describe the CLI as an agent runtime, multi-agent OS, or policy engine replacement.
 - Do not add hosted-service state to the OSS CLI.
 - Do not make screenshots or dashboards a conformance requirement.

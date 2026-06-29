@@ -83,9 +83,9 @@ jobs:
           skills-orchestrator schema validate --kind enterprise-dashboard-rollup --input examples/commercial-handoff/dashboard-rollup.json
           skills-orchestrator --version
 
-      - name: SkillOps demo repo conformance smoke
+      - name: SkillOps reference repo conformance smoke
         run: |
-          mkdir -p /tmp/skillops-demo-evidence
+          mkdir -p /tmp/skillops-reference-evidence
           skills-orchestrator schema validate --kind config --input examples/demo-repo/config/skills.yaml
           skills-orchestrator check \
             --config examples/demo-repo/config/skills.yaml \
@@ -94,58 +94,58 @@ jobs:
           skills-orchestrator check \
             --config examples/demo-repo/config/skills.yaml \
             --format sarif \
-            > /tmp/skillops-demo-evidence/check.sarif
+            > /tmp/skillops-reference-evidence/check.sarif
           skills-orchestrator registry build \
             --config-glob examples/demo-repo/config/skills.yaml \
-            --output /tmp/skillops-demo-evidence/registry-before.json
-          cp /tmp/skillops-demo-evidence/registry-before.json \
-            /tmp/skillops-demo-evidence/registry-after.json
+            --output /tmp/skillops-reference-evidence/registry-before.json
+          cp /tmp/skillops-reference-evidence/registry-before.json \
+            /tmp/skillops-reference-evidence/registry-after.json
           skills-orchestrator registry diff \
-            /tmp/skillops-demo-evidence/registry-before.json \
-            /tmp/skillops-demo-evidence/registry-after.json \
+            /tmp/skillops-reference-evidence/registry-before.json \
+            /tmp/skillops-reference-evidence/registry-after.json \
             --format json \
-            --output /tmp/skillops-demo-evidence/registry-diff.json
+            --output /tmp/skillops-reference-evidence/registry-diff.json
           skills-orchestrator registry diff \
-            /tmp/skillops-demo-evidence/registry-before.json \
-            /tmp/skillops-demo-evidence/registry-after.json \
+            /tmp/skillops-reference-evidence/registry-before.json \
+            /tmp/skillops-reference-evidence/registry-after.json \
             --format markdown \
-            --output /tmp/skillops-demo-evidence/registry-diff.md
+            --output /tmp/skillops-reference-evidence/registry-diff.md
           skills-orchestrator registry comment-body \
-            /tmp/skillops-demo-evidence/registry-diff.md \
-            --output /tmp/skillops-demo-evidence/registry-diff-comment.md
+            /tmp/skillops-reference-evidence/registry-diff.md \
+            --output /tmp/skillops-reference-evidence/registry-diff-comment.md
           skills-orchestrator evidence export \
             --config examples/demo-repo/config/skills.yaml \
-            --out /tmp/skillops-demo-evidence
+            --out /tmp/skillops-reference-evidence
           skills-orchestrator dashboard snapshot \
-            --evidence-dir /tmp/skillops-demo-evidence \
+            --evidence-dir /tmp/skillops-reference-evidence \
             --repository BambooGap/skills-orchestrator \
             --ref "${GITHUB_REF:-refs/heads/main}" \
             --commit "${GITHUB_SHA:-local}" \
-            --output /tmp/skillops-demo-evidence/dashboard-snapshot.json
+            --output /tmp/skillops-reference-evidence/dashboard-snapshot.json
           skills-orchestrator dashboard rollup \
-            --snapshot /tmp/skillops-demo-evidence/dashboard-snapshot.json \
+            --snapshot /tmp/skillops-reference-evidence/dashboard-snapshot.json \
             --organization BambooGap \
-            --output /tmp/skillops-demo-evidence/dashboard-rollup.json
+            --output /tmp/skillops-reference-evidence/dashboard-rollup.json
           skills-orchestrator adapters inspect \
             --path examples/demo-repo \
             --format json \
-            > /tmp/skillops-demo-evidence/adapter-inspect.json
-          skills-orchestrator schema validate --kind registry --input /tmp/skillops-demo-evidence/registry-before.json
-          skills-orchestrator schema validate --kind registry-diff --input /tmp/skillops-demo-evidence/registry-diff.json
-          skills-orchestrator schema validate --kind evidence --input /tmp/skillops-demo-evidence/evidence-manifest.json
-          skills-orchestrator schema validate --kind enterprise-dashboard-snapshot --input /tmp/skillops-demo-evidence/dashboard-snapshot.json
-          skills-orchestrator schema validate --kind enterprise-dashboard-rollup --input /tmp/skillops-demo-evidence/dashboard-rollup.json
-          skills-orchestrator schema validate --kind adapter-inspect --input /tmp/skillops-demo-evidence/adapter-inspect.json
+            > /tmp/skillops-reference-evidence/adapter-inspect.json
+          skills-orchestrator schema validate --kind registry --input /tmp/skillops-reference-evidence/registry-before.json
+          skills-orchestrator schema validate --kind registry-diff --input /tmp/skillops-reference-evidence/registry-diff.json
+          skills-orchestrator schema validate --kind evidence --input /tmp/skillops-reference-evidence/evidence-manifest.json
+          skills-orchestrator schema validate --kind enterprise-dashboard-snapshot --input /tmp/skillops-reference-evidence/dashboard-snapshot.json
+          skills-orchestrator schema validate --kind enterprise-dashboard-rollup --input /tmp/skillops-reference-evidence/dashboard-rollup.json
+          skills-orchestrator schema validate --kind adapter-inspect --input /tmp/skillops-reference-evidence/adapter-inspect.json
           python - <<'PY'
           import json
           from pathlib import Path
 
-          data = json.loads(Path("/tmp/skillops-demo-evidence/adapter-inspect.json").read_text())
+          data = json.loads(Path("/tmp/skillops-reference-evidence/adapter-inspect.json").read_text())
           expected = {"agents-md", "claude-skills", "mcp-client-config", "openai-agents-sdk"}
           detected = {surface["id"] for surface in data["surfaces"] if surface["detected"]}
           missing = sorted(expected - detected)
           if missing:
-              raise SystemExit(f"missing demo adapter surfaces: {missing}")
+              raise SystemExit(f"missing reference adapter surfaces: {missing}")
           PY
 
       - name: Build package

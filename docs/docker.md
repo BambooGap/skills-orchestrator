@@ -120,5 +120,6 @@ If OCI distribution is blocked entirely, use the PyPI wheelhouse path in [Instal
 retain the hash-locked requirements file plus PyPI attestation verification output with the release
 evidence bundle.
 
-Future hardening should add an explicit OS SBOM vulnerability-scanning policy and avoid claiming a
-formal SLSA level until the release process is audited against that level.
+Do not claim a formal SLSA level unless the release process has been audited against that level.
+Retain OS/image SBOM verification output and the organization's vulnerability-scanning policy with
+the release evidence bundle.

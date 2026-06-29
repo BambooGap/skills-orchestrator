@@ -284,23 +284,19 @@ Exit criteria:
   are in scope.
 - CI explains why an instruction artifact was blocked before runtime.
 
-## Version Boundary
-
-### v4.x
+## Supported Scope Boundary
 
 - Keep the CLI focused on check, schema, evidence, registry, conformance, release trust, adapters,
   and post-release smoke.
-- Add documentation, fixtures, and adoption guidance for agent fleet governance.
+- Keep agent fleet governance in documentation, fixtures, and reviewable metadata.
 - Use [Supervisor Governance](supervisor-governance.md) as the boundary for lead/worker handoffs.
 - Keep all multi-tenant and multi-cluster concepts as metadata and artifact contracts.
 - Keep containerized agent runtimes as external images described by `agent-runtime-image` preview
   artifacts; do not bundle or endorse a default worker image.
 - Do not add provider admin API write operations.
 
-### v5.x
-
-A stable agent fleet manifest stays outside the stable scope until at least one external adopter or
-adapter needs it.
+A stable agent fleet manifest stays outside the stable scope until a concrete adapter or consumer
+requires it.
 
 Candidate contract surfaces:
 
@@ -310,7 +306,7 @@ Candidate contract surfaces:
 - handoff and evaluation evidence requirements,
 - protocol export fixtures for A2A-facing agent cards if the ecosystem stabilizes around them.
 
-Do not treat v5 as a rewrite. Treat it as a contract hardening line.
+Keep future contract surfaces additive, schema-reviewed, and separate from runtime enforcement.
 
 ## Recommended Language
 

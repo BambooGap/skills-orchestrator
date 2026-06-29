@@ -1,4 +1,4 @@
-name: SkillOps Demo
+name: SkillOps Reference
 
 on:
   pull_request:
