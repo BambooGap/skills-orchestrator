@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.36
+      - uses: BambooGap/skills-orchestrator@v4.8.37
         with:
           config: config/skills.yaml
           check-lock: skills.lock.json
@@ -110,7 +110,7 @@ skills-orchestrator evidence export \
   --out evidence
 ```
 
-The native JSON manifest is the authoritative instruction inventory. CycloneDX is an experimental
+The native JSON manifest is the authoritative instruction inventory. CycloneDX is an interoperability
 adapter for existing supply-chain vocabulary. OPA/Rego exports are proof fixtures, not a second
 runtime policy engine. `evidence export` writes all of these plus doctor and registry artifacts.
 

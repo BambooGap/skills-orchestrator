@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.37] - 2026-06-29
+
+### Changed
+- Reframed the README release record around the current closed-loop enterprise pilot status instead
+  of open-ended task language.
+- Removed public-facing intent / trial wording from the README so the GitHub project page and
+  PyPI long description present the current supported adoption boundary.
+- Reframed public direction docs from roadmap wording to status and boundary wording.
+- Updated current install, Action, Docker, pilot, and release-verification examples to `v4.8.37`.
+
 ## [4.8.36] - 2026-06-29
 
 ### Added

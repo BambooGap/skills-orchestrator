@@ -1,6 +1,6 @@
 # Commercial Handoff Contracts
 
-This directory contains example payloads for future hosted or enterprise surfaces.
+This directory contains example payloads for hosted or enterprise surfaces.
 They are not SaaS implementations. The open-source CLI remains the source of truth
 for generating registry, evidence, schema, and adapter artifacts.
 

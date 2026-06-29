@@ -17,7 +17,7 @@ Use this artifact for team review, release evidence, and custom organization che
 
 ## CycloneDX
 
-CycloneDX output is an experimental adapter for supply-chain tools that already understand BOM
+CycloneDX output is an interoperability adapter for supply-chain tools that already understand BOM
 formats.
 
 ```bash

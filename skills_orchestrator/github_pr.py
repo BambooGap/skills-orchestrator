@@ -1,7 +1,7 @@
 """Helpers for GitHub PR-facing text artifacts.
 
 This module deliberately avoids GitHub API calls. The CLI can generate stable
-comment bodies, while GitHub Actions or a future app own authentication and
+comment bodies, while GitHub Actions or external apps own authentication and
 comment update behavior.
 """
 

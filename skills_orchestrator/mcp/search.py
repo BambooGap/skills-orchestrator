@@ -2,7 +2,7 @@
 
 设计为可替换的搜索后端：
     KeywordSearcher   — 零依赖，TF-IDF 风格评分，现在用
-    （未来）VectorSearcher — pgvector 语义检索，按需升级，接口相同
+    VectorSearcher — pgvector 语义检索后端，接口相同
 """
 
 from __future__ import annotations

@@ -20,7 +20,7 @@ Use this page as the team entry point for Skills Orchestrator.
 
 - [Zones](ZONES.md): map teams, directories, or repo areas to different instruction policies.
 - [Pipelines](PIPELINES.md): turn multiple skills into gated runtime workflows.
-- [Instruction Supply Chain Roadmap](instruction-supply-chain-roadmap.md): long-term ecosystem direction.
+- [Instruction Supply Chain Status](instruction-supply-chain-status.md): current ecosystem boundary.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
 - [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local pilot to external adoption.
 - [Production Adoption](production-adoption.md): minimum production CI configuration with SHA pins, Docker digests, evidence retention, and runtime boundaries.
@@ -55,7 +55,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Pilot Case Study Template](pilot-case-study-template.md): public case-study structure that requires validated pilot evidence and listing consent.
 - [Pilot Repository Examples](../examples/pilot-repos/README.md): copyable starter packs for Healthchecks, Umami, and Woodpecker-style repositories.
 - [Open-core Boundary](open-core-boundary.md): what stays open-source and what belongs in hosted/enterprise layers.
-- [Commercial Handoff Examples](../examples/commercial-handoff/README.md): schema-valid example payloads for future hosted consumers.
+- [Commercial Handoff Examples](../examples/commercial-handoff/README.md): schema-valid example payloads for hosted consumers.
 - [External Consumer Example](../examples/external-consumer/README.md): static hosted registry,
   GitHub App, and multi-repo artifact inputs for downstream products.
 

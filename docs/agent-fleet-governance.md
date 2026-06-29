@@ -1,6 +1,6 @@
 # Agent Fleet Governance
 
-> Status: v4.8.36 adoption guidance.
+> Status: v4.8.37 adoption guidance.
 >
 > Scope: governance for AI instruction artifacts used by multi-agent, multi-tenant, and
 > multi-project systems. This is not a runtime orchestration specification.
@@ -54,7 +54,7 @@ The practical conclusion is:
 
 - Skill metadata schema, validation, and policy diagnostics.
 - Agent-surface adapter evidence for AGENTS.md, Claude Skills, MCP client config, OpenAI Agents SDK
-  scaffolds, and future protocol metadata when it is stable enough to fixture.
+  scaffolds, and protocol metadata when it is stable enough to fixture.
 - Registry, registry diff, registry graph, and multi-repo artifact index.
 - Evidence bundles, hash ledgers, SBOM/provenance verification, conformance reports, and CI
   explainability.
@@ -124,7 +124,7 @@ The place where governed instructions are consumed:
 - Claude Code subagent definitions,
 - MCP client config,
 - OpenAI Agents SDK scaffold,
-- future A2A-facing agent card metadata,
+- A2A-facing agent card metadata,
 - hosted registry or GitHub App consumers.
 
 SkillOps should inspect and export these surfaces as files and evidence. It should not claim that
@@ -148,7 +148,7 @@ Required governance questions:
 ## Recommended Metadata Direction
 
 Do not add these fields as mandatory schema requirements until real adopters need them. Use them as
-future-compatible guidance for teams that already operate multi-agent or multi-tenant systems.
+forward-compatible guidance for teams that already operate multi-agent or multi-tenant systems.
 
 ```yaml
 agent_surfaces:
@@ -225,7 +225,7 @@ image, start containers, inject secrets, enforce budgets, or prove tenant isolat
 
 A2A is important because it formalizes agent-to-agent communication, capability discovery, long
 running tasks, and collaboration without exposing internal memory or tools. That maps well to the
-future of multi-agent work, but it should not become a hard dependency of the SkillOps CLI.
+multi-agent work, but it should not become a hard dependency of the SkillOps CLI.
 
 SkillOps should stay protocol-adjacent:
 
@@ -284,7 +284,7 @@ Exit criteria:
   are in scope.
 - CI explains why an instruction artifact was blocked before runtime.
 
-## v4.x And v5.x Roadmap Boundary
+## Version Boundary
 
 ### v4.x
 
@@ -299,8 +299,8 @@ Exit criteria:
 
 ### v5.x
 
-Consider adding a stable agent fleet manifest only after at least one external adopter or adapter
-needs it.
+A stable agent fleet manifest stays outside the stable scope until at least one external adopter or
+adapter needs it.
 
 Candidate contract surfaces:
 

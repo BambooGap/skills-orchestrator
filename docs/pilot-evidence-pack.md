@@ -53,7 +53,7 @@ repository is not allowed to disclose. If an artifact cannot be shared, mark it 
 Run these from the pilot repository root after adding `config/skills.yaml` and `skills/`:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator==4.8.36"
+python3.12 -m pip install "skills-orchestrator==4.8.37"
 
 mkdir -p skillops-pilot/artifacts/evidence
 

@@ -181,7 +181,7 @@ audit report verifies packaged schema loadability and catalog metadata without r
 skill files. Production repositories can pass `--stability stable` to exclude preview contracts
 from blocking gates while keeping the filtered catalog machine-validatable. The agent handoff and
 commercial handoff schemas are additive preview contracts for
-future supervised-agent runtimes, GitHub App, hosted registry, and enterprise dashboard consumers:
+supervised-agent runtimes, GitHub App, hosted registry, and enterprise dashboard consumers:
 
 ```bash
 skills-orchestrator schema validate \

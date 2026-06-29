@@ -111,7 +111,7 @@ provenance:
 These fields are exported in:
 
 - native instruction manifests,
-- experimental CycloneDX properties,
+- CycloneDX interoperability properties,
 - OPA input policy export,
 - organization registry snapshots,
 - conformance reports.
@@ -119,7 +119,7 @@ These fields are exported in:
 ## GitHub Action
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v4.8.36
+- uses: BambooGap/skills-orchestrator@v4.8.37
   with:
     config: config/skills.yaml
     policy-pack: builtin/engineering-grade
