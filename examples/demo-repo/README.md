@@ -1,9 +1,9 @@
-# SkillOps Demo Repository
+# SkillOps Reference Repository
 
-This directory is a runnable demo for SkillOps Contract v1. It is designed to be copied into a
+This directory is a runnable reference for SkillOps Contract v1. It is designed to be copied into a
 standalone repository or executed in place from the repository root.
 
-It demonstrates:
+It covers:
 
 - skill metadata validation,
 - team policy checks,
@@ -70,8 +70,8 @@ skills-orchestrator registry comment-body \
 
 ```
 
-To demonstrate a non-empty local diff, save a baseline registry, change one skill, then build the
-head registry:
+To exercise a non-empty local diff, save a baseline registry, change one skill, then build the head
+registry:
 
 ```bash
 cp skills/release-checklist.md /tmp/release-checklist.md
@@ -120,9 +120,9 @@ skills-orchestrator schema validate --kind evidence --input evidence/evidence-ma
 skills-orchestrator schema validate --kind adapter-inspect --input evidence/adapter-inspect.json
 ```
 
-## Pull Request Demo
+## Pull Request Review Flow
 
-To demonstrate a real review flow:
+To run a real review flow:
 
 1. Commit this directory as a standalone repository.
 2. Create a branch.
@@ -140,5 +140,5 @@ To demonstrate a real review flow:
 - `mcp-client-config`
 - `openai-agents-sdk`
 
-This demo intentionally keeps the OpenAI Agents SDK dependency in `pyproject.toml` so adapter
+This reference intentionally keeps the OpenAI Agents SDK dependency in `pyproject.toml` so adapter
 inspection can verify the dependency surface without running a model call.

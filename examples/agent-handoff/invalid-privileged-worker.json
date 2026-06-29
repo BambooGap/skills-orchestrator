@@ -36,7 +36,7 @@
   "task": {
     "id": "unsafe-release",
     "summary": "Invalid fixture",
-    "scope": "demo",
+    "scope": "reference-fixture",
     "inputs": [
       {
         "kind": "evidence-manifest",

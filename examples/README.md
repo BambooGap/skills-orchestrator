@@ -45,7 +45,7 @@
 
 ---
 
-### [SkillOps Demo Repo](demo-repo/)
+### [SkillOps Reference Repo](demo-repo/)
 
 **适合**：外部评估者、平台团队、安全团队
 
@@ -147,7 +147,7 @@
 **展示内容**：
 - 如何把真实仓库 adoption 的 owner、gate、artifact 状态和 promotion decision 记录成 schema-valid artifact
 - 如何把技术接入成功和公开 adopter listing consent 分开
-- 如何避免把 demo 或 generic reference example 误写进 `ADOPTERS.md`
+- 如何避免把内部参考样本误写进 `ADOPTERS.md`
 
 **时间**：5 分钟
 
@@ -190,7 +190,7 @@
 - Healthchecks / Umami / Woodpecker 风格仓库的最小接入包
 - `config/skills.yaml`、sample skills、GitHub Action workflow 和 evidence 目录
 - advisory → warning gate → engineering gate 的迁移路径
-- 如何把 SkillOps 放进真实 PR review，而不是只跑 demo
+- 如何把 SkillOps 放进真实 PR review，而不是只跑参考样本
 
 **时间**：15 分钟
 
@@ -215,7 +215,7 @@
 3. [多平台同步示例](multi-platform/) → 支持团队成员的不同工具
 
 **外部评估者**：
-1. [SkillOps Demo Repo](demo-repo/) → 直接跑 conformance 和证据导出
+1. [SkillOps Reference Repo](demo-repo/) → 直接跑 conformance 和证据导出
 2. [Adapter Evidence Example](adapter-evidence/) → 验证 Claude Skills / MCP / OpenAI Agents SDK adapter evidence
 3. [Release Trust Example](release-trust/) → 验证外部 skill provenance 和 release artifact 绑定
 4. [Multi-repo Artifacts Example](multi-repo-artifacts/) → 聚合多个仓库的 evidence manifest

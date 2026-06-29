@@ -1,6 +1,6 @@
 # Skills Orchestrator Scope: SkillOps for Agent Instructions
 
-> Supported scope (v4.8.42): CI explainability, schema audit, release trust, adapter
+> Supported scope: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > external agent runtime image contracts, and consumer-side supply-chain verification.
 >
@@ -135,7 +135,7 @@ Deliver:
 Do not add OPA as a runtime backend yet. The existing resolver is the authoritative decision
 system; OPA should be a proof and integration surface, not a second source of truth.
 
-## Capability 4: Distribution Hardening
+## Capability 4: Distribution Controls
 
 Status: implemented across v2.4.0-v4.8.x for Docker smoke, package SBOM, CodeQL, GHCR release
 push, pinned third-party Actions, PyPI artifact attestation, digest-bound container

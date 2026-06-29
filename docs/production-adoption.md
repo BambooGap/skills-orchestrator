@@ -162,11 +162,11 @@ Recommended retention:
 | Release evidence | At least one year or the product's release support window. |
 | Security-relevant evidence | Follow the organization's security evidence retention policy. |
 
-## Release Cadence For Production Pins
+## Release Promotion Cadence For Production Pins
 
-Skills Orchestrator can publish patch releases quickly because the OSS project is still hardening
-its public evidence contracts. Production repositories should not automatically promote every patch
-tag. Use this cadence instead:
+Skills Orchestrator patch releases can include fixes, documentation updates, and evidence-contract
+updates. Production repositories should promote releases through immutable pins and retained
+release evidence instead of automatically following every tag. Use this cadence:
 
 1. Promote only releases whose final Post-release Smoke run has `failed: 0`.
 2. Verify PyPI attestations, GHCR provenance/SBOM attestations, and the GHCR Cosign signature before
@@ -176,8 +176,8 @@ tag. Use this cadence instead:
    attestations, and downstream smoke reports can settle.
 5. Skip the hold only for blocking CI fixes or security fixes, and keep the rollback version ready.
 
-This cadence keeps the consuming repository stable while still letting the upstream project ship
-small evidence hardening releases.
+This cadence keeps the consuming repository stable while still allowing normal upstream patch
+releases.
 
 ## Docker In Production CI
 

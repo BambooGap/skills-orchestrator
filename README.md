@@ -217,20 +217,20 @@ enterprise gate：
 完整步骤见 [Adoption Playbook](docs/adoption-playbook.md)。可复制的真实仓库形态示例见
 [Reference Repository Examples](examples/adoption-repos/README.md)。
 
-### 生产采纳节奏
+### 生产固定版本策略
 
-`v4.8.x` 仍处于发布证据面 hardening 阶段，patch 频率较高。生产仓库不要自动追最新 tag：
-固定 PyPI exact version、GitHub Action release commit SHA、Docker digest 和依赖 hash lock；先以
-advisory mode 运行，再逐步升级到 blocking gate。推荐流程见
+生产仓库不要自动追最新 tag。固定 PyPI exact version、GitHub Action release commit SHA、
+Docker digest 和依赖 hash lock；先以 advisory mode 运行，再按团队变更流程升级到 blocking
+gate。推荐流程见
 [Production Adoption](docs/production-adoption.md)。
 
-### 规范、一致性与可运行 Demo
+### 规范、一致性与端到端参考
 
 - [SkillOps Contract v1](SPEC.md): skill metadata、registry、diff、evidence、adapter 的机器可验证规范。
 - [Conformance](CONFORMANCE.md): 如何用 `conformance run`、`schema validate`、`check`、`registry`、`evidence` 验证兼容性。
 - [Third-party Implementation Guide](docs/third-party-implementation.md): 如何只依赖 schema、conformance 和负例 fixtures 实现兼容工具。
 - [Security Policy](SECURITY.md): MCP trust model、HMAC audit、import provenance 和漏洞报告流程。
-- [Demo Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
+- [Reference Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端参考场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
 - [Negative Conformance Fixtures](examples/negative-conformance/README.md): 可复制的坏输入样本，证明高风险 instruction artifacts 会稳定失败。
 - [Adoption Playbook](docs/adoption-playbook.md): 从 advisory CI 到 blocking gate 的接入路径。
 - [Production Adoption](docs/production-adoption.md): 生产 CI 接入的 SHA pin、Docker digest、PyPI version pin、证据保留和 runtime 边界。
