@@ -41,6 +41,24 @@ def test_community_health_files_exist_for_external_review():
         assert path.read_text(encoding="utf-8").strip(), relative
 
 
+def test_external_pilot_authorization_surfaces_are_present():
+    outreach = ROOT / "docs/pilot-outreach.md"
+    issue_template = ROOT / ".github/ISSUE_TEMPLATE/external_pilot_request.md"
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert outreach.exists()
+    assert issue_template.exists()
+
+    outreach_text = outreach.read_text(encoding="utf-8")
+    issue_text = issue_template.read_text(encoding="utf-8")
+
+    assert "Private technical pilot" in outreach_text
+    assert "Public adopter / case study" in outreach_text
+    assert "public_listing.status" in outreach_text
+    assert "No public case study, quote, logo, or adopter listing" in issue_text
+    assert "[Authorized Pilot Outreach](docs/pilot-outreach.md)" in readme
+
+
 def test_readme_points_to_dual_license_and_support_surfaces():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 

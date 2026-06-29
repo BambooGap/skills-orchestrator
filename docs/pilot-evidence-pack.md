@@ -3,8 +3,9 @@
 This guide defines the handoff package for a real repository pilot. It is the bridge between a
 successful local/CI run and an adoption decision. It does not create an adopter claim by itself.
 
-Use this after [External Pilot Intake](external-pilot-intake.md) and before writing a public case
-study or `ADOPTERS.md` entry.
+Use this after [Authorized Pilot Outreach](pilot-outreach.md) and
+[External Pilot Intake](external-pilot-intake.md), and before writing a public case study or
+`ADOPTERS.md` entry.
 
 ## What The Pack Proves
 
@@ -52,7 +53,7 @@ repository is not allowed to disclose. If an artifact cannot be shared, mark it 
 Run these from the pilot repository root after adding `config/skills.yaml` and `skills/`:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator==4.8.34"
+python3.12 -m pip install "skills-orchestrator==4.8.35"
 
 mkdir -p skillops-pilot/artifacts/evidence
 

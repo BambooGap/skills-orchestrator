@@ -129,7 +129,7 @@ def test_supply_chain_sbom_accepts_syft_components_without_version(tmp_path):
                     "component": {
                         "type": "container",
                         "name": "ghcr.io/bamboogap/skills-orchestrator",
-                        "version": "v4.8.34",
+                        "version": "v4.8.35",
                     }
                 },
                 "components": [
@@ -482,7 +482,7 @@ def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
             "repository": "org/repo",
             "pilot_owner": "platform-team",
             "started_at": "2026-06-28T00:00:00Z",
-            "skillops_version": "v4.8.34",
+            "skillops_version": "v4.8.35",
             "ci_system": "github-actions",
         },
         "gate": {"mode": "advisory", "policy_pack": "builtin/team-standard"},
