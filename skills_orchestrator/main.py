@@ -13,6 +13,7 @@ from . import __version__
 from .security import (
     console_safe_symbol,
     console_safe_text,
+    parse_int_in_range,
     safe_child_path,
     validate_identifier,
 )
@@ -31,6 +32,8 @@ from .diagnostic import DiagnosticSeverity
 from .formatters import format_diagnostics_json, format_diagnostics_sarif
 
 MCP_EXTRA_INSTALL_COMMAND = 'python3.12 -m pip install "skills-orchestrator[mcp]"'
+PIPELINE_MAX_CONTENT_BYTES_ENV = "SKILLS_ORCHESTRATOR_MAX_CONTENT_BYTES"
+DEFAULT_PIPELINE_MAX_CONTENT_BYTES = 40_000
 
 
 # ─────────────────────────── helpers ────────────────────────────
@@ -157,6 +160,176 @@ def _load_pipeline(pipeline_id: str, config_path: Optional[str] = None):
     except Exception as e:
         click.echo(f"加载 Pipeline 失败: {e}", err=True)
         return None
+
+
+def _load_pipeline_for_cli(
+    pipeline_id: str, config_path: Optional[str] = None, pipelines_dir: Optional[str] = None
+):
+    """Load a Pipeline, respecting the CLI --pipelines-dir override."""
+    if not pipelines_dir:
+        return _load_pipeline(pipeline_id, config_path)
+
+    from skills_orchestrator.pipeline.loader import PipelineLoader
+
+    pipeline_id = validate_identifier(pipeline_id, "pipeline_id")
+    yaml_path = safe_child_path(Path(pipelines_dir), f"{pipeline_id}.yaml")
+    if not yaml_path.exists():
+        return None
+    loader = PipelineLoader()
+    try:
+        return loader.load(str(yaml_path))
+    except yaml.YAMLError as e:
+        click.echo(f"Pipeline YAML 解析失败: {e}", err=True)
+        return None
+    except Exception as e:
+        click.echo(f"加载 Pipeline 失败: {e}", err=True)
+        return None
+
+
+def _parse_pipeline_context(context: str) -> dict:
+    """Parse and validate a pipeline context object."""
+    parsed = _parse_context(context)
+    if not isinstance(parsed, dict):
+        raise click.BadParameter("context 必须是 JSON object")
+    return parsed
+
+
+def _pipeline_content_limit() -> int:
+    return parse_int_in_range(
+        os.environ.get(PIPELINE_MAX_CONTENT_BYTES_ENV),
+        PIPELINE_MAX_CONTENT_BYTES_ENV,
+        default=DEFAULT_PIPELINE_MAX_CONTENT_BYTES,
+        minimum=1_000,
+        maximum=1_000_000,
+    )
+
+
+def _limit_pipeline_content(content: str) -> tuple[str, bool, int]:
+    raw = content.encode("utf-8")
+    limit = _pipeline_content_limit()
+    if len(raw) <= limit:
+        return content, False, len(raw)
+    return raw[:limit].decode("utf-8", errors="ignore"), True, len(raw)
+
+
+def _validate_pipeline_structure_or_exit(pipeline_id: str, pipeline) -> None:
+    structure_errors = pipeline.validate()
+    if not structure_errors:
+        return
+    click.echo(_err(f"Pipeline '{pipeline_id}' 定义无效:"), err=True)
+    for error in structure_errors:
+        click.echo(_err(f"- {error}"), err=True)
+    raise SystemExit(1)
+
+
+def _validate_pipeline_skills_or_exit(pipeline_id: str, pipeline, registry) -> None:
+    from skills_orchestrator.pipeline.loader import PipelineLoader
+
+    loader = PipelineLoader()
+    known_skills = {s.id for s in registry.all()}
+    missing = loader.validate_skills(pipeline, known_skills)
+    if not missing:
+        return
+    click.echo(
+        _err(f"Pipeline '{pipeline_id}' 引用了不存在的 skill: {', '.join(missing)}"),
+        err=True,
+    )
+    click.echo(_err(f"可用 skill: {', '.join(sorted(known_skills))}"), err=True)
+    click.echo(_err(f"请修复 config/pipelines/{pipeline_id}.yaml 中的 skill 引用。"), err=True)
+    raise SystemExit(1)
+
+
+def _append_pipeline_skill_content(lines: list[str], registry, skill_id: str, label: str) -> None:
+    skill_content = registry.get_content(skill_id)
+    if not skill_content:
+        return
+    skill_content, truncated, original_bytes = _limit_pipeline_content(skill_content)
+    lines.append("")
+    suffix = f" [TRUNCATED from {original_bytes} bytes]" if truncated else ""
+    lines.append(f"═══ {label}: {skill_id}{suffix} ═══")
+    lines.append(skill_content)
+    lines.append("═══════════════════════════════════")
+
+
+def _format_pipeline_start(pipeline, state, registry) -> str:
+    step = pipeline.get_step(state.current_step) if state.current_step else None
+    lines = [
+        f"Pipeline '{pipeline.name}' 已启动！",
+        f"Run ID: {state.run_id}",
+        f"当前步骤: {state.current_step} (skill: {step.skill if step else '?'})",
+        f"状态: {state.status}",
+        "",
+        "后续步骤：",
+    ]
+    for pipeline_step in pipeline.steps:
+        marker = " > " if pipeline_step.id == state.current_step else "   "
+        skip_note = f" [可跳过: {pipeline_step.skip_if}]" if pipeline_step.skip_if else ""
+        gate_note = f" [门禁: {pipeline_step.gate.artifact_label()}]" if pipeline_step.gate else ""
+        lines.append(f"{marker}{pipeline_step.id} → {pipeline_step.skill}{skip_note}{gate_note}")
+
+    if step:
+        _append_pipeline_skill_content(lines, registry, step.skill, "当前步骤 Skill")
+
+    if step and step.gate:
+        lines.append("")
+        lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{step.gate.artifact_label()}'")
+        if step.gate.min_length:
+            lines.append(f"  最小长度: {step.gate.min_length} 字符")
+
+    lines.append("")
+    lines.append(
+        f"使用 pipeline_advance(run_id='{state.run_id}', pipeline_id='{pipeline.id}') 推进下一步。"
+    )
+    return "\n".join(lines)
+
+
+def _format_pipeline_advance(pipeline, state, run_id: str, registry) -> str:
+    if state.status == "failed":
+        lines = [
+            "❌ 步骤执行失败",
+            f"当前步骤: {state.current_step}",
+        ]
+        if state.step_history:
+            last_record = state.step_history[-1]
+            if last_record.get("status") == "failed":
+                lines.append(f"失败原因: {last_record.get('reason', '未知')}")
+        lines.append("")
+        lines.append("💡 建议：检查产出是否符合门禁要求，或使用其他 pipeline")
+        return "\n".join(lines)
+
+    if state.status == "completed":
+        return f"Pipeline '{pipeline.name}' 已完成！\n共 {len(state.step_history)} 个步骤。"
+
+    next_step = pipeline.get_step(state.current_step) if state.current_step else None
+    lines = [
+        f"已推进到步骤: {state.current_step} (skill: {next_step.skill if next_step else '?'})",
+        f"状态: {state.status}",
+    ]
+    if next_step and next_step.gate:
+        lines.append(f"门禁要求: 产出 '{next_step.gate.artifact_label()}'")
+        if next_step.gate.on_failure:
+            lines.append(f"  失败分支: {next_step.gate.on_failure}")
+    if next_step and next_step.skip_if:
+        lines.append(
+            f"跳过条件: {next_step.skip_if} = {state.context.get(next_step.skip_if, False)}"
+        )
+
+    if next_step:
+        _append_pipeline_skill_content(lines, registry, next_step.skill, "当前步骤 Skill")
+
+    if next_step and next_step.gate:
+        lines.append("")
+        lines.append(f"⚠ 门禁要求: 完成此步骤前必须产出 '{next_step.gate.artifact_label()}'")
+        if next_step.gate.min_length:
+            lines.append(f"  最小长度: {next_step.gate.min_length} 字符")
+        if next_step.gate.on_failure:
+            lines.append(f"  失败时跳转: {next_step.gate.on_failure}")
+
+    lines.append("")
+    lines.append(
+        f"使用 pipeline_advance(run_id='{run_id}', pipeline_id='{pipeline.id}') 推进下一步。"
+    )
+    return "\n".join(lines)
 
 
 # ─────────────────────────── CLI ────────────────────────────
@@ -2171,35 +2344,26 @@ def pipeline_start(
       skills-orchestrator pipeline start quick-fix --pipelines-dir /path/to/pipelines
     """
     from .mcp.registry import SkillRegistry
-    from .mcp.tools import ToolExecutor
+    from .pipeline.engine import PipelineEngine
+    from .pipeline.store import RunStateStore
 
     config_path = str(Path(config).resolve())
-    resolved_pipelines_dir = (
-        Path(pipelines_dir) if pipelines_dir else _resolve_pipelines_dir(config)
-    )
-
-    # 使用 _load_pipeline 统一加载，避免重复
-    pipeline = _load_pipeline(pipeline_id, config)
-    if pipeline is None:
-        click.echo(_err(f"Pipeline '{pipeline_id}' 不存在或加载失败"), err=True)
-        raise SystemExit(1)
-    structure_errors = pipeline.validate()
-    if structure_errors:
-        click.echo(_err(f"Pipeline '{pipeline_id}' 定义无效:"), err=True)
-        for error in structure_errors:
-            click.echo(_err(f"- {error}"), err=True)
-        raise SystemExit(1)
 
     try:
+        # 使用 _load_pipeline 统一加载，避免重复
+        pipeline = _load_pipeline_for_cli(pipeline_id, config, pipelines_dir)
+        if pipeline is None:
+            click.echo(_err(f"Pipeline '{pipeline_id}' 不存在或加载失败"), err=True)
+            raise SystemExit(1)
+        _validate_pipeline_structure_or_exit(pipeline_id, pipeline)
+
         registry = SkillRegistry(config_path, zone_id=zone)
-        executor = ToolExecutor(registry, pipelines_dir=str(resolved_pipelines_dir))
-        ctx = _parse_context(context)
-        results = executor.execute(
-            "pipeline_start",
-            {"pipeline_id": pipeline_id, "context": ctx},
-        )
-        for r in results:
-            click.echo(r.text)
+        _validate_pipeline_skills_or_exit(pipeline_id, pipeline, registry)
+
+        ctx = _parse_pipeline_context(context)
+        state = PipelineEngine(pipeline).start(context=ctx)
+        RunStateStore().save(state)
+        click.echo(console_safe_text(_format_pipeline_start(pipeline, state, registry)))
     except json.JSONDecodeError as e:
         click.echo(_err(f"JSON 解析失败: {e}"), err=True)
         raise SystemExit(1)
@@ -2359,7 +2523,7 @@ def pipeline_advance(
       skills-orchestrator pipeline advance bug-fix -z enterprise
     """
     from .mcp.registry import SkillRegistry
-    from .mcp.tools import ToolExecutor
+    from .pipeline.engine import PipelineEngine
     from .pipeline.store import RunStateStore
 
     config_path = str(Path(config).resolve())
@@ -2382,24 +2546,26 @@ def pipeline_advance(
             run_id = state.run_id
             click.echo(f"  自动使用运行 ID: {click.style(run_id, bold=True)}")
 
-        registry = SkillRegistry(config_path, zone_id=zone)
-        resolved_pipelines_dir = (
-            Path(pipelines_dir) if pipelines_dir else _resolve_pipelines_dir(config)
-        )
-        executor = ToolExecutor(registry, pipelines_dir=str(resolved_pipelines_dir))
         arts = json.loads(artifacts)
-        ctx = _parse_context(context)
-        results = executor.execute(
-            "pipeline_advance",
-            {
-                "run_id": run_id,
-                "pipeline_id": pipeline_id,
-                "artifacts": arts,
-                "context_updates": ctx,
-            },
-        )
-        for r in results:
-            click.echo(r.text)
+        if not isinstance(arts, list) or any(not isinstance(item, str) for item in arts):
+            raise click.BadParameter("artifacts 必须是字符串列表")
+        ctx = _parse_pipeline_context(context)
+        for artifact in arts:
+            ctx.setdefault(artifact, True)
+
+        pipeline = _load_pipeline_for_cli(pipeline_id, config, pipelines_dir)
+        if pipeline is None:
+            click.echo(_err(f"Pipeline 不存在: {pipeline_id}"), err=True)
+            raise SystemExit(1)
+        _validate_pipeline_structure_or_exit(pipeline_id, pipeline)
+
+        registry = SkillRegistry(config_path, zone_id=zone)
+        _validate_pipeline_skills_or_exit(pipeline_id, pipeline, registry)
+
+        state.context.update(ctx)
+        state = PipelineEngine(pipeline).complete_and_advance(state)
+        RunStateStore().save(state)
+        click.echo(console_safe_text(_format_pipeline_advance(pipeline, state, run_id, registry)))
     except json.JSONDecodeError as e:
         click.echo(_err(f"JSON 解析失败: {e}"), err=True)
         raise SystemExit(1)
