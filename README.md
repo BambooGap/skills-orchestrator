@@ -42,7 +42,7 @@ on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE
   Docker digest 和 hash-lock 边界的命令。
 
 SLSA 边界：项目生成的是 SLSA readiness / evidence input，用于说明哪些发布证据已经
-可验证；it is not formal SLSA level certification，也不声明已经达到 SLSA Build L3+。
+可验证；它不是正式 SLSA 等级认证，也不声明已经达到 SLSA Build L3+。
 细节见 [SLSA Readiness](docs/slsa-readiness.md)。
 
 ```bash
