@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.38-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.39-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -17,9 +17,9 @@ on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.38` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.38` release tag | `BambooGap/skills-orchestrator@v4.8.38` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.38` |
+| OSS CLI | `v4.8.39` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.39` release tag | `BambooGap/skills-orchestrator@v4.8.39` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.39` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Enterprise adoption | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/adoption-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -104,7 +104,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.38 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.39 --version
 ```
 
 ### 初始化项目
@@ -183,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.38
+      - uses: BambooGap/skills-orchestrator@v4.8.39
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -226,7 +226,7 @@ advisory mode 运行，再逐步升级到 blocking gate。推荐流程见
 
 ### 规范、一致性与可运行 Demo
 
-- [SkillOps Contract v1](SPEC.md): skill metadata、registry、diff、evidence、adapter 的机器可测试规范。
+- [SkillOps Contract v1](SPEC.md): skill metadata、registry、diff、evidence、adapter 的机器可验证规范。
 - [Conformance](CONFORMANCE.md): 如何用 `conformance run`、`schema validate`、`check`、`registry`、`evidence` 验证兼容性。
 - [Third-party Implementation Guide](docs/third-party-implementation.md): 如何只依赖 schema、conformance 和负例 fixtures 实现兼容工具。
 - [Security Policy](SECURITY.md): MCP trust model、HMAC audit、import provenance 和漏洞报告流程。
@@ -366,7 +366,7 @@ skills-orchestrator supply-chain sbom --output package-sbom.cdx.json
 
 `doctor` 默认使用 `adopter` profile，检查接入仓库真正需要的 config、policy、
 SkillOps CI workflow、lock 和 `AGENTS.md` 证据；`maintainer` profile 才额外检查
-本项目发版用的 `action.yml`、`Dockerfile` 和版本化测试报告；`enterprise` profile
+本项目发版用的 `action.yml`、`Dockerfile` 和版本化质量报告；`enterprise` profile
 读取 evidence bundle 并验证核心 artifact schema，适合平台团队接入。`evidence export` 写出
 `check.json`、`check.sarif`、`ci-explainability.json`、`instruction-manifest.json`、
 `policy-opa-input.json`、`policy-proof.rego`、`doctor.json`、`skill-registry.json`、
@@ -793,7 +793,7 @@ skills-orchestrator import    <github-url>                # 从 GitHub 导入 Sk
 
 # MCP Server
 skills-orchestrator serve     --config <path>            # 启动 MCP Server
-skills-orchestrator mcp-test  <tool> <args>              # 测试 MCP 工具
+skills-orchestrator mcp-test  <tool> <args>              # 调用 MCP 工具
 # 示例：为一个新任务动态选择本轮 skills
 skills-orchestrator mcp-test prepare_context '{"task": "做安全审查", "max_skills": 3}'
 
@@ -838,82 +838,7 @@ pytest tests/ -v
 ruff check skills_orchestrator/ tests/
 ```
 
-CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
-
----
-
-## 当前闭环与发布记录
-
-### 已验证能力
-
-- v2.0.x：稳定了 build / validate / zone / conflict、frontmatter discovery、MCP Server、Skill Inheritance、sync targets、Pipeline 编排、PyPI 发布和基础安全边界。
-- 检查诊断与机器报告阶段：补齐 `check` 诊断面，输出 JSON / SARIF，并把项目定位收敛到 SkillOps 和 instruction supply chain。
-- v2.3.x：发布 GitHub Action、CycloneDX / native manifest、OPA/Rego proof export、Action SHA pinning、artifact attestation 和 PyPI 发布防护。
-- v2.4.x：补齐 Docker 交付、团队标准化文档、MCP routing decision record、usage audit、pipeline recovery 和本地运行证据。
-- v2.5.x：补齐 `builtin/team-standard` policy pack、治理元数据、`doctor` readiness、组织级 `registry`、`evidence export`、integration catalog、MCP 内容上限、audit HMAC 和 pipeline 状态脱敏。
-- v2.6.x：补齐稳定 JSON Schema、`schema validate`、`init --template team-standard` 和 `registry diff --format markdown`，降低团队 bootstrap 与 PR review 摩擦。
-- v3.0.x：补齐 PR registry diff comment automation、package SBOM、CodeQL/GHCR workflows、生态 adapter inspect/scaffold、open-core commercial handoff schemas 和 GitHub App / hosted registry / dashboard 蓝图。
-- v4.x：补齐 CI explainability、schema audit、digest-bound container SBOM/provenance、GHCR attestation、Claude Skills round-trip export、release evidence polish、multi-repo artifact index 和 external consumer adoption fixtures。
-- v4.7.x：补齐公开 negative conformance fixtures、adoption maturity model、第三方实现指南、release rollback playbook 和 v4.x 兼容性口径。
-- v4.8.x：补齐 lightweight 默认安装、post-release smoke、外部接入 intake、negative fixture 语义、agent fleet governance、supervisor governance 边界、agent handoff preview contract 和当前 release hygiene。
-- v4.8.11：补齐外部 agent runtime container image 的 preview contract；项目不内置 agent 镜像，而是验证镜像 digest、SBOM/provenance、权限边界、adapter surfaces、handoff 和 evaluation gate。
-- v4.8.12：清理 Post-release Smoke 公开日志中的 Node.js 20 deprecation 噪音，升级 artifact upload 到 v7 pinned SHA。
-- v4.8.13：修正公开 README / PyPI 长描述中的版本归因，让 runtime image contract 和 release hygiene 的阶段记录保持可信。
-- v4.8.14：打磨新用户 onboarding，明确 `init --template team-standard` 后需要先 `build --lock` 再期待 `doctor` 满分。
-- v4.8.15：收紧 `agent-handoff` preview contract，增加 privileged worker / production handoff 负例 fixtures 和 schema 测试。
-- v4.8.16：补齐 production adoption 文档，把生产 CI 的 Action SHA、Docker digest、PyPI version pin、advisory→blocking 和 runtime 边界写成可执行接入标准。
-- v4.8.17：补齐 supply-chain verification 文档，把 PyPI artifact attestation、GHCR provenance/SBOM attestation、offline bundle 和 consumer-side hash lock 写成可执行验证路径。
-- v4.8.18：修正 supply-chain verification 的 PyPI 下载命令，明确 wheel 和 sdist 需要分别下载后再验证 attestation。
-- v4.8.19：把 consumer-side hash-locked PyPI install 纳入 post-release smoke，可验证发布包能通过 `--require-hashes` 从本地 wheelhouse 安装。
-- v4.8.20：给 GHCR release digest 增加 Sigstore Cosign keyless image signature，并把签名验证纳入 full post-release smoke。
-- v4.8.21：给 GHCR release digest 增加 Syft 生成的 container OS-layer CycloneDX SBOM，并把 OS SBOM attestation 验证纳入 full post-release smoke。
-- v4.8.22：放宽 CycloneDX component `version` schema 要求，兼容真实 Syft OS/image SBOM 中无版本号的组件。
-- v4.8.23：新增 `supply-chain slsa-readiness` 和 preview schema，把 PyPI/GHCR/signature/smoke
-  证据映射到非认证 SLSA build-track readiness report。
-- v4.8.24：修正 workflow-dispatched Post-release Smoke 的源码导入路径，让 `slsa-readiness-report`
-  在 GitHub Actions full smoke 中真实通过。
-- v4.8.25：给 workflow-dispatched Post-release Smoke 安装 constrained local smoke dependencies，
-  让 `slsa-readiness-report` 在 GitHub runner 上也能使用 schema/runtime dependencies。
-- v4.8.26：给 `schema list` / `schema audit` 增加 `--stability stable|preview|all`，
-  让生产 blocking CI 明确只绑定 stable contract surface。
-- v4.8.27：把 `schema audit --stability stable` 加入 post-release new-user smoke，
-  让发布产物证明 clean PyPI install 下的 stable contract gate 可用。
-- v4.8.28：GitHub Action 默认在 `check` 前执行 `schema audit --stability stable`，
-  让一行 CI 接入同时覆盖稳定 schema contract gate；可用 `schema-audit-stability: none` 关闭。
-- v4.8.29：补齐双许可、社区支持文件、PR 模板、CODEOWNERS 和 third-party notices，
-  降低企业法务/开源办公室和外部贡献者的第一轮审查摩擦。
-- v4.8.30：让顶层 `LICENSE` 回到 GitHub 可识别的标准 MIT 文本，同时保留
-  `MIT OR Apache-2.0` package metadata 和 `LICENSE-APACHE`；并提高本地 post-release smoke
-  默认超时，减少 GHCR attestation 查询的误报。
-- v4.8.31：README 顶部 license badge 改为指向 License section，并在首页顶部说明
-  GitHub 侧按 MIT 检测、Apache-2.0 仍通过 `LICENSE-APACHE` 提供，减少双许可第一眼误读。
-- v4.8.32：增加 `external-adoption-record` preview schema 和示例，把外部仓库接入交接记录、
-  promotion decision 与公开 adopter listing consent 做成可验证 artifact。
-- v4.8.33：增加 adoption evidence pack 和 public case-study template，把真实外部仓库接入的
-  artifact handoff、review agenda、promotion decision 与公开引用授权流程写成可执行材料。
-- v4.8.34：补充外部 adoption / production workflow 的默认分支提示，避免把 `branches: [main]`
-  原样复制到默认分支为 `master` 或团队自定义分支的仓库后漏掉 SkillOps CI artifact。
-- v4.8.35：增加 authorized adoption outreach 文档和 GitHub issue 模板，把外部维护者授权、
-  public listing consent 和 case/adopter 防误读边界前置到真实 adoption 之前。
-- v4.8.36：补齐 release verification links、restricted-network install guidance、外部 adoption
-  authorization tiers、refusal paths 和 SLSA 边界说明；当前发布面覆盖 GitHub Release、
-  PyPI、GHCR、Post-release Smoke、Supply Chain Verification 和 enterprise profile gates。
-- v4.8.37：将 README / PyPI long description 的公开入口收口到当前闭环状态，移除
-  开放式任务表述，并同步当前安装、Action、Docker、adoption 和 release
-  verification 示例版本。
-- v4.8.38：将公开项目面统一为 enterprise adoption / reference wording，移除旧接入命名，
-  删除历史任务单，并让 sdist 不携带仓库测试目录。
-
-### 当前企业接入边界
-
-- 当前闭环范围：CI governance CLI、policy packs、stable schema contracts、release verification、
-  supply-chain evidence、evidence bundle、SARIF/JSON 输出和授权 adoption 记录。
-- 生产接入方式：固定 `v4.8.38` release、Action commit SHA、Docker digest 或 PyPI hash lock；
-  在 CI 中先以 advisory mode 运行，再按团队治理策略升级为 blocking gate。
-- 运行时边界：本项目不声称执行 agent runtime、租户隔离、生产调度或正式合规认证；这些能力由
-  下游运行时、平台控制面和企业合规系统负责。
-- 公开采纳边界：private、pending 或 declined adoption 不会被写成 adopter、case study 或
-  logo usage；只有得到明确 public listing consent 后才进入公开材料。
+CI 运行：ruff lint + format check + Python 3.12/3.13 matrix。
 
 ---
 

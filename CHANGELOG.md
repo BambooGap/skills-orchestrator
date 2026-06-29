@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.39] - 2026-06-29
+
+### Changed
+- Removed the README release-history and enterprise-boundary sections so the project page stays
+  focused on installation, usage, verification, and operating boundaries.
+- Updated current install, Action, Docker, and reference examples to `v4.8.39`.
+- Kept GitHub/PyPI landing-page wording concise; detailed historical changes remain in release
+  history and changelog artifacts.
+
 ## [4.8.38] - 2026-06-29
 
 ### Changed
