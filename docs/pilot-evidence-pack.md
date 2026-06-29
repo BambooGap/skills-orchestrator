@@ -53,7 +53,7 @@ repository is not allowed to disclose. If an artifact cannot be shared, mark it 
 Run these from the pilot repository root after adding `config/skills.yaml` and `skills/`:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator==4.8.35"
+python3.12 -m pip install "skills-orchestrator==4.8.36"
 
 mkdir -p skillops-pilot/artifacts/evidence
 
@@ -171,6 +171,11 @@ skills-orchestrator schema validate \
 Use `status: "present"` only when the artifact exists in the handoff package. Use
 `status: "missing"` when it should exist but was not retained. Use `status: "not-applicable"` only
 when the artifact is not required for the selected gate.
+
+The record must include `authorization.tier`. Keep the tier at `private-technical-pilot`,
+`pending`, `not-requested`, or `declined-no-follow-up` unless the repository owner explicitly
+approves public reference. A public adopter listing is valid only when `authorization.tier` is
+`public-adopter-reference` or `public-case-study` and `public_listing.status` is `approved`.
 
 Public listing must remain separate:
 

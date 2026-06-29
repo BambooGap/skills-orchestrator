@@ -21,6 +21,50 @@ The default package installs the lightweight governance CLI for `check`, `schema
 python3.12 -m pip install "skills-orchestrator[mcp]"
 ```
 
+## Restricted Or Offline Networks
+
+For enterprise networks, regional network controls, or CI systems without direct PyPI/GHCR access,
+prepare a reviewed wheelhouse from a connected environment and promote that wheelhouse through your
+internal artifact registry.
+
+Consumer-side exact version pins are not the same as hash locking. For production CI, generate and
+own a lock file with hashes in the consuming repository:
+
+```bash
+python3.12 -m pip install pip-tools
+
+cat > requirements.in <<'EOF'
+skills-orchestrator==4.8.36
+EOF
+
+pip-compile \
+  --generate-hashes \
+  --output-file requirements.lock \
+  requirements.in
+
+mkdir -p wheelhouse
+python3.12 -m pip download \
+  --require-hashes \
+  --dest wheelhouse \
+  -r requirements.lock
+```
+
+Install from the retained wheelhouse without contacting PyPI:
+
+```bash
+python3.12 -m pip install \
+  --no-index \
+  --find-links wheelhouse \
+  --require-hashes \
+  -r requirements.lock
+
+skills-orchestrator --version
+```
+
+The official post-release smoke also verifies that each release can be installed from a temporary
+hash-locked wheelhouse. See [Supply Chain Verification](supply-chain-verification.md) for PyPI
+artifact attestations, hash-lock boundaries, and evidence retention commands.
+
 ## Upgrade
 
 When upgrading an existing repository from an older Skills Orchestrator release,
@@ -66,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.35
+      - uses: BambooGap/skills-orchestrator@v4.8.36
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -90,7 +134,7 @@ skills-orchestrator init --template team-standard --hardened-workflow
 Use Docker when CI hosts should not install Python packages directly:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.35 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.36 --version
 
 docker build -t skills-orchestrator:local .
 docker run --rm -v "$PWD:/workspace" -w /workspace \

@@ -4,7 +4,7 @@
     "repository": "acme-example/checkout-service",
     "pilot_owner": "platform-team",
     "started_at": "2026-06-28T00:00:00Z",
-    "skillops_version": "v4.8.35",
+    "skillops_version": "v4.8.36",
     "ci_system": "github-actions",
     "notes": "Synthetic fixture for validating external pilot handoff shape."
   },
@@ -12,6 +12,13 @@
     "mode": "advisory",
     "policy_pack": "builtin/team-standard",
     "fail_on": "none"
+  },
+  "authorization": {
+    "tier": "private-technical-pilot",
+    "requested_at": "2026-06-28T00:00:00Z",
+    "decided_at": "2026-06-28T00:05:00Z",
+    "approved_by": "platform-team",
+    "notes": "Private technical pilot only; no public repository listing, quote, logo, or case study is approved."
   },
   "artifacts": {
     "check_json": {

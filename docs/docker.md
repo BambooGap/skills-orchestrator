@@ -13,7 +13,7 @@ docker run --rm skills-orchestrator:local --version
 Use the published release image when a CI host should not build the project first:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.35 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.36 --version
 ```
 
 ## Run Against A Repository
@@ -24,7 +24,7 @@ Mount the repository at `/workspace` and run commands from that directory:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.35 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.36 \
   check --config config/skills.yaml
 ```
 
@@ -34,7 +34,7 @@ Generate audit artifacts:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.35 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.36 \
   manifest --config config/skills.yaml --format cyclonedx \
   --output instruction-manifest.cdx.json
 ```
@@ -83,6 +83,42 @@ describes what Syft can observe in the container filesystem and package manager 
 See [Supply Chain Verification](supply-chain-verification.md) for the consuming-repository commands
 that verify the GHCR image signature, provenance attestation, package SBOM attestation, and OS/image
 SBOM attestation against the release tag and workflow identity.
+
+## Restricted Network Or GHCR Fallback
+
+Some enterprise or regional networks cannot pull from GHCR reliably. Treat that as a distribution
+constraint, not as a reason to run an unverified floating image tag.
+
+Preferred production pattern:
+
+1. From a connected environment, resolve the release digest:
+
+   ```bash
+   VERSION=v4.8.36
+   IMAGE=ghcr.io/bamboogap/skills-orchestrator
+   docker buildx imagetools inspect "${IMAGE}:${VERSION}"
+   ```
+
+2. Verify the digest, Cosign signature, provenance attestation, package SBOM attestation, and
+   OS/image SBOM attestation with [Supply Chain Verification](supply-chain-verification.md).
+
+3. Promote the verified digest into an internal registry or image cache:
+
+   ```bash
+   docker pull "${IMAGE}@sha256:<verified-digest>"
+   docker tag "${IMAGE}@sha256:<verified-digest>" internal.example.com/skillops/skills-orchestrator:v4.8.36
+   docker push internal.example.com/skillops/skills-orchestrator:v4.8.36
+   ```
+
+4. In production CI, pin the internal image by digest:
+
+   ```bash
+   docker run --rm internal.example.com/skillops/skills-orchestrator@sha256:<internal-digest> --version
+   ```
+
+If OCI distribution is blocked entirely, use the PyPI wheelhouse path in [Install](install.md) and
+retain the hash-locked requirements file plus PyPI attestation verification output with the release
+evidence bundle.
 
 Future hardening should add an explicit OS SBOM vulnerability-scanning policy and avoid claiming a
 formal SLSA level until the release process is audited against that level.

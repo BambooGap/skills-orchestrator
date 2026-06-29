@@ -80,7 +80,8 @@ Use this page as the team entry point for Skills Orchestrator.
 17. Get explicit pilot authorization before treating a real external repository as more than a self-run evaluation.
 18. Validate an external pilot record before counting the pilot as review evidence.
 19. Retain a pilot evidence pack before asking for public adopter listing permission.
-20. Use the pilot case-study template only after listing consent is approved.
+20. Use the pilot case-study template only after listing consent and the matching public
+    authorization tier are approved.
 21. Map governed instruction artifacts to agent surfaces and tenant/project scopes as metadata.
 22. Validate lead/worker handoff and evidence expectations before running supervised agents.
 23. Validate external agent runtime image contracts when workers are packaged as containers.

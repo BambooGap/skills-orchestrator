@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.35-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.36-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -17,12 +17,33 @@ on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.35` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.35` release tag | `BambooGap/skills-orchestrator@v4.8.35` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.35` |
+| OSS CLI | `v4.8.36` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.36` release tag | `BambooGap/skills-orchestrator@v4.8.36` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.36` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Adoption pilots | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/pilot-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
+
+### 可验证发布面
+
+生产团队可以直接核验当前发布物，而不是只相信 README 声明：
+
+- [GitHub latest release](https://github.com/BambooGap/skills-orchestrator/releases/latest):
+  release tag、source archive、release notes 和 release commit。
+- [PyPI project](https://pypi.org/project/skills-orchestrator/): `skills-orchestrator`
+  wheel / sdist；发布流程使用 PyPI Trusted Publishing 和 artifact attestations。
+- [GHCR package](https://github.com/BambooGap/skills-orchestrator/pkgs/container/skills-orchestrator):
+  多架构 OCI image，可按 tag 或 digest 拉取。
+- [Post-release Smoke](https://github.com/BambooGap/skills-orchestrator/actions/workflows/post-release-smoke.yml):
+  发布后核验 GitHub Release、PyPI install、consumer-side hash-locked install、GHCR
+  image、Cosign signature、SBOM/provenance attestations、SLSA readiness report 和 starter kit path。
+- [Supply Chain Verification](docs/supply-chain-verification.md): 消费端验证 PyPI
+  wheel/sdist attestations、GHCR provenance/SBOM/OS SBOM attestations、Cosign signature、
+  Docker digest 和 hash-lock 边界的命令。
+
+SLSA 边界：项目生成的是 SLSA readiness / evidence input，用于说明哪些发布证据已经
+可验证；it is not formal SLSA level certification，也不声明已经达到 SLSA Build L3+。
+细节见 [SLSA Readiness](docs/slsa-readiness.md)。
 
 ```bash
 python3.12 -m pip install skills-orchestrator
@@ -83,7 +104,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.35 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.36 --version
 ```
 
 ### 初始化项目
@@ -162,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.35
+      - uses: BambooGap/skills-orchestrator@v4.8.36
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -195,6 +216,13 @@ enterprise gate：
 
 完整步骤见 [Adoption Playbook](docs/adoption-playbook.md)。可复制的真实仓库形态示例见
 [Pilot Repository Examples](examples/pilot-repos/README.md)。
+
+### 生产采纳节奏
+
+`v4.8.x` 仍处于发布证据面 hardening 阶段，patch 频率较高。生产仓库不要自动追最新 tag：
+固定 PyPI exact version、GitHub Action release commit SHA、Docker digest 和依赖 hash lock；先以
+advisory mode 运行，再逐步升级到 blocking gate。推荐流程见
+[Production Adoption](docs/production-adoption.md)。
 
 ### 规范、一致性与可运行 Demo
 

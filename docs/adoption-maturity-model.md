@@ -53,7 +53,7 @@ Exit criteria:
 Use the GitHub Action in advisory mode:
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v4.8.35
+- uses: BambooGap/skills-orchestrator@v4.8.36
   with:
     config: config/skills.yaml
     policy-pack: builtin/team-standard
@@ -132,7 +132,8 @@ Exit criteria:
 
 - A repository outside this maintainer's control uses SkillOps in public CI or release artifacts.
 - A pilot handoff record validates against `external-pilot-record`.
-- The maintainer has permission to cite it.
+- The maintainer has permission to cite it: `public_listing.status` is approved and
+  `authorization.tier` is `public-adopter-reference` or `public-case-study`.
 - The adopter has enough context to report bugs or compatibility issues.
 
 Do not create an `ADOPTERS.md` entry before this level is real.

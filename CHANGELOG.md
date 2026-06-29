@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.36] - 2026-06-29
+
+### Added
+- Added README release-verification links for GitHub Release, PyPI, GHCR, post-release smoke, and
+  supply-chain verification docs.
+- Added restricted-network install guidance for hash-locked PyPI wheelhouses and GHCR fallback
+  promotion through internal registries.
+
+### Changed
+- Extended the preview `external-pilot-record` schema with explicit authorization tiers so private,
+  pending, or declined pilots cannot be mistaken for public adopter or case-study approval.
+- Clarified pilot outreach refusal paths and public-listing guardrails across pilot intake,
+  evidence-pack, and case-study docs.
+- Made the SLSA boundary more visible in the README: readiness reports are evidence inputs, not
+  formal SLSA level certification.
+
 ## [4.8.35] - 2026-06-29
 
 ### Added

@@ -14,6 +14,8 @@ Keep the consent level explicit:
 
 | Consent level | What is allowed | What is not allowed |
 | --- | --- | --- |
+| Not requested / pending | Prepare a proposed pilot privately and wait for maintainer response. | No public repository name, PR, follow-up campaign, or adopter claim. |
+| Declined / no follow-up | Stop the pilot request and do not contact again on the same thread. | No public mention, no case study, no "declined" naming, no repeated follow-up. |
 | Private technical pilot | Run SkillOps locally or in the repository's CI and share private artifacts with the repo owner. | No public repository name, logo, quote, or adopter claim. |
 | Public pilot mention | Say that a repository is evaluating SkillOps, only if the owner approves that wording. | No success claim, production claim, or case study. |
 | Public adopter / case study | Publish repository name, approved quote, and a case study after a validated pilot record. | No runtime control-plane, SLSA certification, or compliance claim beyond the evidence. |
@@ -41,6 +43,7 @@ conformance, and evidence artifacts.
 
 Please choose one option:
 
+- [ ] Not interested. Please close this request and do not follow up.
 - [ ] Private technical pilot only. Do not mention this repository publicly.
 - [ ] Public pilot mention is allowed, but no adopter or success claim.
 - [ ] Public adopter listing / case study may be requested after artifacts pass review.
@@ -56,6 +59,8 @@ If approved, I will share:
 - external pilot record with `public_listing.status` matching your choice
 
 No public case study, quote, logo, or `ADOPTERS.md` entry will be created without explicit approval.
+If you close this request or reply "not interested", I will not follow up and will not cite this
+repository publicly.
 ```
 
 ## What To Record
@@ -67,6 +72,7 @@ Before running the pilot, record:
 - pilot owner and reviewer contact,
 - CI system and artifact retention policy,
 - SkillOps version and policy pack,
+- authorization tier and decision timestamp,
 - requested public listing status.
 
 After running the pilot, record:
@@ -90,13 +96,16 @@ skills-orchestrator schema validate \
 Use this language until public consent is approved:
 
 - "self-run pilot" when the repository owner did not authorize the run,
+- "declined-no-follow-up" when the maintainer declines or closes the request,
 - "private technical pilot" when the owner approved private evaluation only,
 - "authorized public pilot" only when public pilot mention is approved,
-- "adopter" only after owner approval and a validated pilot record.
+- "adopter" only after `public_listing.status` is approved, `authorization.tier` is
+  `public-adopter-reference` or `public-case-study`, and the pilot record validates.
 
 Do not publish:
 
 - repository name for private pilots,
+- repository name for declined or no-response requests,
 - maintainer quotes without written approval,
 - screenshots containing private CI details,
 - production success claims without a retained evidence pack,
