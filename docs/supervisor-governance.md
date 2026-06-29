@@ -1,6 +1,6 @@
 # Supervisor Governance Model
 
-> Status: v4.8.36 adoption guidance.
+> Status: v4.8.37 adoption guidance.
 >
 > Scope: how a lead agent can coordinate specialized agents without turning Skills Orchestrator
 > into a runtime scheduler.
@@ -226,9 +226,9 @@ control plane.
 - Keep all supervisor, tenant, and cluster fields optional guidance until real adopters need schema
   enforcement.
 
-### Next
+### Boundary
 
-- Add adapter examples for supervisor/worker instruction packs when a real runtime can consume
+- Keep adapter examples for supervisor/worker instruction packs tied to runtimes that can consume
   them.
 - Keep expanding negative fixtures for unsafe worker permissions, stale evidence, or missing
   handoff evidence only when the field model can be enforced by schema.
@@ -243,7 +243,7 @@ control plane.
 - Do not run arbitrary worker agents from the CLI.
 - Do not make A2A, MCP, OpenAI Agents SDK, Claude Code, or any one framework a hard dependency.
 
-## Practical Future Shape
+## Practical Operating Shape
 
 The likely near-term shape is not one universal pattern. It is a family of compatible patterns:
 

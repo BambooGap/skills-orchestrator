@@ -57,8 +57,8 @@ should not claim Linux Foundation, OpenSSF, CNCF, or LF AI readiness until at le
 - at least two maintainers from different organizations can review and release,
 - security policy and vulnerability response have been exercised,
 - conformance fixtures are stable enough for third-party implementations,
-- governance documents describe reality rather than future intent,
-- roadmap decisions are tracked in issues or ADRs,
+- governance documents describe reality rather than intent,
+- direction-setting decisions are tracked in issues or ADRs,
 - release cadence and compatibility policy are predictable for downstream users.
 
 Until then, the correct claim is:
@@ -73,7 +73,7 @@ Until then, the correct claim is:
 - Do not make screenshots or dashboards a conformance requirement.
 - Do not make governance documents imply a multi-maintainer project before that is true.
 
-## Next Investment Order
+## Operating Order
 
 1. Harden conformance and negative fixtures.
 2. Keep GitHub Action and release trust workflows boring and reproducible.
@@ -84,7 +84,7 @@ Until then, the correct claim is:
    pilot, archive a [Pilot Evidence Pack](pilot-evidence-pack.md), and validate the pilot record
    before asking for public listing permission.
 6. Add more ecosystem round-trip examples only when they preserve the same artifact contracts.
-7. Seek real external pilot repos before expanding governance claims.
+7. Require real external pilot repos before expanding governance claims.
 
 ## OpenSSF Scorecard Hygiene
 

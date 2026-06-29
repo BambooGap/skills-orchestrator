@@ -1,6 +1,6 @@
-# Skills Orchestrator Roadmap: SkillOps for Agent Instructions
+# Skills Orchestrator Status: SkillOps for Agent Instructions
 
-> Status: v4.8.36 adoption slice: CI explainability, schema audit, release trust, adapter
+> Status: v4.8.37 adoption slice: CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > external agent runtime image contracts, and consumer-side supply-chain verification.
 >
@@ -114,7 +114,7 @@ Deliver:
 
 - Keep `skills.lock.json` as the local reproducibility lock.
 - `manifest --format json` for the native instruction manifest.
-- `manifest --format cyclonedx` as experimental output.
+- `manifest --format cyclonedx` as an interoperability output.
 - Defer SPDX until field mapping and consumer behavior are tested.
 
 Do not claim GitHub Dependency Graph or Dependency-Track support until tested with real output.
@@ -169,7 +169,7 @@ Deliver:
 - `supply-chain slsa-readiness` report that maps release evidence to SLSA build-track concepts
   while explicitly keeping formal SLSA level claims out of scope.
 
-Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the next bottleneck;
+Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the adoption bottleneck;
 distribution and CI integration are.
 
 ## Phase 6: Team Standardization And Runtime Governance
@@ -192,13 +192,12 @@ Delivered:
 - Optional HMAC task hashing for MCP audit logs.
 - Pipeline context redaction before state persistence.
 
-Next:
+Maintained boundary:
 
-- OS SBOM vulnerability scanning policy after the Syft SBOM attestation path has been exercised
-  across releases.
-- Formal SLSA level claims only after the release process is independently audited against that
+- OS SBOM vulnerability scanning remains a release evidence review concern.
+- Formal SLSA level claims require independent audit against that
   level; the current readiness report is an adoption review artifact, not a certification.
-- SPDX mapping only after a real downstream consumer is tested.
+- SPDX mapping is kept out of the core contract until a downstream consumer validates the mapping.
 
 ## Phase 7: PR Review Automation
 
@@ -236,16 +235,16 @@ Delivered:
 - `examples/adapter-evidence/` as an executable fixture for Claude Skills export, MCP client
   config, OpenAI Agents SDK scaffold, and adapter inspection evidence.
 
-Next:
+Maintained boundary:
 
-- More real ecosystem adapter examples once downstream projects need them.
-- Optional construction test when OpenAI Agents SDK is installed.
+- Adapter examples stay tied to downstream projects that can consume them.
+- OpenAI Agents SDK construction tests remain optional unless the dependency is installed.
 
 ## Phase 9: Open-core Commercial Contracts
 
 Status: implemented in v3.0.0 as docs, schemas, and examples.
 
-Goal: make future GitHub App, hosted registry, and dashboard products consume OSS artifacts instead
+Goal: make GitHub App, hosted registry, and dashboard products consume OSS artifacts instead
 of forking semantics.
 
 Delivered:
@@ -272,7 +271,7 @@ Delivered:
 - SPEC, conformance, registry/evidence, and docs index coverage for Level 5 multi-repo artifact
   conformance.
 
-Next:
+Maintained boundary:
 
 - Use the artifact index as the OSS contract consumed by hosted registry, GitHub App, or dashboard
   products.
@@ -291,12 +290,12 @@ Delivered:
 - `docs/agent-fleet-governance.md` as the boundary document for agent fleet instruction
   governance.
 - README and documentation index links for agent ecosystem integrators.
-- Roadmap language that treats A2A, MCP, Claude Code subagents, and OpenAI Agents SDK handoffs as
+- Boundary language that treats A2A, MCP, Claude Code subagents, and OpenAI Agents SDK handoffs as
   downstream consumption or adapter surfaces, not dependencies of the core CLI.
 
-Next:
+Maintained boundary:
 
-- Add only adopter-driven fixtures for agent-surface metadata, such as Claude Code subagent
+- Keep only adopter-driven fixtures for agent-surface metadata, such as Claude Code subagent
   boundaries, MCP server scope, OpenAI Agents SDK role scaffolds, or A2A-facing agent card exports.
 - Keep tenant/project/cluster metadata optional until real adopters need it.
 - Keep provider project, budget, service account, and audit-log administration outside the OSS CLI.
@@ -316,14 +315,14 @@ Delivered:
 - `agent-handoff` preview schema and `examples/agent-handoff/` fixtures for machine-checkable
   supervisor/worker delegation, tenant scope, tool boundary, evidence, and evaluation gates.
 - README, documentation index, and agent fleet governance links.
-- Roadmap language that distinguishes a conversational thread list from a real supervisor control
+- Boundary language that distinguishes a conversational thread list from a real supervisor control
   loop.
 
-Next:
+Maintained boundary:
 
-- Expand lead/worker/handoff fixtures only when a downstream runtime or adopter can consume them.
+- Keep lead/worker/handoff fixtures tied to downstream runtimes or adopters that can consume them.
 - Keep worker scheduling, queues, retries, and provider permissions outside the core CLI.
-- Treat future supervisor manifests as preview contracts until at least two adapter surfaces need
+- Treat supervisor manifests as preview contracts until at least two adapter surfaces need
   the same metadata.
 
 ## Phase 13: Agent Runtime Image Contracts
@@ -344,16 +343,16 @@ Delivered:
 - README, SPEC, CONFORMANCE, documentation index, agent fleet governance, supervisor governance,
   and third-party implementation guidance.
 
-Next:
+Maintained boundary:
 
-- Add adopter-driven runtime image fixtures for real external consumers such as devcontainer
+- Keep runtime image fixtures adopter-driven for real external consumers such as devcontainer
   workers, OpenAI Agents SDK workers, A2A-facing services, or queue workers.
 - Keep runtime image fields preview until at least two downstream consumers need the same metadata.
 - Do not bundle, endorse, or launch an official agent runtime image from the core CLI.
 
 ## Phase 5: Community Narrative
 
-Write publicly only after the GitHub Action and SARIF path are live.
+Public material should lead with concrete output from the GitHub Action and SARIF path.
 
 Suggested article title:
 

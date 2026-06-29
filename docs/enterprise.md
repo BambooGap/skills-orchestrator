@@ -42,7 +42,7 @@ for reproducibility, exported as machine-readable inventory, and optionally rout
 
 ## Product Ceiling
 
-The next ceiling is not more CLI commands. The ceiling is becoming the standard governance layer for
+The adoption ceiling is not more CLI commands. The ceiling is becoming the standard governance layer for
 team-owned agent instruction assets:
 
 1. enforceable policy packs,
@@ -52,5 +52,5 @@ team-owned agent instruction assets:
 5. signed release and container evidence,
 6. org-level registries for many repositories.
 
-See [Open-core Boundary](open-core-boundary.md) for what belongs in OSS core versus future hosted
+See [Open-core Boundary](open-core-boundary.md) for what belongs in OSS core versus hosted
 registry, GitHub App, and enterprise dashboard products.

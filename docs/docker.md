@@ -13,7 +13,7 @@ docker run --rm skills-orchestrator:local --version
 Use the published release image when a CI host should not build the project first:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.36 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.37 --version
 ```
 
 ## Run Against A Repository
@@ -24,7 +24,7 @@ Mount the repository at `/workspace` and run commands from that directory:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.36 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.37 \
   check --config config/skills.yaml
 ```
 
@@ -34,7 +34,7 @@ Generate audit artifacts:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.36 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.37 \
   manifest --config config/skills.yaml --format cyclonedx \
   --output instruction-manifest.cdx.json
 ```
@@ -48,7 +48,7 @@ cannot accidentally add an unconstrained `pip install` path. The image does not 
 upgrade step and runs the CLI as a non-root user.
 
 The Docker base image is pinned to the `python:3.12.13-slim-trixie` manifest-list digest in the
-Dockerfile. CI runs `scripts/check_docker_base_digest.py` so future Dockerfile changes cannot
+Dockerfile. CI runs `scripts/check_docker_base_digest.py` so Dockerfile changes cannot
 silently return to a floating base tag.
 
 ## GHCR Publishing
@@ -94,7 +94,7 @@ Preferred production pattern:
 1. From a connected environment, resolve the release digest:
 
    ```bash
-   VERSION=v4.8.36
+   VERSION=v4.8.37
    IMAGE=ghcr.io/bamboogap/skills-orchestrator
    docker buildx imagetools inspect "${IMAGE}:${VERSION}"
    ```
@@ -106,8 +106,8 @@ Preferred production pattern:
 
    ```bash
    docker pull "${IMAGE}@sha256:<verified-digest>"
-   docker tag "${IMAGE}@sha256:<verified-digest>" internal.example.com/skillops/skills-orchestrator:v4.8.36
-   docker push internal.example.com/skillops/skills-orchestrator:v4.8.36
+   docker tag "${IMAGE}@sha256:<verified-digest>" internal.example.com/skillops/skills-orchestrator:v4.8.37
+   docker push internal.example.com/skillops/skills-orchestrator:v4.8.37
    ```
 
 4. In production CI, pin the internal image by digest:

@@ -12,7 +12,7 @@ def format_instruction_manifest_json(manifest: dict[str, Any]) -> str:
 
 
 def format_instruction_manifest_cyclonedx(manifest: dict[str, Any]) -> str:
-    """Map the instruction manifest to an experimental CycloneDX BOM."""
+    """Map the instruction manifest to a CycloneDX interoperability BOM."""
     component_ref = "skills-orchestrator:instruction-set"
     skill_refs = [f"skill:{skill['id']}" for skill in manifest["skills"]]
     payload = {

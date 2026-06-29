@@ -10,7 +10,7 @@ skills-orchestrator manifest \
   --output instruction-manifest.json
 ```
 
-Generate an experimental CycloneDX adapter:
+Generate a CycloneDX interoperability adapter:
 
 ```bash
 skills-orchestrator manifest \

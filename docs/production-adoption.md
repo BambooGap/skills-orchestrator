@@ -36,8 +36,8 @@ For production CI, pin every moving part:
 | Surface | Minimum production rule |
 | --- | --- |
 | GitHub Action | Pin `actions/checkout` and `BambooGap/skills-orchestrator` to full commit SHAs. |
-| PyPI CLI | Pin an exact version such as `skills-orchestrator==4.8.36`. |
-| Docker image | Pin the GHCR digest, not only `:v4.8.36`. |
+| PyPI CLI | Pin an exact version such as `skills-orchestrator==4.8.37`. |
+| Docker image | Pin the GHCR digest, not only `:v4.8.37`. |
 | Policy pack | Start with `builtin/team-standard`; promote to `builtin/engineering-grade` when owners accept external import and license requirements. |
 | Evidence | Retain `check.json`, SARIF, `ci-explainability.json`, registry outputs, `evidence-manifest.json`, `post-release-smoke.json`, and `slsa-readiness.json`. |
 | Rollback | Keep a documented rollback owner and downgrade path before enabling blocking gates. |
@@ -50,13 +50,13 @@ release pin in production CI.
 Resolve the action commit from the release tag:
 
 ```bash
-git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.36
+git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.37
 ```
 
 Resolve the image digest:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/bamboogap/skills-orchestrator:v4.8.36
+docker buildx imagetools inspect ghcr.io/bamboogap/skills-orchestrator:v4.8.37
 ```
 
 Use the returned SHA and digest in production workflows. Keep the tag in comments or documentation
@@ -90,7 +90,7 @@ jobs:
           fetch-depth: 0
 
       # Resolve with:
-      # git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.36
+      # git ls-remote https://github.com/BambooGap/skills-orchestrator.git refs/tags/v4.8.37
       - id: skillops
         uses: BambooGap/skills-orchestrator@<skills-orchestrator-release-commit-sha>
         with:
@@ -203,7 +203,7 @@ platform's admission policy.
 For CI hosts that install the CLI directly, pin the version:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator==4.8.36"
+python3.12 -m pip install "skills-orchestrator==4.8.37"
 skills-orchestrator schema audit --stability stable
 skills-orchestrator check --config config/skills.yaml --policy-pack builtin/team-standard --fail-on warning
 ```
@@ -216,7 +216,7 @@ are promoted to stable.
 Use the optional MCP extra only when the CI job intentionally runs MCP smoke checks:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator[mcp]==4.8.36"
+python3.12 -m pip install "skills-orchestrator[mcp]==4.8.37"
 ```
 
 Exact version pins are not hash-locked installs. If the organization requires hash locking, generate
