@@ -383,7 +383,7 @@ Claude Skills export manifest、SBOM、dashboard snapshot/rollup、agent handoff
 适合平台团队做自动发现和兼容性审计；`schema audit` 会自检所有打包 schema 和
 catalog 元数据，是 v4 线的合同自审计 gate。生产 blocking CI 建议使用
 `schema audit --stability stable`，只绑定 stable contract surface；维护者发版继续运行默认
-`schema audit --stability all`，同时覆盖 preview fixtures 和未来合同。
+`schema audit --stability all`，同时覆盖 stable 与 preview 合同 fixtures。
 `builtin/engineering-grade` 在 v3.2 起额外检查 `license`、外部 skill `provenance`
 和 review-window 元数据；外部导入应保留 observed `source_url`、`source_ref`、
 `source_commit`、`content_hash` 和 `fetched_at`，不要把未验证 frontmatter 当成可信来源。
@@ -417,13 +417,13 @@ skills-orchestrator schema validate \
   --input examples/commercial-handoff/registry-ingest.json
 ```
 
-开源核心只负责产出本地 artifact 与机器可读合同。后续 GitHub App、hosted registry
-和 enterprise dashboard 应消费这些文件，而不是在 SaaS 后端里重新实现 resolver 或
-registry 语义。
+开源核心只负责产出本地 artifact 与机器可读合同。GitHub App、hosted registry
+和 enterprise dashboard 这类外部产品应消费这些文件，而不是在 SaaS 后端里重新实现
+resolver 或 registry 语义。
 
 ### 导出 Instruction Manifest
 
-Native JSON 保留 Skills Orchestrator 的完整语义，CycloneDX 输出是实验性映射，用于进入现有 BOM / supply-chain 词汇体系。
+Native JSON 保留 Skills Orchestrator 的完整语义，CycloneDX 输出是互操作映射，用于进入现有 BOM / supply-chain 词汇体系。
 
 ```bash
 skills-orchestrator manifest --config config/skills.yaml --format json
@@ -463,7 +463,7 @@ Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
 | `AGENTS.md` | Bootstrap。告诉 Agent 当前项目有哪些 required / available skills，以及如何按需请求更多内容。多数 Agent 只在会话启动或项目重新加载时读取它。 | `build`, `sync agents-md` |
 | Check Reports | Static diagnostics。检查 metadata、重复 id、冲突声明、lock drift，并输出 text / JSON / SARIF。 | `check`, `validate --format json` |
 | Policy Packs | Team governance。把 owner/source/version/lifecycle/approver 等团队规则变成可执行检查。 | `check --policy-pack builtin/team-standard` |
-| Instruction Manifest | Inventory export。导出 native JSON 和实验性 CycloneDX BOM，便于把 agent instructions 纳入供应链资产清单。 | `manifest` |
+| Instruction Manifest | Inventory export。导出 native JSON 和 CycloneDX BOM，便于把 agent instructions 纳入供应链资产清单。 | `manifest` |
 | Policy Export | Policy proof。导出 OPA input 和 Rego test fixture，证明 resolver 事实可被 policy-as-code 审计。 | `policy export` |
 | Registry & Evidence | SkillOps evidence。生成组织级 registry、doctor readiness 报告和发布审计证据包。 | `registry`, `doctor`, `evidence export` |
 | MCP Server | Runtime skill loading。对话过程中通过 `prepare_context` / `search_skills` / `get_skill` 动态选择并获取本轮 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
@@ -842,9 +842,9 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
 
 ---
 
-## 路线图
+## 当前闭环与发布记录
 
-### 已完成主线
+### 已验证能力
 
 - v2.0.x：稳定了 build / validate / zone / conflict、frontmatter discovery、MCP Server、Skill Inheritance、sync targets、Pipeline 编排、PyPI 发布和基础安全边界。
 - 检查诊断与机器报告阶段：补齐 `check` 诊断面，输出 JSON / SARIF，并把项目定位收敛到 SkillOps 和 instruction supply chain。
@@ -895,21 +895,20 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 矩阵测试。
   原样复制到默认分支为 `master` 或团队自定义分支的仓库后漏掉 SkillOps CI artifact。
 - v4.8.35：增加 authorized pilot outreach 文档和 GitHub issue 模板，把外部维护者授权、
   public listing consent 和 case/adopter 防误读边界前置到真实 pilot 之前。
+- v4.8.36：补齐 release verification links、restricted-network install guidance、外部 pilot
+  authorization tiers、refusal paths 和 SLSA 边界说明；当前发布面覆盖 GitHub Release、
+  PyPI、GHCR、Post-release Smoke、Supply Chain Verification 和 enterprise profile gates。
 
-### 下一阶段
+### 当前企业试点边界
 
-- 优先把 `docs/pilot-evidence-pack.md` 用在真实外部仓库 pilot，生成 validated
-  `external-pilot-record`，并在 public listing consent 获批后沉淀真实 case study。
-- 增加更多真实生态 adapter examples，包括跨仓 MCP client config、OpenAI Agents SDK scaffold 和 Claude Skills bundle 的负例 fixtures。
-- 继续推进 formal SLSA 前置条件、OS SBOM 漏洞扫描策略和 OpenSSF Scorecard hygiene；SLSA readiness
-  map 已可生成和 schema validate，但不等同于 formal SLSA level。
-- 围绕 [Agent Fleet Governance](docs/agent-fleet-governance.md) 增加真实 adopter 需要的 adapter fixtures，
-  但不把 CLI 扩展成 agent runtime、tenant admin tool 或 multi-agent queue。
-- 围绕 [Supervisor Governance](docs/supervisor-governance.md) 继续完善真实 adopter 需要的 lead/worker/handoff
-  证据 fixtures；`agent-handoff` 已作为 preview schema 提供，但仍由下游 runtime 负责调度、权限执行和租户隔离。
-- 围绕 [Agent Runtime Image Contract Example](examples/agent-runtime-image/README.md) 继续收集外部 runtime
-  消费场景；只有当两个以上真实下游需要同一字段时，才把 preview 字段提升为 stable contract。
-- 在外部仓库实现 GitHub App / hosted registry / dashboard，继续消费 OSS artifact contracts；核心 CLI 只维护 artifact contracts、schema 和验证命令。
+- 当前闭环范围：CI governance CLI、policy packs、stable schema contracts、release verification、
+  supply-chain evidence、evidence bundle、SARIF/JSON 输出和授权 pilot 记录。
+- 生产接入方式：固定 `v4.8.36` release、Action commit SHA、Docker digest 或 PyPI hash lock；
+  在 CI 中先以 advisory mode 运行，再按团队治理策略升级为 blocking gate。
+- 运行时边界：本项目不声称执行 agent runtime、租户隔离、生产调度或正式合规认证；这些能力由
+  下游运行时、平台控制面和企业合规系统负责。
+- 公开采纳边界：private、pending 或 declined pilot 不会被写成 adopter、case study 或
+  logo usage；只有得到明确 public listing consent 后才进入公开材料。
 
 ---
 
