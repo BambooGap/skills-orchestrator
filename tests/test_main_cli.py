@@ -498,3 +498,47 @@ steps:
     assert result.exit_code != 0
     assert "定义无效" in result.output
     assert "不可达" in result.output
+
+
+def test_pipeline_start_and_advance_do_not_require_mcp_runtime(workspace, monkeypatch):
+    import builtins
+
+    monkeypatch.setenv("HOME", str(workspace["root"]))
+    real_import = builtins.__import__
+
+    def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if level == 0 and (
+            name == "mcp" or name.startswith("mcp.") or name == "skills_orchestrator.mcp.tools"
+        ):
+            raise ModuleNotFoundError("No module named 'mcp'", name="mcp")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    runner = CliRunner()
+
+    start_result = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "start",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+        ],
+    )
+    assert start_result.exit_code == 0
+    assert "已启动" in start_result.output
+    assert "当前步骤: step1" in start_result.output
+
+    advance_result = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "advance",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+        ],
+    )
+    assert advance_result.exit_code == 0
+    assert "已完成" in advance_result.output

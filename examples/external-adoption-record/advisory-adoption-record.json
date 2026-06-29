@@ -4,7 +4,7 @@
     "repository": "acme-example/checkout-service",
     "adoption_owner": "platform-team",
     "started_at": "2026-06-28T00:00:00Z",
-    "skillops_version": "v4.8.40",
+    "skillops_version": "v4.8.41",
     "ci_system": "github-actions",
     "notes": "Reference example for validating external adoption handoff shape."
   },

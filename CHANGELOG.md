@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.41] - 2026-06-29
+
+### Fixed
+- Fixed the base PyPI install path for `pipeline start` and `pipeline advance` so public pipeline
+  CLI commands no longer require the optional `skills-orchestrator[mcp]` runtime extra.
+- Added regression coverage that blocks external `mcp` imports while running the pipeline CLI.
+
 ## [4.8.40] - 2026-06-29
 
 ### Fixed
