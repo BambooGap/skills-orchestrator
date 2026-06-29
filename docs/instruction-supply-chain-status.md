@@ -1,6 +1,6 @@
-# Skills Orchestrator Status: SkillOps for Agent Instructions
+# Skills Orchestrator Scope: SkillOps for Agent Instructions
 
-> Status: v4.8.38 adoption slice: CI explainability, schema audit, release trust, adapter
+> Supported scope (v4.8.41): CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > external agent runtime image contracts, and consumer-side supply-chain verification.
 >
@@ -56,7 +56,7 @@ The durable market path is to connect Skills Orchestrator to established ecosyst
 | OPA / Rego | Policy-as-code vocabulary | Export inputs/tests, not a second runtime backend |
 | OpenSSF / LF AI & Data / CNCF | Community and enterprise narrative | Evidence-backed article and integration examples |
 
-## Phase 0: Shipped in v2.2.0
+## Capability 0: Shipped in v2.2.0
 
 Delivered:
 
@@ -80,7 +80,7 @@ Initial rules:
 | SO005 | oversized-skill | info | Large skill file deserves review before runtime injection. |
 | SO007 | lock-drift | warning | Current resolved skills differ from lock. |
 
-## Phase 1: GitHub Action and Code Scanning
+## Capability 1: GitHub Action and Code Scanning
 
 Status: implemented for v2.3.0.
 
@@ -104,7 +104,7 @@ Default:
 - Keep `upload-sarif` explicit. Hidden upload attempts create confusing permission failures.
 - Provide a complete one-step example for teams that do want Code Scanning.
 
-## Phase 2: Instruction Manifest
+## Capability 2: Instruction Manifest
 
 Status: implemented for v2.3.0.
 
@@ -119,7 +119,7 @@ Deliver:
 
 Do not claim GitHub Dependency Graph or Dependency-Track support until tested with real output.
 
-## Phase 3: Policy Export
+## Capability 3: Policy Export
 
 Status: implemented for v2.3.0.
 
@@ -135,7 +135,7 @@ Deliver:
 Do not add OPA as a runtime backend yet. The existing resolver is the authoritative decision
 system; OPA should be a proof and integration surface, not a second source of truth.
 
-## Phase 4: Distribution Hardening
+## Capability 4: Distribution Hardening
 
 Status: implemented across v2.4.0-v4.8.x for Docker smoke, package SBOM, CodeQL, GHCR release
 push, pinned third-party Actions, PyPI artifact attestation, digest-bound container
@@ -172,7 +172,7 @@ Deliver:
 Python remains acceptable for the core CLI. Rewriting in Go or Rust is not the adoption bottleneck;
 distribution and CI integration are.
 
-## Phase 6: Team Standardization And Runtime Governance
+## Capability 6: Team Standardization And Runtime Governance
 
 Status: implemented across v2.4.0 and v2.5.x.
 
@@ -199,7 +199,7 @@ Maintained boundary:
   level; the current readiness report is an adoption review artifact, not a certification.
 - SPDX mapping is kept out of the core contract until a downstream consumer validates the mapping.
 
-## Phase 7: PR Review Automation
+## Capability 7: PR Review Automation
 
 Status: implemented in v3.0.0.
 
@@ -213,7 +213,7 @@ Delivered:
 - GitHub PR comment upsert in an integration module, not the registry core.
 - Documentation for `pull-requests: write` and avoiding `pull_request_target` by default.
 
-## Phase 8: Ecosystem Adapters
+## Capability 8: Ecosystem Adapters
 
 Status: implemented across v3.0.0-v4.5.0 as inspection, scaffold generation, Claude Skills export,
 and adapter evidence fixtures.
@@ -240,7 +240,7 @@ Maintained boundary:
 - Adapter examples stay tied to downstream projects that can consume them.
 - OpenAI Agents SDK construction tests remain optional unless the dependency is installed.
 
-## Phase 9: Open-core Commercial Contracts
+## Capability 9: Open-core Commercial Contracts
 
 Status: implemented in v3.0.0 as docs, schemas, and examples.
 
@@ -254,7 +254,7 @@ Delivered:
 - JSON Schema contracts for installation, ingest, dashboard snapshots, and dashboard rollups.
 - `examples/commercial-handoff/` sample payloads.
 
-## Phase 10: Multi-repo Artifact Contracts
+## Capability 10: Multi-repo Artifact Contracts
 
 Status: implemented in v4.5.0.
 
@@ -278,7 +278,7 @@ Maintained boundary:
 - Keep graph viewers and hosted dashboards outside the core CLI unless they remain static artifact
   renderers.
 
-## Phase 11: Agent Fleet Governance
+## Capability 11: Agent Fleet Governance
 
 Status: introduced in v4.8.4 as documentation and adoption guidance.
 
@@ -300,7 +300,7 @@ Maintained boundary:
 - Keep tenant/project/cluster metadata optional until real adopters need it.
 - Keep provider project, budget, service account, and audit-log administration outside the OSS CLI.
 
-## Phase 12: Supervisor Governance
+## Capability 12: Supervisor Governance
 
 Status: introduced in v4.8.5 as documentation and adoption guidance.
 Machine-checkable handoff fixtures were hardened in v4.8.15 with additional negative cases for
@@ -325,7 +325,7 @@ Maintained boundary:
 - Treat supervisor manifests as preview contracts until at least two adapter surfaces need
   the same metadata.
 
-## Phase 13: Agent Runtime Image Contracts
+## Capability 13: Agent Runtime Image Contracts
 
 Status: introduced in v4.8.11 as a preview schema and example fixture; runtime-image docs refreshed
 in v4.8.13.
@@ -350,7 +350,7 @@ Maintained boundary:
 - Keep runtime image fields preview until at least two downstream consumers need the same metadata.
 - Do not bundle, endorse, or launch an official agent runtime image from the core CLI.
 
-## Phase 5: Community Narrative
+## Capability 5: Community Narrative
 
 Public material should lead with concrete output from the GitHub Action and SARIF path.
 

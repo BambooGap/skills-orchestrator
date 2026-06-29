@@ -11,12 +11,15 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from skills_orchestrator.models import SkillMeta
     from skills_orchestrator.mcp.registry import SkillRegistry
+
+logger = logging.getLogger(__name__)
 
 
 class SkillContentResolver:
@@ -65,7 +68,11 @@ class SkillContentResolver:
                 if content:
                     return content
             except Exception:
-                pass  # registry 失败时降级
+                logger.debug(
+                    "Skill registry content lookup failed for %s; falling back to file read",
+                    skill.id,
+                    exc_info=True,
+                )
 
         # 检查本地缓存
         if skill.id in self._cache:
@@ -114,7 +121,11 @@ class SkillContentResolver:
                 if content:
                     return content
             except Exception:
-                pass
+                logger.debug(
+                    "Skill registry base content lookup failed for %s; falling back to file read",
+                    base_id,
+                    exc_info=True,
+                )
 
         # 检查缓存
         if base_id in self._cache:

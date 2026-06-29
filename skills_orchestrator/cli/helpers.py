@@ -100,7 +100,7 @@ def _slugify(text: str) -> str:
 
     result = re.sub(r"[^\w\u4e00-\u9fff-]", "-", text.lower()).strip("-")
     if not result or result.strip("-") == "":
-        return f"skill-{hashlib.sha1(text.encode()).hexdigest()[:8]}"
+        return f"skill-{hashlib.sha256(text.encode()).hexdigest()[:8]}"
     return result
 
 
