@@ -352,7 +352,7 @@ def _team_review_pipeline() -> str:
         "id": "team-review",
         "name": "Team Review",
         "steps": [
-            {"id": "code-review", "skill": "team-code-review"},
+            {"id": "code-review", "skill": "team-code-review", "next": ["release-checklist"]},
             {"id": "release-checklist", "skill": "team-release-checklist"},
         ],
     }

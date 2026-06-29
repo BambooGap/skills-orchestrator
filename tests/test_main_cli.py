@@ -466,3 +466,35 @@ def test_pipeline_start_missing(workspace):
     )
     assert result.exit_code != 0
     assert "不存在或加载失败" in result.output
+
+
+def test_pipeline_start_invalid_definition_exits_nonzero(workspace):
+    invalid_pipeline = workspace["root"] / "config" / "pipelines" / "invalid-pipeline.yaml"
+    invalid_pipeline.write_text(
+        """
+id: invalid-pipeline
+name: Invalid Pipeline
+steps:
+  - id: first
+    skill: test-skill
+  - id: unreachable
+    skill: test-skill
+""",
+        encoding="utf-8",
+    )
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "start",
+            "invalid-pipeline",
+            "--config",
+            workspace["config"],
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "定义无效" in result.output
+    assert "不可达" in result.output

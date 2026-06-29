@@ -2183,6 +2183,12 @@ def pipeline_start(
     if pipeline is None:
         click.echo(_err(f"Pipeline '{pipeline_id}' 不存在或加载失败"), err=True)
         raise SystemExit(1)
+    structure_errors = pipeline.validate()
+    if structure_errors:
+        click.echo(_err(f"Pipeline '{pipeline_id}' 定义无效:"), err=True)
+        for error in structure_errors:
+            click.echo(_err(f"- {error}"), err=True)
+        raise SystemExit(1)
 
     try:
         registry = SkillRegistry(config_path, zone_id=zone)

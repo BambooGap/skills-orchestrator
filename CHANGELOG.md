@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.40] - 2026-06-29
+
+### Fixed
+- Fixed the `team-standard` starter kit `team-review` pipeline so `code-review` links to
+  `release-checklist` and validates out of the box.
+- Fixed `pipeline start` so invalid pipeline definitions return a non-zero CLI exit code instead of
+  printing an error as a successful command.
+
 ## [4.8.39] - 2026-06-29
 
 ### Changed

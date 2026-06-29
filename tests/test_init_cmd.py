@@ -3,6 +3,7 @@ from click.testing import CliRunner
 
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.cli.init_cmd import init
+from skills_orchestrator.pipeline.loader import PipelineLoader
 
 
 def test_init_non_interactive_happy_path(tmp_path):
@@ -204,6 +205,9 @@ def test_init_team_standard_template_generates_portable_scaffold(tmp_path, monke
     )
     assert "security-events: write" not in workflow
     assert "upload-sarif: true" not in workflow
+    pipeline = PipelineLoader().load(str(tmp_path / "config" / "pipelines" / "team-review.yaml"))
+    assert pipeline.validate() == []
+    assert pipeline.get_step("code-review").next == ["release-checklist"]
 
     report = run_check(str(config_path), policy_packs=["builtin/team-standard"])
     assert report.diagnostics == []
