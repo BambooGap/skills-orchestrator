@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.35] - 2026-06-29
+
+### Added
+- Added an authorized pilot outreach guide with maintainer request wording, consent levels, and
+  public-claim guardrails before external pilot evidence is collected.
+- Added a GitHub issue template for external pilot requests so repository owners can distinguish
+  private technical pilots, public pilot mentions, and adopter / case-study approval.
+
 ## [4.8.34] - 2026-06-29
 
 ### Fixed

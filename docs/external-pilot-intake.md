@@ -2,7 +2,8 @@
 
 Use this checklist when a repository outside this project wants to trial Skills Orchestrator. It is
 written for platform teams, security reviewers, and maintainers who need a clear go / no-go decision
-before turning SkillOps into a blocking gate.
+before turning SkillOps into a blocking gate. If the repository owner has not approved a pilot yet,
+start with [Authorized Pilot Outreach](pilot-outreach.md).
 
 This is not an `ADOPTERS.md` substitute. A repository becomes an adopter only after it runs SkillOps
 in its own CI or release evidence and gives permission to be listed.
@@ -102,7 +103,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v4.8.34
+      - uses: BambooGap/skills-orchestrator@v4.8.35
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -203,7 +204,7 @@ The record should use this shape:
     "repository": "owner/repo",
     "pilot_owner": "team-or-person",
     "started_at": "YYYY-MM-DD",
-    "skillops_version": "v4.8.34",
+    "skillops_version": "v4.8.35",
     "ci_system": "github-actions"
   },
   "gate": {
