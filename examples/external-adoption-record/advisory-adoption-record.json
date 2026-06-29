@@ -1,0 +1,68 @@
+{
+  "schema_version": "skills-orchestrator.external-adoption-record.v1",
+  "adoption": {
+    "repository": "acme-example/checkout-service",
+    "adoption_owner": "platform-team",
+    "started_at": "2026-06-28T00:00:00Z",
+    "skillops_version": "v4.8.38",
+    "ci_system": "github-actions",
+    "notes": "Reference example for validating external adoption handoff shape."
+  },
+  "gate": {
+    "mode": "advisory",
+    "policy_pack": "builtin/team-standard",
+    "fail_on": "none"
+  },
+  "authorization": {
+    "tier": "private-technical-adoption",
+    "requested_at": "2026-06-28T00:00:00Z",
+    "decided_at": "2026-06-28T00:05:00Z",
+    "approved_by": "platform-team",
+    "notes": "Private technical adoption only; no public repository listing, quote, logo, or case study is approved."
+  },
+  "artifacts": {
+    "check_json": {
+      "status": "present",
+      "path": "artifacts/check.json"
+    },
+    "sarif": {
+      "status": "present",
+      "path": "artifacts/skills-orchestrator.sarif"
+    },
+    "registry_diff": {
+      "status": "present",
+      "path": "artifacts/registry-diff.md"
+    },
+    "ci_explainability": {
+      "status": "present",
+      "path": "artifacts/ci-explainability.json"
+    },
+    "reviewer_summary": {
+      "status": "present",
+      "path": "artifacts/skillops-review-summary.md"
+    },
+    "dashboard_snapshot": {
+      "status": "not-applicable",
+      "notes": "Dashboard snapshot is not required for the first advisory run."
+    },
+    "evidence_manifest": {
+      "status": "present",
+      "path": "artifacts/evidence/evidence-manifest.json"
+    },
+    "conformance_report": {
+      "status": "present",
+      "path": "artifacts/conformance.json"
+    }
+  },
+  "promotion": {
+    "decision": "stay-advisory",
+    "decided_at": "2026-06-28T00:30:00Z",
+    "next_review": "2026-07-12",
+    "reviewer": "platform-team",
+    "rationale": "First CI run produced evidence, but reviewers need two weeks of advisory output before enabling warning gate."
+  },
+  "public_listing": {
+    "status": "not-requested",
+    "notes": "Technical adoption evidence is present, but public adopter listing consent has not been requested."
+  }
+}

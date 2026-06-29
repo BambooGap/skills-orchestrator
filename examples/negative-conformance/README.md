@@ -4,7 +4,7 @@ This directory contains intentionally invalid SkillOps projects. They are design
 teams, security reviewers, and third-party implementers who need to prove that malformed AI
 instruction artifacts fail deterministically.
 
-These fixtures are different from the normal pilot examples:
+These fixtures are different from the normal adoption examples:
 
 - they are supposed to emit the expected `check` rule ids,
 - each case documents the expected SkillOps rule ids,
@@ -49,5 +49,5 @@ The machine-readable index is `cases.json`.
 ## Why This Matters
 
 Positive examples prove that a happy path can pass. Negative fixtures prove that the contract is a
-real gate. For enterprise pilots, both are required: the tool must accept good instruction assets
+real gate. For enterprise adoptions, both are required: the tool must accept good instruction assets
 and reject high-risk instruction assets with stable rule ids, locations, severities, and fixes.

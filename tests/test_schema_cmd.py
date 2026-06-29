@@ -96,7 +96,7 @@ def test_schema_resources_are_packaged_and_loadable():
         "container-provenance",
         "doctor",
         "evidence",
-        "external-pilot-record",
+        "external-adoption-record",
         "enterprise-dashboard-rollup",
         "enterprise-dashboard-snapshot",
         "github-app-installation",
@@ -307,10 +307,10 @@ def test_schema_list_json(tmp_path):
         == "skills-orchestrator.claude-skills-export.v1"
     )
     assert schemas["enterprise-dashboard-rollup"]["stability"] == "preview"
-    assert schemas["external-pilot-record"]["stability"] == "preview"
+    assert schemas["external-adoption-record"]["stability"] == "preview"
     assert (
-        schemas["external-pilot-record"]["contract_id"]
-        == "skills-orchestrator.external-pilot-record.v1"
+        schemas["external-adoption-record"]["contract_id"]
+        == "skills-orchestrator.external-adoption-record.v1"
     )
     catalog_file = tmp_path / "schema-catalog.json"
     catalog_file.write_text(result.output, encoding="utf-8")
@@ -377,7 +377,7 @@ def test_schema_audit_json_can_filter_preview_contracts(tmp_path):
     assert payload["summary"]["stable"] == 0
     assert payload["summary"]["preview"] > 0
     assert any(check["kind"] == "agent-handoff" for check in payload["checks"])
-    assert any(check["kind"] == "external-pilot-record" for check in payload["checks"])
+    assert any(check["kind"] == "external-adoption-record" for check in payload["checks"])
     audit_file = tmp_path / "schema-audit-preview.json"
     audit_file.write_text(result.output, encoding="utf-8")
     assert validate_document("schema-audit", str(audit_file)).valid is True
@@ -462,25 +462,25 @@ def test_github_app_installation_rejects_overbroad_permissions(tmp_path):
     assert any(error["path"].startswith("$.permissions") for error in result_payload["errors"])
 
 
-def test_external_pilot_record_example_validates():
+def test_external_adoption_record_example_validates():
     input_file = (
         Path(__file__).resolve().parents[1]
         / "examples"
-        / "external-pilot-record"
-        / "advisory-pilot-record.json"
+        / "external-adoption-record"
+        / "advisory-adoption-record.json"
     )
 
-    result = validate_document("external-pilot-record", str(input_file))
+    result = validate_document("external-adoption-record", str(input_file))
 
     assert result.valid is True
 
 
-def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
+def test_external_adoption_record_rejects_unsafe_artifact_path(tmp_path):
     payload = {
-        "schema_version": "skills-orchestrator.external-pilot-record.v1",
-        "pilot": {
+        "schema_version": "skills-orchestrator.external-adoption-record.v1",
+        "adoption": {
             "repository": "org/repo",
-            "pilot_owner": "platform-team",
+            "adoption_owner": "platform-team",
             "started_at": "2026-06-28T00:00:00Z",
             "skillops_version": "v4.8.35",
             "ci_system": "github-actions",
@@ -500,7 +500,7 @@ def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
             },
         },
         "authorization": {
-            "tier": "private-technical-pilot",
+            "tier": "private-technical-adoption",
             "decided_at": "2026-06-28T00:15:00Z",
             "approved_by": "platform-team",
         },
@@ -510,7 +510,7 @@ def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
         },
         "public_listing": {"status": "not-requested"},
     }
-    input_file = tmp_path / "pilot-record.json"
+    input_file = tmp_path / "adoption-record.json"
     input_file.write_text(json.dumps(payload), encoding="utf-8")
     runner = CliRunner()
 
@@ -520,7 +520,7 @@ def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
             "schema",
             "validate",
             "--kind",
-            "external-pilot-record",
+            "external-adoption-record",
             "--input",
             str(input_file),
             "--format",
@@ -536,12 +536,12 @@ def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
     )
 
 
-def test_external_pilot_record_rejects_public_listing_without_public_authorization(tmp_path):
+def test_external_adoption_record_rejects_public_listing_without_public_authorization(tmp_path):
     payload = {
-        "schema_version": "skills-orchestrator.external-pilot-record.v1",
-        "pilot": {
+        "schema_version": "skills-orchestrator.external-adoption-record.v1",
+        "adoption": {
             "repository": "org/repo",
-            "pilot_owner": "platform-team",
+            "adoption_owner": "platform-team",
             "started_at": "2026-06-28T00:00:00Z",
             "skillops_version": "v4.8.35",
             "ci_system": "github-actions",
@@ -561,7 +561,7 @@ def test_external_pilot_record_rejects_public_listing_without_public_authorizati
             },
         },
         "authorization": {
-            "tier": "private-technical-pilot",
+            "tier": "private-technical-adoption",
             "decided_at": "2026-06-28T00:15:00Z",
             "approved_by": "platform-team",
         },
@@ -575,7 +575,7 @@ def test_external_pilot_record_rejects_public_listing_without_public_authorizati
             "approved_at": "2026-06-28T00:35:00Z",
         },
     }
-    input_file = tmp_path / "pilot-record.json"
+    input_file = tmp_path / "adoption-record.json"
     input_file.write_text(json.dumps(payload), encoding="utf-8")
     runner = CliRunner()
 
@@ -585,7 +585,7 @@ def test_external_pilot_record_rejects_public_listing_without_public_authorizati
             "schema",
             "validate",
             "--kind",
-            "external-pilot-record",
+            "external-adoption-record",
             "--input",
             str(input_file),
             "--format",
@@ -599,12 +599,12 @@ def test_external_pilot_record_rejects_public_listing_without_public_authorizati
 
 
 @pytest.mark.parametrize("tier", ["public-adopter-reference", "public-case-study"])
-def test_external_pilot_record_accepts_public_listing_with_public_authorization(tmp_path, tier):
+def test_external_adoption_record_accepts_public_listing_with_public_authorization(tmp_path, tier):
     payload = {
-        "schema_version": "skills-orchestrator.external-pilot-record.v1",
-        "pilot": {
+        "schema_version": "skills-orchestrator.external-adoption-record.v1",
+        "adoption": {
             "repository": "org/repo",
-            "pilot_owner": "platform-team",
+            "adoption_owner": "platform-team",
             "started_at": "2026-06-28T00:00:00Z",
             "skillops_version": "v4.8.35",
             "ci_system": "github-actions",
@@ -638,10 +638,10 @@ def test_external_pilot_record_accepts_public_listing_with_public_authorization(
             "approved_at": "2026-06-28T00:35:00Z",
         },
     }
-    input_file = tmp_path / "pilot-record.json"
+    input_file = tmp_path / "adoption-record.json"
     input_file.write_text(json.dumps(payload), encoding="utf-8")
 
-    result = validate_document("external-pilot-record", str(input_file))
+    result = validate_document("external-adoption-record", str(input_file))
 
     assert result.valid is True
 

@@ -241,15 +241,15 @@ SCHEMAS: dict[str, SchemaDescriptor] = {
         since="v3.0.0",
         consumers=("github-app", "hosted-service"),
     ),
-    "external-pilot-record": SchemaDescriptor(
-        kind="external-pilot-record",
-        filename="external-pilot-record.schema.json",
-        title="External Pilot Record",
+    "external-adoption-record": SchemaDescriptor(
+        kind="external-adoption-record",
+        filename="external-adoption-record.schema.json",
+        title="External Adoption Record",
         description=(
-            "Preview contract for recording external repository pilots, artifact availability, "
+            "Preview contract for recording external repository adoptions, artifact availability, "
             "promotion decisions, and public listing consent."
         ),
-        contract_id="skills-orchestrator.external-pilot-record.v1",
+        contract_id="skills-orchestrator.external-adoption-record.v1",
         stability="preview",
         since="v4.8.32",
         consumers=("adoption", "platform-review", "hosted-registry"),

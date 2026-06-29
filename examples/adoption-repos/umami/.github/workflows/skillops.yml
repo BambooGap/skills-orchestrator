@@ -1,0 +1,29 @@
+name: SkillOps
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  skillops:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: BambooGap/skills-orchestrator@v4.8.38
+        with:
+          config: config/skills.yaml
+          policy-pack: builtin/team-standard
+          fail-on: warning
+          upload-sarif: true
+          registry-diff: true
+          reviewer-summary: true
+          dashboard-snapshot: true
+          comment-registry-diff: true

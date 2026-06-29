@@ -1,7 +1,7 @@
 # SLSA Readiness
 
 Skills Orchestrator publishes release evidence that can be mapped to SLSA build-track concepts, but
-it does not claim a formal SLSA level. Treat this page and the generated report as an adoption aid
+it does not claim a formal SLSA level. Treat this page and the generated report as review evidence
 for platform teams, not as a certification statement.
 
 The current mapping follows the SLSA v1.2 build requirements:
@@ -17,7 +17,7 @@ Reference: <https://slsa.dev/spec/v1.2/build-requirements>
 
 ```bash
 skills-orchestrator supply-chain slsa-readiness \
-  --version v4.8.37 \
+  --version v4.8.38 \
   --repository BambooGap/skills-orchestrator \
   --image ghcr.io/bamboogap/skills-orchestrator \
   --digest sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
@@ -67,8 +67,8 @@ The report explicitly does not claim:
 
 ## Production Release Cadence
 
-High-frequency patch releases are useful while the release evidence surface is being hardened, but
-production consumers should not auto-promote every tag.
+Patch releases may update release evidence, packaging, or documentation quickly. Production consumers
+should not auto-promote every tag.
 
 Recommended consuming policy:
 

@@ -250,7 +250,7 @@ skills-orchestrator sync cursor --full
 skills-orchestrator sync openclaw --full
 ```
 
-## 下一步
+## 相关文档
 
 - 了解 [基础示例](../basic/)
 - 查看 [团队协作示例](../team-collab/)

@@ -112,7 +112,7 @@ def test_instruction_manifest_cyclonedx_maps_skills_and_dependencies(tmp_path):
     assert len(child["hashes"][0]["content"]) == 64
     assert {"ref": "skill:child", "dependsOn": ["skill:base"]} in bom["dependencies"]
     assert any(prop["name"] == "skills-orchestrator:governance" for prop in child["properties"])
-    assert any(prop["name"] == "skills-orchestrator:experimental" for prop in bom["properties"])
+    assert any(prop["name"] == "skills-orchestrator:preview" for prop in bom["properties"])
 
 
 def test_manifest_json_formatter_returns_valid_json(tmp_path):

@@ -12,7 +12,7 @@ Use this page as the team entry point for Skills Orchestrator.
 | Release owner | [Release Verification](release-verification.md), [Supply Chain Verification](supply-chain-verification.md), [SLSA Readiness](slsa-readiness.md), [Release Rollback](release-rollback.md), [Registry And Evidence](registry-evidence.md), [Docker Usage](docker.md) | Produce repeatable release evidence and a rollback path. |
 | Agent runtime owner | [MCP Server](MCP_SERVER.md), [Adapters](adapters.md), [Pipelines](PIPELINES.md) | Consume governed context and preserve workflow state. |
 | External evaluator | [SkillOps Contract](../SPEC.md), [Conformance](../CONFORMANCE.md), [Third-party Implementation](third-party-implementation.md), [Negative Conformance Fixtures](../examples/negative-conformance/README.md), [Foundation Readiness](foundation-readiness.md), [Demo Repo](../examples/demo-repo/README.md) | Verify the project as a technical contract, not only a CLI. |
-| Pilot team | [Authorized Pilot Outreach](pilot-outreach.md), [External Pilot Intake](external-pilot-intake.md), [Pilot Evidence Pack](pilot-evidence-pack.md), [Adoption Playbook](adoption-playbook.md), [External Pilot Record](../examples/external-pilot-record/README.md), [Pilot Case Study Template](pilot-case-study-template.md), [Pilot Repos](../examples/pilot-repos/README.md), [GitHub Action](github-action.md) | Get explicit pilot permission, copy a realistic starter pack into one production-like repo, retain review evidence, and record pilot decisions. |
+| Adoption team | [Adoption Authorization](adoption-authorization.md), [External Adoption Intake](external-adoption-intake.md), [Adoption Evidence Pack](adoption-evidence-pack.md), [Adoption Playbook](adoption-playbook.md), [External Adoption Record](../examples/external-adoption-record/README.md), [Adoption Case Study Template](adoption-case-study-template.md), [Reference Repos](../examples/adoption-repos/README.md), [GitHub Action](github-action.md) | Get explicit adoption permission, copy a realistic starter pack into one production-like repo, retain review evidence, and record adoption decisions. |
 | Agent ecosystem integrator | [Agent Fleet Governance](agent-fleet-governance.md), [Supervisor Governance](supervisor-governance.md), [Agent Handoff Contract Example](../examples/agent-handoff/README.md), [Agent Runtime Image Contract Example](../examples/agent-runtime-image/README.md), [Adapters](adapters.md), [Adapter Evidence Example](../examples/adapter-evidence/README.md), [Conformance](../CONFORMANCE.md) | Generate governed agent-surface, handoff, and runtime-image evidence from one SkillOps config. |
 | Commercial product owner | [Open-core Boundary](open-core-boundary.md), [GitHub App Blueprint](github-app.md), [Hosted Registry](hosted-registry.md), [Enterprise Dashboard](enterprise-dashboard.md) | Build hosted products around OSS artifact contracts. |
 
@@ -22,7 +22,7 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Pipelines](PIPELINES.md): turn multiple skills into gated runtime workflows.
 - [Instruction Supply Chain Status](instruction-supply-chain-status.md): current ecosystem boundary.
 - [Enterprise Narrative](enterprise.md): positioning, buyers, non-goals, and ecosystem routing.
-- [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local pilot to external adoption.
+- [Adoption Maturity Model](adoption-maturity-model.md): artifact-driven levels from local adoption to external adoption.
 - [Production Adoption](production-adoption.md): minimum production CI configuration with SHA pins, Docker digests, evidence retention, and runtime boundaries.
 - [Supply Chain Verification](supply-chain-verification.md): consumer-side verification for PyPI attestations, GHCR provenance/SBOM attestations, digest pins, and hash-lock boundaries.
 - [SLSA Readiness](slsa-readiness.md): non-certifying build-track readiness map for release evidence; records what is evidence-ready and what is not claimed.
@@ -47,13 +47,13 @@ Use this page as the team entry point for Skills Orchestrator.
 - [Compatibility Policy](../COMPATIBILITY.md): stable contract surfaces, additive changes, and migration rules.
 - [Security Policy](../SECURITY.md): vulnerability reporting, MCP trust model, HMAC audit, and import provenance boundaries.
 - [Demo Repo](../examples/demo-repo/README.md): runnable end-to-end demo for PR review and evidence generation.
-- [Adoption Playbook](adoption-playbook.md): 15-minute pilot path and promotion criteria from advisory to blocking gates.
-- [Authorized Pilot Outreach](pilot-outreach.md): maintainer request template, consent levels, and public-claim guardrails before a real external pilot.
-- [External Pilot Intake](external-pilot-intake.md): go / no-go checklist for repositories outside this project.
-- [Pilot Evidence Pack](pilot-evidence-pack.md): artifact handoff package for real external repository pilots.
-- [External Pilot Record Example](../examples/external-pilot-record/README.md): machine-valid pilot handoff record that separates technical success from public adopter consent.
-- [Pilot Case Study Template](pilot-case-study-template.md): public case-study structure that requires validated pilot evidence and listing consent.
-- [Pilot Repository Examples](../examples/pilot-repos/README.md): copyable starter packs for Healthchecks, Umami, and Woodpecker-style repositories.
+- [Adoption Playbook](adoption-playbook.md): 15-minute adoption path and promotion criteria from advisory to blocking gates.
+- [Adoption Authorization](adoption-authorization.md): maintainer request template, consent levels, and public-claim guardrails before a real external adoption.
+- [External Adoption Intake](external-adoption-intake.md): go / no-go checklist for repositories outside this project.
+- [Adoption Evidence Pack](adoption-evidence-pack.md): artifact handoff package for real external repository adoptions.
+- [External Adoption Record Example](../examples/external-adoption-record/README.md): machine-valid adoption handoff record that separates technical success from public adopter consent.
+- [Adoption Case Study Template](adoption-case-study-template.md): public case-study structure that requires validated adoption evidence and listing consent.
+- [Reference Repository Examples](../examples/adoption-repos/README.md): copyable starter packs for Healthchecks, Umami, and Woodpecker-style repositories.
 - [Open-core Boundary](open-core-boundary.md): what stays open-source and what belongs in hosted/enterprise layers.
 - [Commercial Handoff Examples](../examples/commercial-handoff/README.md): schema-valid example payloads for hosted consumers.
 - [External Consumer Example](../examples/external-consumer/README.md): static hosted registry,
@@ -67,7 +67,7 @@ Use this page as the team entry point for Skills Orchestrator.
 4. Add the GitHub Action.
 5. Enable `builtin/team-standard` policy pack.
 6. Run `skills-orchestrator conformance run`.
-7. For stricter pilots, enable `builtin/engineering-grade`.
+7. For stricter adoptions, enable `builtin/engineering-grade`.
 8. Run `skills-orchestrator doctor --profile adopter`.
 9. Export manifest, registry graph, and evidence bundle for releases.
 10. Verify external skill trust metadata and container release evidence.
@@ -76,11 +76,11 @@ Use this page as the team entry point for Skills Orchestrator.
 13. Document the release rollback path.
 14. Enable and review OpenSSF Scorecard results.
 15. Build a multi-repo artifact index from repository evidence manifests.
-16. Validate external consumer payloads for hosted registry or GitHub App pilots.
-17. Get explicit pilot authorization before treating a real external repository as more than a self-run evaluation.
-18. Validate an external pilot record before counting the pilot as review evidence.
-19. Retain a pilot evidence pack before asking for public adopter listing permission.
-20. Use the pilot case-study template only after listing consent and the matching public
+16. Validate external consumer payloads for hosted registry or GitHub App adoptions.
+17. Get explicit adoption authorization before treating a real external repository as more than a self-run technical check.
+18. Validate an external adoption record before counting the adoption as review evidence.
+19. Retain an adoption evidence pack before asking for public adopter listing permission.
+20. Use the adoption case-study template only after listing consent and the matching public
     authorization tier are approved.
 21. Map governed instruction artifacts to agent surfaces and tenant/project scopes as metadata.
 22. Validate lead/worker handoff and evidence expectations before running supervised agents.

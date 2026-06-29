@@ -244,7 +244,7 @@ skills-orchestrator check --config config/skills.yaml --fail-on warning
    - 每个 Skill 必须有清晰的 summary
    - 使用 tags 分类
 
-## 下一步
+## 相关文档
 
 - 了解 [Zone 机制](../../docs/ZONES.md)
 - 查看 [Pipeline 配置](../../docs/PIPELINES.md)

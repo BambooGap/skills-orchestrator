@@ -172,7 +172,7 @@ def run_conformance(
         steps.append(
             ConformanceStep(
                 id="enterprise-gate",
-                title="Enterprise pilot gate",
+                title="Enterprise readiness gate",
                 status="fail" if enterprise_blockers else "pass",
                 detail=(
                     "All required evidence contracts are valid."

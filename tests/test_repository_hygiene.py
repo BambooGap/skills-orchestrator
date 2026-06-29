@@ -41,9 +41,9 @@ def test_community_health_files_exist_for_external_review():
         assert path.read_text(encoding="utf-8").strip(), relative
 
 
-def test_external_pilot_authorization_surfaces_are_present():
-    outreach = ROOT / "docs/pilot-outreach.md"
-    issue_template = ROOT / ".github/ISSUE_TEMPLATE/external_pilot_request.md"
+def test_external_adoption_authorization_surfaces_are_present():
+    outreach = ROOT / "docs/adoption-authorization.md"
+    issue_template = ROOT / ".github/ISSUE_TEMPLATE/external_adoption_request.md"
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert outreach.exists()
@@ -52,13 +52,13 @@ def test_external_pilot_authorization_surfaces_are_present():
     outreach_text = outreach.read_text(encoding="utf-8")
     issue_text = issue_template.read_text(encoding="utf-8")
 
-    assert "Private technical pilot" in outreach_text
+    assert "Private technical adoption" in outreach_text
     assert "Public adopter / case study" in outreach_text
     assert "Declined / no follow-up" in outreach_text
     assert "public_listing.status" in outreach_text
     assert "No public case study, quote, logo, or adopter listing" in issue_text
     assert "Not interested. Please close this request and do not follow up." in issue_text
-    assert "[Authorized Pilot Outreach](docs/pilot-outreach.md)" in readme
+    assert "[Adoption Authorization](docs/adoption-authorization.md)" in readme
 
 
 def test_readme_points_to_dual_license_and_support_surfaces():
