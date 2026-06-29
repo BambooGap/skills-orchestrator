@@ -1,6 +1,6 @@
 # Supervisor Governance Model
 
-> Supported scope (v4.8.43): lead-agent coordination contracts for governed instruction assets.
+> Supported scope (v4.8.44): lead-agent coordination contracts for governed instruction assets.
 >
 > This does not turn Skills Orchestrator into a runtime scheduler.
 

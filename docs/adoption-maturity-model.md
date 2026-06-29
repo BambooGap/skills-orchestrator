@@ -53,7 +53,7 @@ Exit criteria:
 Use the GitHub Action in advisory mode:
 
 ```yaml
-- uses: BambooGap/skills-orchestrator@v4.8.43
+- uses: BambooGap/skills-orchestrator@v4.8.44
   with:
     config: config/skills.yaml
     policy-pack: builtin/team-standard

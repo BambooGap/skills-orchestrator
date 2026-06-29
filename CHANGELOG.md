@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.44] - 2026-06-30
+
+### Changed
+- Set the team-standard starter workflow `SKILLS_ORCHESTRATOR_STATE_DIR` to a project-local
+  `.skills-orchestrator` directory.
+- Removed impossible self-referential `content_hash` placeholders from local adapter evidence
+  fixture skills.
+
+### Fixed
+- Enforced `provenance.content_hash` integrity for local skill content reads across build and MCP
+  registry paths.
+- Rejected invalid or mismatched `sha256:<64hex>` provenance hashes without printing skill content.
+
 ## [4.8.43] - 2026-06-30
 
 ### Added
