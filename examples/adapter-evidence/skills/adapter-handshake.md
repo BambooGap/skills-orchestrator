@@ -19,7 +19,6 @@ provenance:
   source_url: https://github.com/BambooGap/skills-orchestrator/blob/main/examples/adapter-evidence/skills/adapter-handshake.md
   source_ref: main
   source_commit: local-fixture
-  content_hash: sha256:fixture
   fetched_at: 2026-06-24T00:00:00Z
 ---
 # Adapter Handshake
@@ -36,4 +35,3 @@ Use this skill when connecting SkillOps artifacts to an adjacent agent runtime.
 ## Output
 
 List the generated adapter artifacts and whether each one was validated.
-

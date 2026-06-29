@@ -383,6 +383,8 @@ permissions:
 jobs:
   skillops:
     runs-on: ubuntu-latest
+    env:
+      SKILLS_ORCHESTRATOR_STATE_DIR: .skills-orchestrator
     steps:
       - uses: {checkout_ref}
       - uses: BambooGap/skills-orchestrator@v{__version__}
