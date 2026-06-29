@@ -7,15 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.38] - 2026-06-29
+
+### Changed
+- Reframed public repository language around enterprise adoption, review evidence, and supported
+  boundaries instead of early-stage wording.
+- Renamed the preview external adoption schema, docs, issue template, and starter examples so the
+  public project surface describes customer usage as governed enterprise adoption.
+- Renamed the CycloneDX instruction-manifest interoperability marker to preview wording.
+- Updated current install, Action, Docker, adoption, and release-verification examples to `v4.8.38`.
+- Excluded the repository test suite from source distributions while keeping runtime package data,
+  schemas, docs, and examples available for users.
+
 ## [4.8.37] - 2026-06-29
 
 ### Changed
-- Reframed the README release record around the current closed-loop enterprise pilot status instead
+- Reframed the README release record around the current closed-loop enterprise adoption status instead
   of open-ended task language.
-- Removed public-facing intent / trial wording from the README so the GitHub project page and
-  PyPI long description present the current supported adoption boundary.
+- Removed public-facing intent wording from the README so the GitHub project page and PyPI long
+  description present the current supported adoption boundary.
 - Reframed public direction docs from roadmap wording to status and boundary wording.
-- Updated current install, Action, Docker, pilot, and release-verification examples to `v4.8.37`.
+- Updated current install, Action, Docker, adoption, and release-verification examples to `v4.8.37`.
 
 ## [4.8.36] - 2026-06-29
 
@@ -26,9 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   promotion through internal registries.
 
 ### Changed
-- Extended the preview `external-pilot-record` schema with explicit authorization tiers so private,
-  pending, or declined pilots cannot be mistaken for public adopter or case-study approval.
-- Clarified pilot outreach refusal paths and public-listing guardrails across pilot intake,
+- Extended the preview `external-adoption-record` schema with explicit authorization tiers so private,
+  pending, or declined adoptions cannot be mistaken for public adopter or case-study approval.
+- Clarified adoption outreach refusal paths and public-listing guardrails across adoption intake,
   evidence-pack, and case-study docs.
 - Made the SLSA boundary more visible in the README: readiness reports are evidence inputs, not
   formal SLSA level certification.
@@ -36,37 +48,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.8.35] - 2026-06-29
 
 ### Added
-- Added an authorized pilot outreach guide with maintainer request wording, consent levels, and
-  public-claim guardrails before external pilot evidence is collected.
-- Added a GitHub issue template for external pilot requests so repository owners can distinguish
-  private technical pilots, public pilot mentions, and adopter / case-study approval.
+- Added an authorized adoption outreach guide with maintainer request wording, consent levels, and
+  public-claim guardrails before external adoption evidence is collected.
+- Added a GitHub issue template for external adoption requests so repository owners can distinguish
+  private technical adoptions, public reference mentions, and adopter / case-study approval.
 
 ## [4.8.34] - 2026-06-29
 
 ### Fixed
-- Documented that copied pilot and production starter workflows must adjust `branches: [main]` to
+- Documented that copied adoption and production starter workflows must adjust `branches: [main]` to
   the target repository's real default branch, such as `main`, `master`, or a team-protected branch.
-- Kept the external pilot guidance neutral: no adopter, case-study, or public listing claim is made
+- Kept the external adoption guidance neutral: no adopter, case-study, or public listing claim is made
   without repository owner approval.
 
 ## [4.8.33] - 2026-06-29
 
 ### Added
-- Added `docs/pilot-evidence-pack.md`, a concrete artifact handoff checklist for real external
-  repository pilots.
-- Added `docs/pilot-case-study-template.md`, a consent-aware public case-study template that
-  requires a validated external pilot record before publication.
-- Linked the pilot evidence pack and case-study template from the README, docs index, adoption
-  playbook, external pilot intake, and foundation readiness guidance.
+- Added `docs/adoption-evidence-pack.md`, a concrete artifact handoff checklist for real external
+  repository adoptions.
+- Added `docs/adoption-case-study-template.md`, a consent-aware public case-study template that
+  requires a validated external adoption record before publication.
+- Linked the adoption evidence pack and case-study template from the README, docs index, adoption
+  playbook, external adoption intake, and foundation readiness guidance.
 
 ## [4.8.32] - 2026-06-28
 
 ### Added
-- Added the preview `external-pilot-record` schema for recording external repository pilots,
+- Added the preview `external-adoption-record` schema for recording external repository adoptions,
   artifact availability, promotion decisions, and public listing consent.
-- Added `examples/external-pilot-record/`, a synthetic fixture proving pilot records are
+- Added `examples/external-adoption-record/`, a generic reference example proving adoption records are
   machine-valid artifacts without creating fake adopter claims.
-- Documented schema-validated pilot handoff records in the external pilot intake, docs index,
+- Documented schema-validated adoption handoff records in the external adoption intake, docs index,
   examples index, and README.
 
 ## [4.8.31] - 2026-06-28
@@ -215,7 +227,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Linked production adoption guidance from README, the documentation index, install docs, GitHub
-  Action docs, and release verification docs so production users do not copy pilot tag examples as
+  Action docs, and release verification docs so production users do not copy adoption tag examples as
   high-trust CI defaults.
 
 ## [4.8.15] - 2026-06-28
@@ -232,7 +244,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   privileged workers require a `human-review` evaluation gate.
 - Documented the hardened supervisor/worker handoff safety rules in the agent handoff example,
   supervisor governance, agent fleet governance, and third-party implementation guide.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.15`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.15`.
 
 ## [4.8.14] - 2026-06-28
 
@@ -241,14 +253,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   expecting `doctor --profile adopter --fail-under 100` to pass.
 - Updated onboarding docs and maturity checklists to make `build --lock` the explicit bridge
   between starter generation and full adopter readiness.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.14`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.14`.
 
 ## [4.8.13] - 2026-06-28
 
 ### Changed
 - Corrected the public roadmap and README release attribution so `agent-runtime-image` is recorded
   as the v4.8.11 feature and v4.8.12 remains the release-hygiene update.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.13`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.13`.
 
 ## [4.8.12] - 2026-06-28
 
@@ -257,7 +269,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   by full commit SHA, removing the Node.js 20 deprecation annotation from future release smoke
   runs.
 - Updated dashboard artifact upload documentation to use `actions/upload-artifact@v7`.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.12`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.12`.
 
 ## [4.8.11] - 2026-06-28
 
@@ -272,7 +284,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Documented agent runtime images as external, evidence-backed consumers of SkillOps artifacts
   rather than official runtimes bundled into the core CLI.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.11`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.11`.
 
 ## [4.8.10] - 2026-06-28
 
@@ -281,7 +293,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made enterprise doctor validate the bundled `registry_graph` artifact.
 - Documented that registry graph is bundle-derived while registry diff remains a base/head
   PR-review artifact.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.10`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.10`.
 
 ## [4.8.9] - 2026-06-28
 
@@ -293,7 +305,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Documented Claude Skills export manifest validation in README, SPEC, CONFORMANCE, adapter docs,
   and the adapter evidence example.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.9`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.9`.
 
 ## [4.8.8] - 2026-06-28
 
@@ -306,7 +318,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Fleet Governance, registry/evidence docs, and third-party implementation guidance.
 
 ### Changed
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.8`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.8`.
 
 ## [4.8.7] - 2026-06-28
 
@@ -319,7 +331,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   release as verified.
 - Added `--force` to repeated registry diff examples so demo users can rerun local diff flows
   without hitting existing-output safeguards.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.7`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.7`.
 
 ## [4.8.6] - 2026-06-28
 
@@ -327,7 +339,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Made `scripts/post_release_smoke.py` use `GITHUB_TOKEN` or `GH_TOKEN` for GitHub Release API
   checks so GitHub Actions post-release smoke is not blocked by anonymous API rate limits.
 - Passed the workflow `github.token` into the post-release smoke step.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.6`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.6`.
 
 ## [4.8.5] - 2026-06-28
 
@@ -339,7 +351,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Linked supervisor governance from README, the documentation index, agent fleet governance, and
   the instruction supply chain roadmap.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.5`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.5`.
 
 ## [4.8.4] - 2026-06-28
 
@@ -351,7 +363,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Linked agent fleet governance from README, the documentation index, and the instruction supply
   chain roadmap.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.4`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.4`.
 
 ## [4.8.3] - 2026-06-28
 
@@ -359,18 +371,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated the conformance GitHub Action example to the current release tag.
 - Clarified negative conformance fixture wording so "fail" means expected rule ids appear; warning
   cases require `--fail-on warning` when an exit-code failure is desired.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.3`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.3`.
 
 ## [4.8.2] - 2026-06-28
 
 ### Added
-- Added `docs/external-pilot-intake.md`, a go / no-go checklist for external repository pilots,
+- Added `docs/external-adoption-intake.md`, a go / no-go checklist for external repository adoptions,
   artifact review, gate promotion, stop conditions, and adopter listing boundaries.
 
 ### Changed
-- Linked the external pilot intake from README, the documentation index, the adoption playbook, and
+- Linked the external adoption intake from README, the documentation index, the adoption playbook, and
   foundation readiness guidance.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.2`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.2`.
 
 ## [4.8.1] - 2026-06-28
 
@@ -379,7 +391,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   default so release evidence covers real adopter setup, not only public artifact metadata.
 - Extended full post-release smoke for `v4.8.0+` to verify the default PyPI install does not include
   the optional MCP runtime and that MCP commands show the `skills-orchestrator[mcp]` install hint.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.1`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.1`.
 
 ## [4.8.0] - 2026-06-28
 
@@ -389,7 +401,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kept the development extra installing MCP dependencies so the full MCP test suite remains covered.
 - Updated `serve` and `mcp-test` to show a clear `skills-orchestrator[mcp]` installation hint when
   optional MCP runtime dependencies are missing.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.8.0`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.8.0`.
 
 ## [4.7.11] - 2026-06-27
 
@@ -401,7 +413,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Documented schema validation for post-release smoke reports in `docs/release-verification.md`.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.11`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.11`.
 
 ## [4.7.10] - 2026-06-27
 
@@ -412,7 +424,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Documented the GitHub Actions post-release smoke workflow in `docs/release-verification.md`.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.10`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.10`.
 
 ## [4.7.9] - 2026-06-27
 
@@ -423,7 +435,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated release verification docs to recommend retry-enabled post-release smoke commands.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.9`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.9`.
 
 ## [4.7.8] - 2026-06-27
 
@@ -435,7 +447,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Documented the post-release smoke flow in `docs/release-verification.md`.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.8`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.8`.
 
 ## [4.7.7] - 2026-06-27
 
@@ -446,7 +458,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Pinned the Docker base image to the current `python:3.12.13-slim-trixie` manifest-list digest.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.7`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.7`.
 
 ## [4.7.6] - 2026-06-27
 
@@ -458,7 +470,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Constrained the CI `pip-audit` installation and added the `pip-audit` dependency closure to
   `constraints.txt`.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.6`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.6`.
 
 ## [4.7.5] - 2026-06-27
 
@@ -466,7 +478,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hardened public positioning across PyPI metadata, README, CLI help, and high-level docs to describe
   Skills Orchestrator as a CI-native SkillOps governance system rather than an agent runtime control
   plane.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.5`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.5`.
 
 ## [4.7.4] - 2026-06-27
 
@@ -478,7 +490,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Linked adapter negative fixtures from the documentation index and examples index.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.4`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.4`.
 
 ## [4.7.3] - 2026-06-27
 
@@ -489,7 +501,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Actions, trusted publishing, and container attestations.
 
 ### Changed
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.3`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.3`.
 
 ## [4.7.2] - 2026-06-27
 
@@ -499,7 +511,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Linked rollback guidance from the README, documentation index, and release verification guide.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.2`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.2`.
 
 ## [4.7.1] - 2026-06-27
 
@@ -510,7 +522,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated the compatibility policy and SPEC wording from stale v3.x language to the current v4.x
   compatible line.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.1`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.1`.
 
 ## [4.7.0] - 2026-06-27
 
@@ -523,7 +535,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Linked negative fixtures and maturity levels from the README, documentation index, conformance
   guide, and examples index.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.7.0`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.7.0`.
 
 ## [4.6.6] - 2026-06-27
 
@@ -531,9 +543,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded the negative conformance suite from 3 to 7 representative malformed-input cases,
   covering parser-level skill metadata, lifecycle/approver metadata, review-window failures,
   duplicate ids, and external import trust metadata.
-- Added commercial and foundation readiness guidance that separates CI pilot value,
+- Added commercial and foundation readiness guidance that separates CI adoption value,
   external adoption evidence, and future foundation candidacy without creating fake adopter claims.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to
   `v4.6.6`.
 
 ## [4.6.5] - 2026-06-27
@@ -543,7 +555,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   setting explicit pip build environment variables in the Dockerfile.
 
 ### Changed
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to
   `v4.6.5`.
 
 ## [4.6.4] - 2026-06-27
@@ -553,7 +565,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actions/attest` action while preserving SBOM attestation inputs and full-SHA pinning.
 
 ### Changed
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to
   `v4.6.4`.
 
 ## [4.6.3] - 2026-06-27
@@ -564,7 +576,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   windows.
 
 ### Changed
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to
   `v4.6.3`.
 
 ## [4.6.2] - 2026-06-27
@@ -576,7 +588,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated pinned GitHub Actions used by CI, PyPI publishing, and GHCR release workflows to the
   latest reviewed SHAs, including Node 24-compatible Docker setup and attestation actions.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to
   `v4.6.2`.
 
 ## [4.6.1] - 2026-06-27
@@ -590,7 +602,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated GHCR publishing to build and push `linux/amd64` and `linux/arm64` images with Docker
   Buildx, binding release SBOM/provenance to the published manifest-list digest.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.6.1`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.6.1`.
 
 ## [4.6.0] - 2026-06-26
 
@@ -603,7 +615,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Updated hosted registry and GitHub App docs to describe `multi-repo-artifacts.json` as an
   external consumer input without moving hosted products into the OSS CLI.
-- Updated current install, Action, container, release trust, pilot, and PyPI examples to `v4.6.0`.
+- Updated current install, Action, container, release trust, adoption, and PyPI examples to `v4.6.0`.
 
 ## [4.5.0] - 2026-06-26
 
@@ -701,7 +713,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Marked the package as `Production/Stable` for the v4 line while keeping existing v1 SkillOps
   contract identifiers compatible.
-- Updated current install, Action, container, and pilot workflow examples to `v4.0.0`.
+- Updated current install, Action, container, and adoption workflow examples to `v4.0.0`.
 
 ## [3.9.0] - 2026-06-22
 
@@ -714,7 +726,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Expanded schema catalog text/JSON output to distinguish stable contracts from preview
   commercial handoff contracts before the 4.0 line.
-- Updated current install, Action, container, and pilot workflow examples to `v3.9.0`.
+- Updated current install, Action, container, and adoption workflow examples to `v3.9.0`.
 
 ## [3.8.0] - 2026-06-22
 
@@ -726,14 +738,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Expanded CI smoke and docs to validate dashboard snapshot and dashboard rollup contracts.
-- Updated current install, Action, container, and pilot workflow examples to `v3.8.0`.
+- Updated current install, Action, container, and adoption workflow examples to `v3.8.0`.
 
 ## [3.7.0] - 2026-06-22
 
 ### Changed
 - Upgraded pinned GitHub Actions workflow dependencies to Node 24-compatible releases:
   `actions/checkout@v7.0.0` and `actions/setup-python@v6.2.0`.
-- Updated current install, Action, container, and pilot workflow examples to `v3.7.0`.
+- Updated current install, Action, container, and adoption workflow examples to `v3.7.0`.
 
 ## [3.6.0] - 2026-06-22
 
@@ -786,7 +798,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added an Adoption Playbook for advisory, warning, and engineering-grade rollout modes.
-- Added copyable pilot repository starter packs for Healthchecks, Umami, and Woodpecker-style
+- Added copyable reference repository starter packs for Healthchecks, Umami, and Woodpecker-style
   repositories.
 - Added a release hygiene regression test that fails when generated `AGENTS.md` is stale relative
   to the package version.
@@ -837,7 +849,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added declarative local policy packs validated by `policy-pack.schema.json`; packs are data-only
   YAML/JSON and do not execute repository Python code.
 - Added `doctor --profile enterprise` to verify schema-backed evidence bundles for enterprise
-  SkillOps pilots.
+  SkillOps adoptions.
 - Added `conformance-report.schema.json` and `policy-pack.schema.json` to the public schema catalog.
 
 ### Changed
@@ -1010,7 +1022,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a composite GitHub Action for running `skills-orchestrator check` in CI and optionally uploading SARIF to GitHub Code Scanning.
 - Added GitHub Action usage documentation.
 - Added Dependabot coverage for GitHub Actions and Python dependencies.
-- Added `skills-orchestrator manifest --format json|cyclonedx` for native instruction inventory and experimental CycloneDX export.
+- Added `skills-orchestrator manifest --format json|cyclonedx` for native instruction inventory and preview CycloneDX export.
 - Added `skills-orchestrator policy export --format opa-input|rego-test` for OPA/Rego proof exports without adding an OPA runtime backend.
 - Added runtime dependency constraints for the composite action, CI, and publish workflow.
 - Added a release artifact attestation step for wheel and sdist provenance.

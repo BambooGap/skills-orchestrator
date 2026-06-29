@@ -997,7 +997,7 @@ def registry_comment_body(
     type=click.Choice(["adopter", "maintainer", "enterprise"]),
     default="adopter",
     show_default=True,
-    help="readiness 评分口径：adopter 面向接入仓库，maintainer 面向本项目发版，enterprise 面向证据包试点。",
+    help="readiness 评分口径：adopter 面向接入仓库，maintainer 面向本项目发版，enterprise 面向证据包接入。",
 )
 @click.option(
     "--evidence-dir",

@@ -80,7 +80,7 @@ load_policy: free
 ## 本项目特定规则
 
 - 必须更新 CHANGELOG.md
-- 修复后必须添加测试用例
+- 修复后必须添加验证用例
 ```
 
 ## 验证
@@ -93,7 +93,7 @@ skills-orchestrator validate --config config/skills.yaml
 skills-orchestrator --version
 ```
 
-## 下一步
+## 相关文档
 
 - 查看 [团队协作示例](../team-collab/)
 - 了解 [Pipeline 编排](../../docs/PIPELINES.md)

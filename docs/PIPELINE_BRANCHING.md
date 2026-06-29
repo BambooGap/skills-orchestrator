@@ -131,7 +131,7 @@ steps:
 
 ## 测试
 
-查看 `tests/test_pipeline_branch.py` 了解完整的测试用例：
+查看 `tests/test_pipeline_branch.py` 了解完整的测接入例：
 - gate 失败分支
 - gate 成功不走分支
 - step 级别分支

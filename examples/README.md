@@ -115,7 +115,7 @@
 
 ### [Multi-repo Artifacts Example](multi-repo-artifacts/)
 
-**适合**：平台团队、组织级试点、安全/审计负责人
+**适合**：平台团队、组织级接入、安全/审计负责人
 
 **展示内容**：
 - 如何把多个仓库的 `evidence-manifest.json` 聚合成一个 `multi-repo-artifacts.json`
@@ -140,14 +140,14 @@
 
 ---
 
-### [External Pilot Record Example](external-pilot-record/)
+### [External Adoption Record Example](external-adoption-record/)
 
-**适合**：平台团队、外部试点评估、开源采用审查
+**适合**：平台团队、外部接入评估、开源采用审查
 
 **展示内容**：
-- 如何把真实仓库 pilot 的 owner、gate、artifact 状态和 promotion decision 记录成 schema-valid artifact
-- 如何把技术试点成功和公开 adopter listing consent 分开
-- 如何避免把 demo 或 synthetic fixture 误写进 `ADOPTERS.md`
+- 如何把真实仓库 adoption 的 owner、gate、artifact 状态和 promotion decision 记录成 schema-valid artifact
+- 如何把技术接入成功和公开 adopter listing consent 分开
+- 如何避免把 demo 或 generic reference example 误写进 `ADOPTERS.md`
 
 **时间**：5 分钟
 
@@ -182,9 +182,9 @@
 
 ---
 
-### [Pilot Repository Examples](pilot-repos/)
+### [Reference Repository Examples](adoption-repos/)
 
-**适合**：平台团队、开源采用评估、真实仓库试点
+**适合**：平台团队、开源采用评估、真实仓库接入
 
 **展示内容**：
 - Healthchecks / Umami / Woodpecker 风格仓库的最小接入包
@@ -220,10 +220,10 @@
 3. [Release Trust Example](release-trust/) → 验证外部 skill provenance 和 release artifact 绑定
 4. [Multi-repo Artifacts Example](multi-repo-artifacts/) → 聚合多个仓库的 evidence manifest
 5. [External Consumer Example](external-consumer/) → 验证 hosted/GitHub App consumer 输入
-6. [External Pilot Record Example](external-pilot-record/) → 验证外部试点交接记录
+6. [External Adoption Record Example](external-adoption-record/) → 验证外部接入交接记录
 7. [Agent Handoff Contract Example](agent-handoff/) → 验证 supervisor/worker handoff 边界
 8. [Agent Runtime Image Contract Example](agent-runtime-image/) → 验证外部 agent runtime 镜像边界
-9. [Pilot Repository Examples](pilot-repos/) → 复制真实仓库接入包
+9. [Reference Repository Examples](adoption-repos/) → 复制真实仓库接入包
 10. [SPEC.md](../SPEC.md) → 检查合同字段
 11. [CONFORMANCE.md](../CONFORMANCE.md) → 对照验证命令
 

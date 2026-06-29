@@ -39,7 +39,7 @@ def format_instruction_manifest_cyclonedx(manifest: dict[str, Any]) -> str:
                     {
                         "schema_version": manifest["schema_version"],
                         "zone": manifest["zone"]["id"],
-                        "format": "instruction-manifest-cyclonedx-experimental",
+                        "format": "instruction-manifest-cyclonedx-preview",
                     }
                 ),
             },
@@ -60,7 +60,7 @@ def format_instruction_manifest_cyclonedx(manifest: dict[str, Any]) -> str:
                 "value": json.dumps(manifest["combos"], ensure_ascii=False, separators=(",", ":")),
             },
             {
-                "name": "skills-orchestrator:experimental",
+                "name": "skills-orchestrator:preview",
                 "value": "true",
             },
         ],

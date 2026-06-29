@@ -1,8 +1,7 @@
 # Commercial And Foundation Readiness
 
-This document defines the honest adoption path for Skills Orchestrator. It is not an
-`ADOPTERS.md` substitute, and it does not claim foundation eligibility before real external users
-exist.
+This document defines the adoption evidence standard for Skills Orchestrator. It is not an
+`ADOPTERS.md` substitute, and it keeps foundation eligibility separate from release quality.
 
 ## Current Position
 
@@ -12,7 +11,7 @@ Skills Orchestrator is currently best described as:
 > policy evaluation, registry integrity, CI-level explainability, and evidence-based traceability
 > across multi-repository environments.
 
-The project is suitable for advisory or limited blocking CI pilots when a repository can generate
+The project is suitable for advisory or limited blocking CI adoptions when a repository can generate
 the standard evidence artifacts. It is not an agent runtime control plane, an OPA replacement, or a
 hosted compliance platform.
 
@@ -20,12 +19,12 @@ hosted compliance platform.
 
 | Level | Claim | Evidence required |
 | --- | --- | --- |
-| 1. Local pilot | One repo can run SkillOps checks locally. | `check`, `schema audit --stability stable`, `build --lock`, `doctor --profile adopter`, and `conformance run --profile core` pass. |
-| 2. CI pilot | One repo can run SkillOps in pull requests. | GitHub Action produces JSON/SARIF, reviewer summary, registry diff, and evidence bundle artifacts. |
+| 1. Local adoption | One repo can run SkillOps checks locally. | `check`, `schema audit --stability stable`, `build --lock`, `doctor --profile adopter`, and `conformance run --profile core` pass. |
+| 2. CI adoption | One repo can run SkillOps in pull requests. | GitHub Action produces JSON/SARIF, reviewer summary, registry diff, and evidence bundle artifacts. |
 | 3. Production advisory | A production-like repo can run advisory gates without blocking delivery. | `builtin/team-standard` is enabled, lock drift is visible, and PR reviewers understand failures. |
 | 4. Production blocking | A platform-owned repo can block merges on instruction governance. | `builtin/engineering-grade --fail-on warning`, negative conformance, release trust verification, and rollback path are accepted by owners. |
 | 5. Multi-repo governance | Multiple repos publish comparable SkillOps evidence. | `evidence index`, registry graph, dashboard snapshot, and multi-repo artifact schema validation pass from CI artifacts. |
-| 6. External adoption | A repo not owned by the maintainer relies on SkillOps. | Public issue/PR/release evidence from that repo, a validated external pilot record, and permission to list it. |
+| 6. External adoption | A repo not owned by the maintainer relies on SkillOps. | Public issue/PR/release evidence from that repo, a validated external adoption record, and permission to list it. |
 | 7. Foundation candidate | The project has community and governance depth beyond one maintainer. | Multiple maintainers, real external adopters, documented governance, security response history, and regular releases. |
 
 ## Commercial Value Standard
@@ -40,18 +39,17 @@ work without requiring a SaaS backend. The minimum commercial-standard OSS packa
 - GitHub Action integration that works in a single workflow step,
 - PyPI, GHCR, SBOM, provenance, and release attestation hygiene,
 - public OpenSSF Scorecard results or a documented reason why the check is temporarily disabled,
-- repeatable pilot examples for production-like repositories,
+- repeatable adoption examples for production repositories,
 - clear open-core boundary so hosted registry, GitHub App, and dashboard products consume OSS
   artifacts instead of changing CLI semantics.
 
-This standard is already close for CI pilots. The remaining commercial gap is not a single feature;
-it is repeated use in real repositories, cleaner onboarding, and evidence that teams can operate it
-without maintainer help.
+This standard is met for CI governance adoption. Broader commercial references depend on retained
+evidence from repositories that operate the tool without maintainer help.
 
 ## Foundation Readiness Standard
 
-Foundation readiness is a community and governance milestone, not a version number. The project
-should not claim Linux Foundation, OpenSSF, CNCF, or LF AI readiness until at least these are true:
+Foundation readiness is a community and governance milestone, not a version number. Public
+foundation-readiness claims require all of these conditions:
 
 - at least two independent external adopters have public evidence of use,
 - at least two maintainers from different organizations can review and release,
@@ -61,7 +59,7 @@ should not claim Linux Foundation, OpenSSF, CNCF, or LF AI readiness until at le
 - direction-setting decisions are tracked in issues or ADRs,
 - release cadence and compatibility policy are predictable for downstream users.
 
-Until then, the correct claim is:
+Before those conditions are met, the correct claim is:
 
 > Foundation-aligned, not foundation-ready.
 
@@ -73,18 +71,17 @@ Until then, the correct claim is:
 - Do not make screenshots or dashboards a conformance requirement.
 - Do not make governance documents imply a multi-maintainer project before that is true.
 
-## Operating Order
+## Operating Controls
 
-1. Harden conformance and negative fixtures.
-2. Keep GitHub Action and release trust workflows boring and reproducible.
-3. Keep public security-health signals visible through CodeQL, pinned Actions, Dependabot, and
-   OpenSSF Scorecard.
-4. Improve the 10-minute adoption path and migration notes.
-5. Use [External Pilot Intake](external-pilot-intake.md) before counting a repository as an external
-   pilot, archive a [Pilot Evidence Pack](pilot-evidence-pack.md), and validate the pilot record
-   before asking for public listing permission.
-6. Add more ecosystem round-trip examples only when they preserve the same artifact contracts.
-7. Require real external pilot repos before expanding governance claims.
+- Conformance and negative fixtures are part of the release gate.
+- GitHub Action and release trust workflows stay reproducible and pinned.
+- Public security-health signals stay visible through CodeQL, pinned Actions, Dependabot, and
+  OpenSSF Scorecard.
+- Adoption guidance stays tied to copyable commands and retained artifacts.
+- [External Adoption Intake](external-adoption-intake.md), [Adoption Evidence Pack](adoption-evidence-pack.md),
+  and a validated adoption record are required before public listing permission is requested.
+- Ecosystem examples preserve the same artifact contracts as the CLI.
+- Governance claims are limited to evidence-backed maintainership and adoption facts.
 
 ## OpenSSF Scorecard Hygiene
 

@@ -1,13 +1,13 @@
 # Adoption Playbook
 
 This playbook is the shortest path for adopting Skills Orchestrator in a real
-repository. It is written for platform teams that want a low-risk pilot before
+repository. It is written for platform teams that want a low-risk adoption before
 turning SkillOps checks into a blocking release gate.
 
-For repositories outside this project, first use [External Pilot Intake](external-pilot-intake.md)
+For repositories outside this project, first use [External Adoption Intake](external-adoption-intake.md)
 to confirm ownership, artifact retention, gate mode, and stop conditions.
-After the first CI run, archive the [Pilot Evidence Pack](pilot-evidence-pack.md) and validate an
-`external-pilot-record` before treating the repository as external adoption evidence.
+After the first CI run, archive the [Adoption Evidence Pack](adoption-evidence-pack.md) and validate an
+`external-adoption-record` before treating the repository as external adoption evidence.
 
 ## Adoption Modes
 
@@ -20,7 +20,7 @@ After the first CI run, archive the [Pilot Evidence Pack](pilot-evidence-pack.md
 Start with advisory mode unless the repository already has owners, versions,
 sources, lifecycle metadata, and review windows for each skill.
 
-## 15-Minute Pilot
+## 15-Minute Adoption Path
 
 1. Install the CLI:
 
@@ -92,7 +92,7 @@ sources, lifecycle metadata, and review windows for each skill.
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: BambooGap/skills-orchestrator@v4.8.37
+         - uses: BambooGap/skills-orchestrator@v4.8.38
            with:
              config: config/skills.yaml
              policy-pack: builtin/team-standard
@@ -127,16 +127,16 @@ Move from warning gate to engineering gate when all of these are true:
 - `builtin/engineering-grade` has no warnings.
 - Security reviewers agree that SARIF findings can block merges.
 
-## Pilot Examples
+## Adoption Examples
 
-The examples under `examples/pilot-repos/` are copyable starter packs for
+The examples under `examples/adoption-repos/` are copyable starter packs for
 real-world repository shapes:
 
 - `healthchecks`: operational runbook and release-check skills for a monitoring app.
 - `umami`: privacy, schema migration, and analytics release skills.
 - `woodpecker`: CI pipeline, runner security, and plugin release skills.
 
-Each pilot includes:
+Each adoption includes:
 
 - `config/skills.yaml`
 - sample `skills/*.md`
@@ -152,6 +152,6 @@ Each pilot includes:
   threat model has been reviewed.
 - Do not create an `ADOPTERS.md` entry until a real external repo is using the tool,
   `public_listing.status` is approved, and `authorization.tier` is `public-adopter-reference` or
-  `public-case-study` in a validated external pilot record.
-- Use [Pilot Case Study Template](pilot-case-study-template.md) only after public listing consent is
+  `public-case-study` in a validated external adoption record.
+- Use [Adoption Case Study Template](adoption-case-study-template.md) only after public listing consent is
   approved with the matching authorization tier.

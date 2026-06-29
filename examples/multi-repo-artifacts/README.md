@@ -17,12 +17,12 @@ skills-orchestrator evidence export \
   --out evidence
 ```
 
-For this repository's pilot fixtures, generate three local evidence bundles:
+For this repository's adoption fixtures, generate three local evidence bundles:
 
 ```bash
 for repo in healthchecks umami woodpecker; do
   (
-    cd "../pilot-repos/${repo}"
+    cd "../adoption-repos/${repo}"
     skills-orchestrator evidence export \
       --config config/skills.yaml \
       --policy-pack builtin/team-standard \
@@ -35,10 +35,10 @@ done
 
 ```bash
 skills-orchestrator evidence index \
-  --manifest "healthchecks=../pilot-repos/healthchecks/evidence/evidence-manifest.json" \
-  --manifest "umami=../pilot-repos/umami/evidence/evidence-manifest.json" \
-  --manifest "woodpecker=../pilot-repos/woodpecker/evidence/evidence-manifest.json" \
-  --scope-name pilot-org \
+  --manifest "healthchecks=../adoption-repos/healthchecks/evidence/evidence-manifest.json" \
+  --manifest "umami=../adoption-repos/umami/evidence/evidence-manifest.json" \
+  --manifest "woodpecker=../adoption-repos/woodpecker/evidence/evidence-manifest.json" \
+  --scope-name adoption-org \
   --output evidence/multi-repo-artifacts.json \
   --force
 ```
@@ -47,8 +47,8 @@ Or use a glob:
 
 ```bash
 skills-orchestrator evidence index \
-  --manifest-glob "../pilot-repos/*/evidence/evidence-manifest.json" \
-  --scope-name pilot-org \
+  --manifest-glob "../adoption-repos/*/evidence/evidence-manifest.json" \
+  --scope-name adoption-org \
   --output evidence/multi-repo-artifacts.json \
   --force
 ```

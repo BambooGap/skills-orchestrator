@@ -13,7 +13,7 @@ docker run --rm skills-orchestrator:local --version
 Use the published release image when a CI host should not build the project first:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.37 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.38 --version
 ```
 
 ## Run Against A Repository
@@ -24,7 +24,7 @@ Mount the repository at `/workspace` and run commands from that directory:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.37 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.38 \
   check --config config/skills.yaml
 ```
 
@@ -34,7 +34,7 @@ Generate audit artifacts:
 docker run --rm \
   -v "$PWD:/workspace" \
   -w /workspace \
-  ghcr.io/bamboogap/skills-orchestrator:v4.8.37 \
+  ghcr.io/bamboogap/skills-orchestrator:v4.8.38 \
   manifest --config config/skills.yaml --format cyclonedx \
   --output instruction-manifest.cdx.json
 ```
@@ -94,7 +94,7 @@ Preferred production pattern:
 1. From a connected environment, resolve the release digest:
 
    ```bash
-   VERSION=v4.8.37
+   VERSION=v4.8.38
    IMAGE=ghcr.io/bamboogap/skills-orchestrator
    docker buildx imagetools inspect "${IMAGE}:${VERSION}"
    ```
@@ -106,8 +106,8 @@ Preferred production pattern:
 
    ```bash
    docker pull "${IMAGE}@sha256:<verified-digest>"
-   docker tag "${IMAGE}@sha256:<verified-digest>" internal.example.com/skillops/skills-orchestrator:v4.8.37
-   docker push internal.example.com/skillops/skills-orchestrator:v4.8.37
+   docker tag "${IMAGE}@sha256:<verified-digest>" internal.example.com/skillops/skills-orchestrator:v4.8.38
+   docker push internal.example.com/skillops/skills-orchestrator:v4.8.38
    ```
 
 4. In production CI, pin the internal image by digest:

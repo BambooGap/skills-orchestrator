@@ -367,7 +367,7 @@ def _enterprise_evidence(
                     f"DOCTOR_{label.upper()}",
                     "info",
                     f"Recommended enterprise artifact is missing: {path}",
-                    "Generate this artifact when piloting organization-wide SkillOps evidence.",
+                    "Generate this artifact when preparing organization-wide SkillOps evidence.",
                     str(path),
                 )
             )

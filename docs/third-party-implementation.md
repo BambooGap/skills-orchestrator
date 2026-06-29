@@ -18,7 +18,7 @@ A compatible implementation SHOULD support these stable surfaces:
 | Registry | Produce registry, registry diff, and registry graph artifacts that validate against their v1 schemas. |
 | Claude Skills export | Produce or consume Claude Skills export manifests that validate against `skills-orchestrator.claude-skills-export.v1` when claiming Claude Skills round-trip compatibility. |
 | Conformance | Pass positive conformance checks and fail the public negative fixtures deterministically. |
-| External pilot record | Treat `external-pilot-record` as a preview adoption artifact for pilot handoff and public listing consent, not as proof of production success. |
+| External adoption record | Treat `external-adoption-record` as a preview adoption artifact for adoption handoff and public listing consent, not as proof of production success. |
 | Agent handoff | Treat `agent-handoff` as a preview artifact contract for supervisor/worker delegation metadata, not as proof that a runtime executed workers. |
 | Agent runtime image | Treat `agent-runtime-image` as a preview artifact contract for external containerized agent runtime review, not as proof that SkillOps started containers or enforced tenants. |
 
@@ -77,8 +77,8 @@ skills-orchestrator schema validate \
   --kind claude-skills-export \
   --input evidence/claude-skills-export.json
 skills-orchestrator schema validate \
-  --kind external-pilot-record \
-  --input examples/external-pilot-record/advisory-pilot-record.json
+  --kind external-adoption-record \
+  --input examples/external-adoption-record/advisory-adoption-record.json
 skills-orchestrator schema validate \
   --kind agent-handoff \
   --input examples/agent-handoff/release-review-handoff.json
