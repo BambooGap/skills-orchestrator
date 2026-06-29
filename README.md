@@ -449,6 +449,9 @@ skills-orchestrator build --config config/skills.yaml
 ```
 
 把生成的 `AGENTS.md` 放到项目根目录，Claude / Cursor 会在会话启动或项目重新加载时读取。
+`build` 会拒绝把明显的 secret-like 字段写入 `AGENTS.md`，并限制单个 required skill 的
+输出大小。需要更严格限制时可传 `--max-skill-bytes` 或设置
+`SKILLS_ORCHESTRATOR_BUILD_MAX_SKILL_BYTES`。
 
 ---
 
