@@ -16,6 +16,9 @@ Use the published release image when a CI host should not build the project firs
 docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.42 --version
 ```
 
+This project does not publish or recommend a floating `:latest` tag. Use a release tag for
+interactive smoke checks and a verified digest for production CI.
+
 ## Run Against A Repository
 
 Mount the repository at `/workspace` and run commands from that directory:

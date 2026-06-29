@@ -15,6 +15,7 @@ from .models import RunState
 STATE_FILENAME_RE = re.compile(
     r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}_[A-Za-z0-9][A-Za-z0-9_-]{0,63}\.json$"
 )
+STATE_DIR_ENV = "SKILLS_ORCHESTRATOR_STATE_DIR"
 
 
 class RunStateStore:
@@ -29,8 +30,9 @@ class RunStateStore:
 
     def __init__(self, base_dir: Optional[str] = None):
         if base_dir is None:
-            base_dir = os.path.expanduser("~/.skills-orchestrator")
-        self.runs_dir = Path(base_dir) / "runs"
+            base_dir = os.environ.get(STATE_DIR_ENV) or os.path.expanduser("~/.skills-orchestrator")
+        self.base_dir = Path(base_dir)
+        self.runs_dir = self.base_dir / "runs"
         self.runs_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.runs_dir.chmod(0o700)
 

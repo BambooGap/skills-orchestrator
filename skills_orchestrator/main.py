@@ -18,6 +18,7 @@ from .security import (
     validate_identifier,
 )
 from .compiler import Parser, Resolver, Compressor, SkillsLock
+from .compiler.compressor import BUILD_MAX_SKILL_BYTES_ENV
 from .enforcer import Enforcer
 from .sync.targets import get_target, SyncEngine, TARGET_REGISTRY
 from .models import Manifest
@@ -239,6 +240,12 @@ def _validate_pipeline_skills_or_exit(pipeline_id: str, pipeline, registry) -> N
     raise SystemExit(1)
 
 
+def _pipeline_store(state_dir: Optional[str] = None):
+    from skills_orchestrator.pipeline.store import RunStateStore
+
+    return RunStateStore(base_dir=state_dir)
+
+
 def _append_pipeline_skill_content(lines: list[str], registry, skill_id: str, label: str) -> None:
     skill_content = registry.get_content(skill_id)
     if not skill_content:
@@ -362,7 +369,15 @@ cli.add_command(_schema_cmd)
 @click.option("--output", "-o", default="AGENTS.md", help="输出文件路径")
 @click.option("--zone", "-z", default=None, help="指定 Zone ID，不传则自动探测")
 @click.option("--lock", is_flag=True, help="同时生成 skills.lock.json 保证可复现性")
-def build(config: str, output: str, zone: Optional[str], lock: bool):
+@click.option(
+    "--max-skill-bytes",
+    type=int,
+    default=None,
+    help=f"单个 forced skill 写入 AGENTS.md 的最大字节数；也可用 {BUILD_MAX_SKILL_BYTES_ENV}",
+)
+def build(
+    config: str, output: str, zone: Optional[str], lock: bool, max_skill_bytes: Optional[int]
+):
     """编译 skill 配置并生成 AGENTS.md。"""
     try:
         parser = Parser(config)
@@ -394,7 +409,11 @@ def build(config: str, output: str, zone: Optional[str], lock: bool):
             )
         )
 
-        compressor = Compressor(resolved, all_skills=cfg.skills)
+        compressor = Compressor(
+            resolved,
+            all_skills=cfg.skills,
+            max_forced_skill_bytes=max_skill_bytes,
+        )
         manifest = compressor.compress()
         agents_md = compressor.generate_agents_md(manifest, resolved.active_zone)
 
@@ -2329,8 +2348,18 @@ def pipeline_list(detail: bool, compact: bool, config: str):
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 zone id")
 @click.option("--pipelines-dir", default=None, help="Pipeline 定义目录（默认为 config/pipelines）")
+@click.option(
+    "--state-dir",
+    default=None,
+    help="Pipeline 状态目录；也可用 SKILLS_ORCHESTRATOR_STATE_DIR 固定到项目内目录",
+)
 def pipeline_start(
-    pipeline_id: str, context: str, config: str, zone: Optional[str], pipelines_dir: Optional[str]
+    pipeline_id: str,
+    context: str,
+    config: str,
+    zone: Optional[str],
+    pipelines_dir: Optional[str],
+    state_dir: Optional[str],
 ):
     """启动一个 Pipeline 运行
 
@@ -2345,7 +2374,6 @@ def pipeline_start(
     """
     from .mcp.registry import SkillRegistry
     from .pipeline.engine import PipelineEngine
-    from .pipeline.store import RunStateStore
 
     config_path = str(Path(config).resolve())
 
@@ -2362,8 +2390,11 @@ def pipeline_start(
 
         ctx = _parse_pipeline_context(context)
         state = PipelineEngine(pipeline).start(context=ctx)
-        RunStateStore().save(state)
-        click.echo(console_safe_text(_format_pipeline_start(pipeline, state, registry)))
+        store = _pipeline_store(state_dir)
+        store.save(state)
+        output = _format_pipeline_start(pipeline, state, registry)
+        output += f"\nState dir: {store.base_dir}"
+        click.echo(console_safe_text(output))
     except json.JSONDecodeError as e:
         click.echo(_err(f"JSON 解析失败: {e}"), err=True)
         raise SystemExit(1)
@@ -2377,8 +2408,17 @@ def pipeline_start(
 @click.option("--run-id", "-r", default=None, help="运行 ID")
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--pipelines-dir", default=None, help="Pipeline 定义目录（默认为 config/pipelines）")
+@click.option(
+    "--state-dir",
+    default=None,
+    help="Pipeline 状态目录；也可用 SKILLS_ORCHESTRATOR_STATE_DIR 固定到项目内目录",
+)
 def pipeline_status(
-    pipeline_id: Optional[str], run_id: Optional[str], config: str, pipelines_dir: Optional[str]
+    pipeline_id: Optional[str],
+    run_id: Optional[str],
+    config: str,
+    pipelines_dir: Optional[str],
+    state_dir: Optional[str],
 ):
     """查看 Pipeline 运行状态
 
@@ -2388,10 +2428,8 @@ def pipeline_status(
       skills-orchestrator pipeline status quick-fix --run-id abc123
       skills-orchestrator pipeline status  # 查看最近的运行
     """
-    from skills_orchestrator.pipeline.store import RunStateStore
-
     try:
-        store = RunStateStore()
+        store = _pipeline_store(state_dir)
 
         # 加载 RunState
         if run_id and pipeline_id:
@@ -2443,7 +2481,14 @@ def pipeline_status(
 @click.argument("pipeline_id", required=False, default=None)
 @click.option("--limit", default=20, show_default=True, help="最多显示多少条运行记录")
 @click.option("--json", "as_json", is_flag=True, help="输出 JSON，便于 Agent/CI 读取")
-def pipeline_list_runs(pipeline_id: Optional[str], limit: int, as_json: bool):
+@click.option(
+    "--state-dir",
+    default=None,
+    help="Pipeline 状态目录；也可用 SKILLS_ORCHESTRATOR_STATE_DIR 固定到项目内目录",
+)
+def pipeline_list_runs(
+    pipeline_id: Optional[str], limit: int, as_json: bool, state_dir: Optional[str]
+):
     """列出 Pipeline 运行记录
 
     \b
@@ -2452,10 +2497,8 @@ def pipeline_list_runs(pipeline_id: Optional[str], limit: int, as_json: bool):
       skills-orchestrator pipeline list-runs quick-fix
       skills-orchestrator pipeline list-runs --json
     """
-    from skills_orchestrator.pipeline.store import RunStateStore
-
     try:
-        store = RunStateStore()
+        store = _pipeline_store(state_dir)
         rows = store.list_runs(pipeline_id)
         rows.sort(key=lambda row: row.get("updated_at") or "", reverse=True)
         rows = rows[: max(limit, 0)]
@@ -2503,6 +2546,11 @@ def pipeline_list_runs(pipeline_id: Optional[str], limit: int, as_json: bool):
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--zone", "-z", default=None, help="指定 zone id")
 @click.option("--pipelines-dir", default=None, help="Pipeline 定义目录（默认为 config/pipelines）")
+@click.option(
+    "--state-dir",
+    default=None,
+    help="Pipeline 状态目录；也可用 SKILLS_ORCHESTRATOR_STATE_DIR 固定到项目内目录",
+)
 def pipeline_advance(
     pipeline_id: str,
     run_id: Optional[str],
@@ -2511,6 +2559,7 @@ def pipeline_advance(
     config: str,
     zone: Optional[str],
     pipelines_dir: Optional[str],
+    state_dir: Optional[str],
 ):
     """推进 Pipeline 到下一步
 
@@ -2524,13 +2573,12 @@ def pipeline_advance(
     """
     from .mcp.registry import SkillRegistry
     from .pipeline.engine import PipelineEngine
-    from .pipeline.store import RunStateStore
 
     config_path = str(Path(config).resolve())
     try:
+        store = _pipeline_store(state_dir)
         # 自动找最新运行（run_id 未指定时）
         if not run_id:
-            store = RunStateStore()
             state = store.load_latest(pipeline_id)
             if state is None:
                 click.echo(
@@ -2545,6 +2593,11 @@ def pipeline_advance(
                 return
             run_id = state.run_id
             click.echo(f"  自动使用运行 ID: {click.style(run_id, bold=True)}")
+        else:
+            state = store.load(pipeline_id, run_id)
+            if state is None:
+                click.echo(_err(f"找不到运行记录: {pipeline_id}/{run_id}"), err=True)
+                raise SystemExit(1)
 
         arts = json.loads(artifacts)
         if not isinstance(arts, list) or any(not isinstance(item, str) for item in arts):
@@ -2564,7 +2617,7 @@ def pipeline_advance(
 
         state.context.update(ctx)
         state = PipelineEngine(pipeline).complete_and_advance(state)
-        RunStateStore().save(state)
+        store.save(state)
         click.echo(console_safe_text(_format_pipeline_advance(pipeline, state, run_id, registry)))
     except json.JSONDecodeError as e:
         click.echo(_err(f"JSON 解析失败: {e}"), err=True)
@@ -2579,8 +2632,17 @@ def pipeline_advance(
 @click.option("--run-id", "-r", default=None, help="运行 ID（不传则恢复最近一次）")
 @click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option("--pipelines-dir", default=None, help="Pipeline 定义目录（默认为 config/pipelines）")
+@click.option(
+    "--state-dir",
+    default=None,
+    help="Pipeline 状态目录；也可用 SKILLS_ORCHESTRATOR_STATE_DIR 固定到项目内目录",
+)
 def pipeline_resume(
-    pipeline_id: Optional[str], run_id: Optional[str], config: str, pipelines_dir: Optional[str]
+    pipeline_id: Optional[str],
+    run_id: Optional[str],
+    config: str,
+    pipelines_dir: Optional[str],
+    state_dir: Optional[str],
 ):
     """恢复中断的 Pipeline 运行
 
@@ -2591,10 +2653,9 @@ def pipeline_resume(
       skills-orchestrator pipeline resume  # 恢复最近的运行
     """
     from skills_orchestrator.pipeline.engine import PipelineEngine
-    from skills_orchestrator.pipeline.store import RunStateStore
 
     try:
-        store = RunStateStore()
+        store = _pipeline_store(state_dir)
 
         # 加载 RunState
         if run_id and pipeline_id:

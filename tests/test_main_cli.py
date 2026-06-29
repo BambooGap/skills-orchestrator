@@ -542,3 +542,219 @@ def test_pipeline_start_and_advance_do_not_require_mcp_runtime(workspace, monkey
     )
     assert advance_result.exit_code == 0
     assert "已完成" in advance_result.output
+
+
+def test_pipeline_advance_explicit_run_id_loads_state(workspace, tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    state_dir = tmp_path / "project-state"
+    runner = CliRunner()
+
+    start_result = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "start",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+            "--state-dir",
+            str(state_dir),
+        ],
+    )
+    assert start_result.exit_code == 0
+    run_id = next(
+        line.split("Run ID: ", 1)[1].strip()
+        for line in start_result.output.splitlines()
+        if "Run ID: " in line
+    )
+
+    advance_result = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "advance",
+            "test-pipeline",
+            "--run-id",
+            run_id,
+            "--config",
+            workspace["config"],
+            "--state-dir",
+            str(state_dir),
+        ],
+    )
+
+    assert advance_result.exit_code == 0
+    assert "已完成" in advance_result.output
+
+
+def test_pipeline_advance_explicit_run_id_missing_exits_nonzero(workspace, tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "advance",
+            "test-pipeline",
+            "--run-id",
+            "missing-run",
+            "--config",
+            workspace["config"],
+            "--state-dir",
+            str(tmp_path / "state"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "找不到运行记录" in result.output
+
+
+def test_pipeline_state_dir_isolates_latest_runs(workspace, tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    runner = CliRunner()
+    state_a = tmp_path / "repo-a" / ".skills-orchestrator"
+    state_b = tmp_path / "repo-b" / ".skills-orchestrator"
+
+    start_a = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "start",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+            "--state-dir",
+            str(state_a),
+        ],
+    )
+    start_b = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "start",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+            "--state-dir",
+            str(state_b),
+        ],
+    )
+    assert start_a.exit_code == 0
+    assert start_b.exit_code == 0
+    run_a = next(
+        line.split("Run ID: ", 1)[1].strip()
+        for line in start_a.output.splitlines()
+        if "Run ID: " in line
+    )
+    run_b = next(
+        line.split("Run ID: ", 1)[1].strip()
+        for line in start_b.output.splitlines()
+        if "Run ID: " in line
+    )
+    assert run_a != run_b
+
+    status_a = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "status",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+            "--state-dir",
+            str(state_a),
+        ],
+    )
+    status_b = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "status",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+            "--state-dir",
+            str(state_b),
+        ],
+    )
+
+    assert status_a.exit_code == 0
+    assert status_b.exit_code == 0
+    assert f"Run: {run_a}" in status_a.output
+    assert f"Run: {run_b}" in status_b.output
+
+
+def test_pipeline_state_dir_env_is_used(workspace, tmp_path, monkeypatch):
+    state_dir = tmp_path / "env-state"
+    monkeypatch.setenv("SKILLS_ORCHESTRATOR_STATE_DIR", str(state_dir))
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "start",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert f"State dir: {state_dir}" in result.output
+    assert (state_dir / "runs").is_dir()
+
+
+def test_build_rejects_oversized_forced_skill(workspace, tmp_path):
+    skill_path = workspace["root"] / "skills" / "test-skill.md"
+    skill_path.write_text(
+        skill_path.read_text(encoding="utf-8").replace("load_policy: free", "load_policy: require")
+        + "\n"
+        + ("A" * 1200),
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "build",
+            "--config",
+            workspace["config"],
+            "--output",
+            str(tmp_path / "AGENTS.md"),
+            "--max-skill-bytes",
+            "1000",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "exceeds AGENTS.md content limit" in result.output
+
+
+def test_build_rejects_secret_like_forced_skill_without_echoing_value(workspace, tmp_path):
+    skill_path = workspace["root"] / "skills" / "test-skill.md"
+    secret_value = "sk-testsecretvalue123456"
+    skill_path.write_text(
+        skill_path.read_text(encoding="utf-8").replace("load_policy: free", "load_policy: require")
+        + f"\napi_key: {secret_value}\n",
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "build",
+            "--config",
+            workspace["config"],
+            "--output",
+            str(tmp_path / "AGENTS.md"),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "secret-like field" in result.output
+    assert "api_key" in result.output
+    assert secret_value not in result.output

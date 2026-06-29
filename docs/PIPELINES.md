@@ -38,6 +38,22 @@ skills-orchestrator pipeline list --config config/skills.yaml
 skills-orchestrator pipeline start code-review --config config/skills.yaml
 ```
 
+Pipeline run state is stored under `~/.skills-orchestrator` by default. In CI or shared developer
+machines, pin it to the repository workspace so `status`, `resume`, and `advance` never pick up
+another repository's latest run:
+
+```bash
+skills-orchestrator pipeline start code-review \
+  --config config/skills.yaml \
+  --state-dir .skills-orchestrator
+
+skills-orchestrator pipeline advance code-review \
+  --config config/skills.yaml \
+  --state-dir .skills-orchestrator
+```
+
+The same default can be set with `SKILLS_ORCHESTRATOR_STATE_DIR=.skills-orchestrator`.
+
 ## MCP Runtime
 
 When served through MCP, pipelines expose:

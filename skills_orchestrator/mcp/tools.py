@@ -88,9 +88,13 @@ TOOL_GET_SKILL = types.Tool(
             "id": {
                 "type": "string",
                 "description": "Skill ID，如 'git-worktrees'、'systematic-debugging'",
-            }
+            },
+            "skill_id": {
+                "type": "string",
+                "description": "Alias for id, accepted for client ergonomics.",
+            },
         },
-        "required": ["id"],
+        "anyOf": [{"required": ["id"]}, {"required": ["skill_id"]}],
     },
 )
 
@@ -108,13 +112,17 @@ TOOL_SUGGEST_COMBO = types.Tool(
                 "type": "string",
                 "description": "任务或项目需求描述，越具体越好",
             },
+            "task": {
+                "type": "string",
+                "description": "Alias for requirement, accepted for client ergonomics.",
+            },
             "max_combos": {
                 "type": "integer",
                 "description": "返回方案数量，默认 3",
                 "default": 3,
             },
         },
-        "required": ["requirement"],
+        "anyOf": [{"required": ["requirement"]}, {"required": ["task"]}],
     },
 )
 
@@ -516,7 +524,7 @@ class ToolExecutor:
     # ── get_skill ─────────────────────────────────────────────────
 
     def _get_skill(self, args: dict) -> list[types.TextContent]:
-        skill_id = self._get_string(args, "id").strip()
+        skill_id = (self._get_string(args, "id") or self._get_string(args, "skill_id")).strip()
 
         if not skill_id:
             return [types.TextContent(type="text", text="请提供 skill id。")]
@@ -552,7 +560,9 @@ class ToolExecutor:
     # ── suggest_combo ─────────────────────────────────────────────
 
     def _suggest_combo(self, args: dict) -> list[types.TextContent]:
-        requirement = self._get_string(args, "requirement").strip()
+        requirement = (
+            self._get_string(args, "requirement") or self._get_string(args, "task")
+        ).strip()
         max_combos = parse_int_in_range(
             args.get("max_combos"), "max_combos", default=3, minimum=1, maximum=5
         )

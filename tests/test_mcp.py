@@ -245,6 +245,12 @@ class TestToolExecutor:
         assert "系统化调试" in text
         assert "复现问题" in text
 
+    def test_get_skill_accepts_skill_id_alias(self):
+        results = self.executor.execute("get_skill", {"skill_id": "systematic-debugging"})
+        text = self._text(results)
+        assert "系统化调试" in text
+        assert "复现问题" in text
+
     def test_get_skill_applies_content_byte_limit(self):
         executor = ToolExecutor(MockRegistry(), max_content_bytes=12)
 
@@ -270,6 +276,12 @@ class TestToolExecutor:
         results = self.executor.execute(
             "suggest_combo", {"requirement": "部署微服务，需要 git 工作流和代码审查"}
         )
+        text = self._text(results)
+        assert "方案" in text
+        assert "Skills:" in text
+
+    def test_suggest_combo_accepts_task_alias(self):
+        results = self.executor.execute("suggest_combo", {"task": "部署微服务，需要 git 工作流"})
         text = self._text(results)
         assert "方案" in text
         assert "Skills:" in text

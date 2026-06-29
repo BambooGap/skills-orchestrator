@@ -762,6 +762,18 @@ class TestRunStateStore:
             assert loaded is not None
             assert loaded.context["key"] == "value"
 
+    def test_default_store_uses_state_dir_env(self, tmp_path, monkeypatch):
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        state_dir = tmp_path / "project-state"
+        monkeypatch.setenv("SKILLS_ORCHESTRATOR_STATE_DIR", str(state_dir))
+
+        store = RunStateStore()
+        store.save(self._make_state("p1", "r1"))
+
+        assert store.base_dir == state_dir
+        assert (state_dir / "runs" / "p1_r1.json").exists()
+
     def test_rejects_path_traversal_identifiers(self):
         """pipeline_id/run_id 不应能通过 ../ 逃逸 runs 目录。"""
         import pytest

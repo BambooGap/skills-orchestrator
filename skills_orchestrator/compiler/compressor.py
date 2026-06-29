@@ -1,7 +1,9 @@
 """Compressor - 压缩合并生成 Manifest + AGENTS.md"""
 
 from datetime import datetime
+import os
 from pathlib import Path
+import re
 from typing import Optional
 
 from skills_orchestrator.models import ResolvedConfig, Manifest, Zone
@@ -10,12 +12,30 @@ from skills_orchestrator.compiler.content_resolver import SkillContentResolver
 
 from skills_orchestrator import __version__
 
+BUILD_MAX_SKILL_BYTES_ENV = "SKILLS_ORCHESTRATOR_BUILD_MAX_SKILL_BYTES"
+DEFAULT_BUILD_MAX_SKILL_BYTES = 1_000_000
+
+OBVIOUS_SECRET_RE = re.compile(
+    r"^\s*(?P<key>"
+    r"api[_-]?key|secret|token|password|passwd|credential|authorization|"
+    r"private[_-]?key"
+    r")\s*[:=]\s*['\"]?[A-Za-z0-9_./+=-]{12,}",
+    re.IGNORECASE,
+)
+
 
 class Compressor:
     """压缩器 - 生成 AGENTS.md"""
 
-    def __init__(self, resolved: ResolvedConfig, registry=None, all_skills=None):
+    def __init__(
+        self,
+        resolved: ResolvedConfig,
+        registry=None,
+        all_skills=None,
+        max_forced_skill_bytes: int | None = None,
+    ):
         self.resolved = resolved
+        self.max_forced_skill_bytes = _resolve_max_forced_skill_bytes(max_forced_skill_bytes)
         current_skills = resolved.forced_skills + resolved.passive_skills
         self._resolver = SkillContentResolver(
             base_dir=resolved.base_dir,
@@ -94,6 +114,7 @@ class Compressor:
         parts = []
         for skill in self.resolved.forced_skills:
             content = self._resolver.read(skill)
+            self._validate_forced_skill_content(skill.id, skill.path, content)
             stripped = content.strip()
             # 文件已有 frontmatter（--- 开头），不再双重包裹
             if stripped.startswith("---"):
@@ -102,6 +123,24 @@ class Compressor:
                 parts.append(f"---\n{stripped}\n---")
 
         return "\n\n".join(parts)
+
+    def _validate_forced_skill_content(self, skill_id: str, skill_path: str, content: str) -> None:
+        raw_size = len(content.encode("utf-8"))
+        if raw_size > self.max_forced_skill_bytes:
+            raise ValueError(
+                f"Forced skill '{skill_id}' exceeds AGENTS.md content limit "
+                f"({raw_size} bytes > {self.max_forced_skill_bytes} bytes): {skill_path}"
+            )
+
+        for line_number, line in enumerate(content.splitlines(), 1):
+            match = OBVIOUS_SECRET_RE.match(line)
+            if not match:
+                continue
+            key = match.group("key")
+            raise ValueError(
+                f"Forced skill '{skill_id}' appears to contain a secret-like field "
+                f"'{key}' at line {line_number}: {skill_path}"
+            )
 
     def _generate_passive_index(self) -> str:
         """生成 passive skills 摘要表格"""
@@ -128,3 +167,18 @@ def _runtime_skill_loading_lines() -> list[str]:
         "",
         '未配置 MCP 时，可说明"使用 [skill-name] skill"，由宿主环境加载完整内容。',
     ]
+
+
+def _resolve_max_forced_skill_bytes(value: int | None) -> int:
+    if value is None:
+        raw_value = os.environ.get(BUILD_MAX_SKILL_BYTES_ENV)
+        if raw_value:
+            try:
+                value = int(raw_value)
+            except ValueError as exc:
+                raise ValueError(f"{BUILD_MAX_SKILL_BYTES_ENV} must be an integer") from exc
+        else:
+            value = DEFAULT_BUILD_MAX_SKILL_BYTES
+    if value < 1_000 or value > 10_000_000:
+        raise ValueError("Forced skill byte limit must be between 1000 and 10000000")
+    return value
