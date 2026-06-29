@@ -131,7 +131,8 @@ State these boundaries explicitly:
 - It does not validate agent runtime enforcement.
 - It does not prove tenant isolation, secret isolation, or budget enforcement.
 - It is not a formal SLSA or compliance certification.
-- It is not an adopter claim unless public listing consent is approved.
+- It is not an adopter claim unless public listing consent is approved and `authorization.tier` is
+  `public-adopter-reference` or `public-case-study`.
 
 ## Publication Checklist
 
@@ -139,6 +140,7 @@ Before publishing:
 
 - `pilot-record.json` validates against `external-pilot-record`.
 - `public_listing.status` is `approved`.
+- `authorization.tier` is `public-adopter-reference` or `public-case-study`.
 - `approved_by` and `approved_at` are present.
 - Private repository details are redacted or approved.
 - The case links to public CI/release evidence when possible.

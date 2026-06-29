@@ -3,7 +3,15 @@
   "$id": "https://github.com/BambooGap/skills-orchestrator/schemas/external-pilot-record.schema.json",
   "title": "Skills Orchestrator External Pilot Record",
   "type": "object",
-  "required": ["schema_version", "pilot", "gate", "artifacts", "promotion", "public_listing"],
+  "required": [
+    "schema_version",
+    "pilot",
+    "authorization",
+    "gate",
+    "artifacts",
+    "promotion",
+    "public_listing"
+  ],
   "properties": {
     "schema_version": { "const": "skills-orchestrator.external-pilot-record.v1" },
     "pilot": {
@@ -24,6 +32,41 @@
         "ci_system": { "type": "string", "minLength": 1 },
         "notes": { "type": "string" }
       },
+      "additionalProperties": true
+    },
+    "authorization": {
+      "type": "object",
+      "required": ["tier"],
+      "properties": {
+        "tier": {
+          "enum": [
+            "not-requested",
+            "pending",
+            "declined-no-follow-up",
+            "private-technical-pilot",
+            "public-pilot-mention",
+            "public-adopter-reference",
+            "public-case-study"
+          ]
+        },
+        "requested_at": { "type": "string", "minLength": 1 },
+        "decided_at": { "type": "string", "minLength": 1 },
+        "approved_by": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "enum": ["public-adopter-reference", "public-case-study"]
+              }
+            },
+            "required": ["tier"]
+          },
+          "then": { "required": ["approved_by", "decided_at"] }
+        }
+      ],
       "additionalProperties": true
     },
     "gate": {
@@ -104,6 +147,60 @@
       "additionalProperties": true
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "authorization": {
+            "properties": {
+              "tier": {
+                "enum": [
+                  "not-requested",
+                  "pending",
+                  "declined-no-follow-up",
+                  "private-technical-pilot",
+                  "public-pilot-mention"
+                ]
+              }
+            },
+            "required": ["tier"]
+          }
+        },
+        "required": ["authorization"]
+      },
+      "then": {
+        "properties": {
+          "public_listing": {
+            "properties": {
+              "status": { "not": { "const": "approved" } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "public_listing": {
+            "properties": { "status": { "const": "approved" } },
+            "required": ["status"]
+          }
+        },
+        "required": ["public_listing"]
+      },
+      "then": {
+        "properties": {
+          "authorization": {
+            "properties": {
+              "tier": {
+                "enum": ["public-adopter-reference", "public-case-study"]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "additionalProperties": true,
   "$defs": {
     "artifact": {

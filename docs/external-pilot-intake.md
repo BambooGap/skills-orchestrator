@@ -3,7 +3,8 @@
 Use this checklist when a repository outside this project wants to trial Skills Orchestrator. It is
 written for platform teams, security reviewers, and maintainers who need a clear go / no-go decision
 before turning SkillOps into a blocking gate. If the repository owner has not approved a pilot yet,
-start with [Authorized Pilot Outreach](pilot-outreach.md).
+start with [Authorized Pilot Outreach](pilot-outreach.md). If the owner closes the request or says
+they are not interested, stop there; do not follow up, open a PR, or cite the repository publicly.
 
 This is not an `ADOPTERS.md` substitute. A repository becomes an adopter only after it runs SkillOps
 in its own CI or release evidence and gives permission to be listed.
@@ -103,7 +104,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: BambooGap/skills-orchestrator@v4.8.35
+      - uses: BambooGap/skills-orchestrator@v4.8.36
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -204,8 +205,15 @@ The record should use this shape:
     "repository": "owner/repo",
     "pilot_owner": "team-or-person",
     "started_at": "YYYY-MM-DD",
-    "skillops_version": "v4.8.35",
+    "skillops_version": "v4.8.36",
     "ci_system": "github-actions"
+  },
+  "authorization": {
+    "tier": "private-technical-pilot",
+    "requested_at": "YYYY-MM-DD",
+    "decided_at": "YYYY-MM-DD",
+    "approved_by": "repo-maintainer",
+    "notes": "Private technical pilot only; no public listing or case study is approved."
   },
   "gate": {
     "mode": "advisory",
@@ -233,9 +241,24 @@ The record should use this shape:
 }
 ```
 
-Only create or update `ADOPTERS.md` after the repository owner explicitly allows public listing.
+Only create or update `ADOPTERS.md` after the repository owner explicitly allows public listing and
+the external pilot record carries a public adopter/reference or public case-study authorization tier.
 For a runnable synthetic fixture, see
 [`examples/external-pilot-record`](../examples/external-pilot-record/README.md).
+
+Use `authorization.tier` to record what the maintainer approved:
+
+- `not-requested`: no pilot authorization has been requested yet.
+- `pending`: authorization was requested and no decision has been recorded.
+- `declined-no-follow-up`: the maintainer declined or closed the request; do not follow up or cite.
+- `private-technical-pilot`: artifacts may be shared privately with the maintainer.
+- `public-pilot-mention`: public evaluation mention is allowed, but not adopter/case language.
+- `public-adopter-reference`: public adopter/reference listing is approved.
+- `public-case-study`: a case study, quote, or artifact excerpt is approved.
+
+`public_listing.status=approved` is valid only with `public-adopter-reference` or
+`public-case-study`. Private, pending, declined, and public-mention-only pilots must not be listed
+as adopters.
 
 ## Evidence Pack And Case Study
 
@@ -245,5 +268,5 @@ decisions for a real external repository pilot.
 
 If the repository owner approves public listing, use
 [Pilot Case Study Template](pilot-case-study-template.md) to write a public case. Do not publish a
-case study, logo, quote, or `ADOPTERS.md` entry while `public_listing.status` is `not-requested` or
-`denied`.
+case study, logo, quote, or `ADOPTERS.md` entry unless `public_listing.status` is `approved` and
+`authorization.tier` is `public-adopter-reference` or `public-case-study`.

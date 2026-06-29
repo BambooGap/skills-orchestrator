@@ -54,8 +54,10 @@ def test_external_pilot_authorization_surfaces_are_present():
 
     assert "Private technical pilot" in outreach_text
     assert "Public adopter / case study" in outreach_text
+    assert "Declined / no follow-up" in outreach_text
     assert "public_listing.status" in outreach_text
     assert "No public case study, quote, logo, or adopter listing" in issue_text
+    assert "Not interested. Please close this request and do not follow up." in issue_text
     assert "[Authorized Pilot Outreach](docs/pilot-outreach.md)" in readme
 
 
@@ -69,3 +71,20 @@ def test_readme_points_to_dual_license_and_support_surfaces():
     assert "[Support](SUPPORT.md)" in readme
     assert "[Code of Conduct](CODE_OF_CONDUCT.md)" in readme
     assert "[Third-party Notices](THIRD_PARTY_NOTICES.md)" in readme
+
+
+def test_readme_exposes_release_verification_and_slsa_boundaries():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "GitHub latest release" in readme
+    assert "https://github.com/BambooGap/skills-orchestrator/releases/latest" in readme
+    assert "https://pypi.org/project/skills-orchestrator/" in readme
+    assert (
+        "https://github.com/BambooGap/skills-orchestrator/pkgs/container/skills-orchestrator"
+        in readme
+    )
+    assert "actions/workflows/post-release-smoke.yml" in readme
+    assert "[Supply Chain Verification](docs/supply-chain-verification.md)" in readme
+    assert "not formal SLSA level certification" in readme
+    assert "SLSA Build L3+" in readme
+    assert "[Production Adoption](docs/production-adoption.md)" in readme

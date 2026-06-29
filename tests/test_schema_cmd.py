@@ -499,6 +499,11 @@ def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
                 "path": "artifacts/conformance.json",
             },
         },
+        "authorization": {
+            "tier": "private-technical-pilot",
+            "decided_at": "2026-06-28T00:15:00Z",
+            "approved_by": "platform-team",
+        },
         "promotion": {
             "decision": "stay-advisory",
             "decided_at": "2026-06-28T00:30:00Z",
@@ -529,6 +534,116 @@ def test_external_pilot_record_rejects_unsafe_artifact_path(tmp_path):
         error["path"].startswith("$.artifacts.check_json.path")
         for error in result_payload["errors"]
     )
+
+
+def test_external_pilot_record_rejects_public_listing_without_public_authorization(tmp_path):
+    payload = {
+        "schema_version": "skills-orchestrator.external-pilot-record.v1",
+        "pilot": {
+            "repository": "org/repo",
+            "pilot_owner": "platform-team",
+            "started_at": "2026-06-28T00:00:00Z",
+            "skillops_version": "v4.8.35",
+            "ci_system": "github-actions",
+        },
+        "gate": {"mode": "advisory", "policy_pack": "builtin/team-standard"},
+        "artifacts": {
+            "check_json": {"status": "present", "path": "artifacts/check.json"},
+            "sarif": {"status": "present", "path": "artifacts/skills-orchestrator.sarif"},
+            "registry_diff": {"status": "present", "path": "artifacts/registry-diff.md"},
+            "evidence_manifest": {
+                "status": "present",
+                "path": "artifacts/evidence/evidence-manifest.json",
+            },
+            "conformance_report": {
+                "status": "present",
+                "path": "artifacts/conformance.json",
+            },
+        },
+        "authorization": {
+            "tier": "private-technical-pilot",
+            "decided_at": "2026-06-28T00:15:00Z",
+            "approved_by": "platform-team",
+        },
+        "promotion": {
+            "decision": "promote-warning",
+            "decided_at": "2026-06-28T00:30:00Z",
+        },
+        "public_listing": {
+            "status": "approved",
+            "approved_by": "repo-maintainer",
+            "approved_at": "2026-06-28T00:35:00Z",
+        },
+    }
+    input_file = tmp_path / "pilot-record.json"
+    input_file.write_text(json.dumps(payload), encoding="utf-8")
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "schema",
+            "validate",
+            "--kind",
+            "external-pilot-record",
+            "--input",
+            str(input_file),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 1
+    result_payload = json.loads(result.output)
+    assert any(error["path"].startswith("$") for error in result_payload["errors"])
+
+
+@pytest.mark.parametrize("tier", ["public-adopter-reference", "public-case-study"])
+def test_external_pilot_record_accepts_public_listing_with_public_authorization(tmp_path, tier):
+    payload = {
+        "schema_version": "skills-orchestrator.external-pilot-record.v1",
+        "pilot": {
+            "repository": "org/repo",
+            "pilot_owner": "platform-team",
+            "started_at": "2026-06-28T00:00:00Z",
+            "skillops_version": "v4.8.35",
+            "ci_system": "github-actions",
+        },
+        "gate": {"mode": "advisory", "policy_pack": "builtin/team-standard"},
+        "artifacts": {
+            "check_json": {"status": "present", "path": "artifacts/check.json"},
+            "sarif": {"status": "present", "path": "artifacts/skills-orchestrator.sarif"},
+            "registry_diff": {"status": "present", "path": "artifacts/registry-diff.md"},
+            "evidence_manifest": {
+                "status": "present",
+                "path": "artifacts/evidence/evidence-manifest.json",
+            },
+            "conformance_report": {
+                "status": "present",
+                "path": "artifacts/conformance.json",
+            },
+        },
+        "authorization": {
+            "tier": tier,
+            "decided_at": "2026-06-28T00:15:00Z",
+            "approved_by": "repo-maintainer",
+        },
+        "promotion": {
+            "decision": "promote-warning",
+            "decided_at": "2026-06-28T00:30:00Z",
+        },
+        "public_listing": {
+            "status": "approved",
+            "approved_by": "repo-maintainer",
+            "approved_at": "2026-06-28T00:35:00Z",
+        },
+    }
+    input_file = tmp_path / "pilot-record.json"
+    input_file.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = validate_document("external-pilot-record", str(input_file))
+
+    assert result.valid is True
 
 
 def test_agent_handoff_rejects_privileged_worker_without_human_approval(tmp_path):

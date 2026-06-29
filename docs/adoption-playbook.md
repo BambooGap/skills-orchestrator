@@ -92,7 +92,7 @@ sources, lifecycle metadata, and review windows for each skill.
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: BambooGap/skills-orchestrator@v4.8.35
+         - uses: BambooGap/skills-orchestrator@v4.8.36
            with:
              config: config/skills.yaml
              policy-pack: builtin/team-standard
@@ -150,7 +150,8 @@ Each pilot includes:
 - Use `doctor --profile enterprise` only when the repo already exports evidence bundles.
 - Keep `pull_request_target` out of untrusted fork workflows unless the action is pinned and the
   threat model has been reviewed.
-- Do not create an `ADOPTERS.md` entry until a real external repo is using the tool and
-  `public_listing.status` is approved in a validated external pilot record.
+- Do not create an `ADOPTERS.md` entry until a real external repo is using the tool,
+  `public_listing.status` is approved, and `authorization.tier` is `public-adopter-reference` or
+  `public-case-study` in a validated external pilot record.
 - Use [Pilot Case Study Template](pilot-case-study-template.md) only after public listing consent is
-  approved.
+  approved with the matching authorization tier.
