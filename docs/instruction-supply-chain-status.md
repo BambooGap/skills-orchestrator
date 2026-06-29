@@ -1,6 +1,6 @@
 # Skills Orchestrator Scope: SkillOps for Agent Instructions
 
-> Supported scope (v4.8.41): CI explainability, schema audit, release trust, adapter
+> Supported scope (v4.8.42): CI explainability, schema audit, release trust, adapter
 > evidence, multi-repo artifact contracts, agent fleet governance, supervisor governance,
 > external agent runtime image contracts, and consumer-side supply-chain verification.
 >

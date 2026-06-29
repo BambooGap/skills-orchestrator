@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.42] - 2026-06-30
+
+### Changed
+- Updated current production adoption, release verification, supply-chain verification, and trust
+  examples to the `v4.8.42` release line.
+- Reframed public trust documents from phase/current-boundary wording to stable supported-scope and
+  verification-scope language.
+
+### Fixed
+- Replaced the non-security fallback slug SHA-1 hash with SHA-256 to reduce scanner noise.
+- Added debug-only logging for registry content lookup fallbacks without changing normal CLI output
+  or file-read fallback behavior.
+
 ## [4.8.41] - 2026-06-29
 
 ### Fixed
