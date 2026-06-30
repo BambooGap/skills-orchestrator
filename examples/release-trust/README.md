@@ -12,9 +12,11 @@ It covers:
 
 ## Valid External Skill Gate
 
-The valid fixture set includes a synthetic reviewed skill and a real Hermes
-Tweet source-linked skill, so downstream teams can test license and provenance
-metadata against both placeholder and public package examples.
+The valid fixture set includes a synthetic reviewed skill and a public
+third-party source-linked fixture, so downstream teams can test license and
+provenance metadata against both placeholder and real package examples.
+Third-party fixtures are not endorsements, certifications, or default install
+recommendations.
 
 ```bash
 skills-orchestrator check \

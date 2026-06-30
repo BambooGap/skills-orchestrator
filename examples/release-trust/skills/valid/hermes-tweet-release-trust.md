@@ -29,10 +29,10 @@ agent plugin. Hermes Tweet is a native Hermes Agent plugin for X/Twitter
 automation through Xquik. It ships read-first workflows and keeps account
 changing actions behind explicit runtime approval.
 
-This fixture is not a default install recommendation. It exists to prove that a
-MIT-licensed external agent skill can carry source URL, resolved commit, content
-hash, review-window, approver, and license metadata under the engineering-grade
-policy pack.
+This fixture is not an endorsement, certification, or default install
+recommendation. It exists to prove that a MIT-licensed external agent skill can
+carry source URL, resolved commit, content hash, review-window, approver, and
+license metadata under the engineering-grade policy pack.
 
 Reviewers should verify the pinned source before promoting this skill:
 
