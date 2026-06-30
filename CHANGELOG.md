@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.45] - 2026-06-30
+
+### Changed
+- Replaced the adoption evidence install example with an adopter-pinned version placeholder.
+
+### Fixed
+- Validated `provenance.content_hash` for passive/free skills during `build` preflight, so
+  generated AGENTS.md and lock artifacts fail closed before passive skills are later loaded by MCP.
+
 ## [4.8.44] - 2026-06-30
 
 ### Changed

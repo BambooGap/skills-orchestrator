@@ -1,6 +1,6 @@
 # Agent Fleet Governance
 
-> Supported scope (v4.8.44): governance for AI instruction artifacts used by multi-agent,
+> Supported scope (v4.8.45): governance for AI instruction artifacts used by multi-agent,
 > multi-tenant, and multi-project systems.
 >
 > This is not a runtime orchestration specification.
