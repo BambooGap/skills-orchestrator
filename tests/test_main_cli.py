@@ -761,7 +761,9 @@ def test_build_rejects_secret_like_forced_skill_without_echoing_value(workspace,
     assert secret_value not in result.output
 
 
-def _write_provenance_workspace(tmp_path, *, content: str, expected_hash: str | None = None):
+def _write_provenance_workspace(
+    tmp_path, *, content: str, expected_hash: str | None = None, load_policy: str = "require"
+):
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
     skill_path = skills_dir / "external.md"
@@ -780,7 +782,7 @@ skills:
     path: skills/external.md
     summary: Imported skill
     tags: [external]
-    load_policy: require
+    load_policy: {load_policy}
     priority: 100
     zones: [default]
     owner: platform
@@ -832,3 +834,35 @@ def test_build_rejects_mismatched_provenance_content_hash_without_leaking_conten
     assert result.exit_code != 0
     assert "provenance.content_hash mismatch" in result.output
     assert "TAMPERED CONTENT SHOULD NOT LEAK" not in result.output
+
+
+def test_build_rejects_passive_mismatched_provenance_hash_without_leaking_content(tmp_path):
+    content = (
+        "---\nid: passive-external\n---\n# Passive External\n\nPASSIVE TAMPER SHOULD NOT LEAK.\n"
+    )
+    config_path = _write_provenance_workspace(
+        tmp_path, content=content, expected_hash="a" * 64, load_policy="free"
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["build", "--config", str(config_path), "--lock"])
+
+    assert result.exit_code != 0
+    assert "provenance.content_hash mismatch" in result.output
+    assert "PASSIVE TAMPER SHOULD NOT LEAK" not in result.output
+
+
+def test_build_allows_passive_matching_provenance_hash(tmp_path):
+    content = "---\nid: passive-external\n---\n# Passive External\n\nTrusted passive content.\n"
+    config_path = _write_provenance_workspace(tmp_path, content=content, load_policy="free")
+
+    runner = CliRunner()
+    output = tmp_path / "AGENTS.md"
+    result = runner.invoke(
+        cli, ["build", "--config", str(config_path), "--output", str(output), "--lock"]
+    )
+
+    assert result.exit_code == 0, result.output
+    generated = output.read_text(encoding="utf-8")
+    assert "External Skill" in generated
+    assert "Trusted passive content" not in generated

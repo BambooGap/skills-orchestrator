@@ -8,6 +8,7 @@ from typing import Optional
 
 from skills_orchestrator.models import ResolvedConfig, Manifest, Zone
 from skills_orchestrator.compiler.content_resolver import SkillContentResolver
+from skills_orchestrator.compiler.provenance import validate_provenance_content_hash
 
 
 from skills_orchestrator import __version__
@@ -46,6 +47,8 @@ class Compressor:
 
     def compress(self) -> Manifest:
         """压缩并生成 Manifest"""
+        self._validate_visible_provenance_hashes()
+
         # 读取 forced skills 完整内容
         forced_content = self._read_forced_skills()
 
@@ -123,6 +126,15 @@ class Compressor:
                 parts.append(f"---\n{stripped}\n---")
 
         return "\n\n".join(parts)
+
+    def _validate_visible_provenance_hashes(self) -> None:
+        """Validate provenance hashes for all skills exposed by the generated manifest."""
+        for skill in self.resolved.forced_skills + self.resolved.passive_skills:
+            if not str(skill.provenance.get("content_hash", "")).strip():
+                continue
+            path = self._resolve_path(skill.path)
+            raw = path.read_text(encoding="utf-8")
+            validate_provenance_content_hash(skill, raw)
 
     def _validate_forced_skill_content(self, skill_id: str, skill_path: str, content: str) -> None:
         raw_size = len(content.encode("utf-8"))
