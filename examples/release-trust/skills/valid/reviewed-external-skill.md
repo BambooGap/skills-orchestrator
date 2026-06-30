@@ -19,10 +19,8 @@ provenance:
   source_url: https://raw.githubusercontent.com/example/skillops-skills/0123456789abcdef0123456789abcdef01234567/reviewed-external-skill.md
   source_ref: 0123456789abcdef0123456789abcdef01234567
   source_commit: 0123456789abcdef0123456789abcdef01234567
-  content_hash: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   fetched_at: 2026-06-24T00:00:00Z
 ---
 # Reviewed External Skill
 
 Use this skill only after its provenance, license, and review window have been verified.
-

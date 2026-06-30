@@ -3,6 +3,24 @@ version: "1.0"
 skill_dirs:
   - ../skills/valid
 
+# Keep content_hash in config overrides so it binds to the local fixture raw file
+# without making the Markdown frontmatter self-referential.
+overrides:
+  - id: reviewed-external-skill
+    provenance:
+      source_url: https://raw.githubusercontent.com/example/skillops-skills/0123456789abcdef0123456789abcdef01234567/reviewed-external-skill.md
+      source_ref: 0123456789abcdef0123456789abcdef01234567
+      source_commit: 0123456789abcdef0123456789abcdef01234567
+      content_hash: sha256:f4a95d138e50a81b87a5f28438e8a911c390c50dd81e76f68dae7a867bf0fbdf
+      fetched_at: 2026-06-24T00:00:00Z
+  - id: hermes-tweet-release-trust
+    provenance:
+      source_url: https://raw.githubusercontent.com/Xquik-dev/hermes-tweet/87ca73c0e3de48ce209d07754c0e148f9b9feab2/hermes_tweet/skills/hermes-tweet/skill-card.md
+      source_ref: 87ca73c0e3de48ce209d07754c0e148f9b9feab2
+      source_commit: 87ca73c0e3de48ce209d07754c0e148f9b9feab2
+      content_hash: sha256:a2410e2a0b95c0998b58c5aab0ee34e7309a88e448e6663f2e52ef09d5a7dfb2
+      fetched_at: 2026-06-29T04:22:28Z
+
 zones:
   - id: default
     name: Release trust zone

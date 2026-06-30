@@ -19,7 +19,6 @@ provenance:
   source_url: https://raw.githubusercontent.com/Xquik-dev/hermes-tweet/87ca73c0e3de48ce209d07754c0e148f9b9feab2/hermes_tweet/skills/hermes-tweet/skill-card.md
   source_ref: 87ca73c0e3de48ce209d07754c0e148f9b9feab2
   source_commit: 87ca73c0e3de48ce209d07754c0e148f9b9feab2
-  content_hash: sha256:872f98d1c9ba796e252ea7a3e0f76565c518e4c29b533baaad24d228de9ed5bd
   fetched_at: 2026-06-29T04:22:28Z
 ---
 # Hermes Tweet Release Trust
