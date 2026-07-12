@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.46] - 2026-07-12
+
+### Added
+- Made Pipeline `gate.check_command` executable: a reviewed pipeline can now run a local,
+  shell-free verifier with a constrained environment and a 60-second timeout.
+
+### Fixed
+- Block Pipeline advancement when a real `check_command` verifier fails, even if the caller
+  reports the required artifact key.
+- Reject non-string `gate.check_command` values while loading Pipeline YAML.
+
 ## [4.8.45] - 2026-06-30
 
 ### Changed

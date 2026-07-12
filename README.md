@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.45-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.46-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -17,9 +17,9 @@ on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.45` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.45` release tag | `BambooGap/skills-orchestrator@v4.8.45` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.45` |
+| OSS CLI | `v4.8.46` on PyPI | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | `v4.8.46` release tag | `BambooGap/skills-orchestrator@v4.8.46` |
+| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.46` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Enterprise adoption | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/adoption-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
@@ -104,7 +104,7 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.45 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.46 --version
 ```
 
 ### 初始化项目
@@ -183,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.45
+      - uses: BambooGap/skills-orchestrator@v4.8.46
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -629,7 +629,7 @@ skills-orchestrator pipeline resume
 
 **关键设计**：
 - `pipeline_start` / `pipeline_advance` / `pipeline_resume` 返回时自动注入当前步骤 Skill 的完整内容，AI 无需额外调用 `get_skill`
-- Gate 质量门禁：`must_produce` 检查上下文中 key 的存在性，`min_length` 检查最小长度
+- Gate 质量门禁：`must_produce` 检查上下文中 key 的存在性，`min_length` 检查最小长度；可选 `check_command` 在当前工作目录以无 shell、受限环境执行真实验证（60 秒超时）。Pipeline 配置应只来自受信任仓库；它不验证 Agent 的推理或替代 CI/eval。
 - `skip_if` 条件跳过：满足条件时自动跳过该步骤
 - RunState 持久化：工作流状态存到 `~/.skills-orchestrator/runs/`，中断后可恢复
 

@@ -1,5 +1,7 @@
 """测试 Pipeline 条件分支功能"""
 
+import sys
+
 from skills_orchestrator.pipeline.loader import PipelineLoader
 from skills_orchestrator.pipeline.engine import PipelineEngine
 
@@ -182,6 +184,68 @@ steps:
     state.context["result"] = "success"
     state = engine.complete_and_advance(state)
     assert state.current_step == "step2", f"期望跳转到 step2，实际是 {state.current_step}"
+
+
+def test_gate_check_command_requires_a_real_successful_verifier():
+    pipeline = PipelineLoader().load_string(
+        f"""\
+id: test-command-gate
+name: 测试命令门禁
+steps:
+  - id: verify
+    skill: skill-a
+    next: [done]
+    gate:
+      must_produce: report
+      check_command: '{sys.executable} -c "import sys; sys.exit(0)"'
+  - id: done
+    skill: skill-b
+    next: []
+"""
+    )
+    state = PipelineEngine(pipeline).start({"report": "self-reported"})
+    state = PipelineEngine(pipeline).complete_and_advance(state)
+    assert state.current_step == "done"
+
+
+def test_gate_check_command_failure_blocks_even_when_artifact_is_reported():
+    pipeline = PipelineLoader().load_string(
+        f"""\
+id: test-command-failure
+name: 测试失败命令门禁
+steps:
+  - id: verify
+    skill: skill-a
+    next: []
+    gate:
+      must_produce: report
+      check_command: '{sys.executable} -c "import sys; sys.exit(3)"'
+"""
+    )
+    state = PipelineEngine(pipeline).start({"report": "self-reported"})
+    state = PipelineEngine(pipeline).complete_and_advance(state)
+    assert state.status == "failed"
+    assert state.step_history[-1]["reason"] == "检查命令失败（退出码 3）"
+
+
+def test_gate_check_command_requires_a_string_in_pipeline_yaml():
+    try:
+        PipelineLoader().load_string(
+            """
+id: invalid-command-gate
+name: 非法命令门禁
+steps:
+  - id: verify
+    skill: skill-a
+    next: []
+    gate:
+      check_command: [python, -m, pytest]
+"""
+        )
+    except ValueError as exc:
+        assert "check_command 必须是字符串" in str(exc)
+    else:
+        raise AssertionError("Expected invalid check_command to be rejected")
 
 
 if __name__ == "__main__":

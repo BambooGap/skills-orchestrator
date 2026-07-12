@@ -30,10 +30,13 @@ class PipelineLoader:
             gate: Optional[Gate] = None
             gate_raw = step_raw.get("gate")
             if gate_raw and isinstance(gate_raw, dict):
+                check_command = gate_raw.get("check_command", "")
+                if not isinstance(check_command, str):
+                    raise ValueError(f"Step '{step_raw['id']}' 的 gate.check_command 必须是字符串")
                 gate = Gate(
                     must_produce=gate_raw.get("must_produce", ""),
                     min_length=gate_raw.get("min_length", 0),
-                    check_command=gate_raw.get("check_command", ""),
+                    check_command=check_command,
                     max_iterations=gate_raw.get("max_iterations", 0),
                     on_failure=gate_raw.get("on_failure"),  # 新增
                 )

@@ -109,4 +109,7 @@ skills-orchestrator pipeline status
 skills-orchestrator pipeline list-runs
 ```
 
-Pipeline gates can require one artifact key or a list of keys through `must_produce`.
+Pipeline gates can require one artifact key or a list of keys through `must_produce`. For a
+repository-controlled local verifier, add `check_command` (for example, `python -m pytest -q`);
+it runs without a shell, with a constrained environment and a 60-second timeout. Keep pipeline
+configuration reviewed because a verifier command is executable project policy.

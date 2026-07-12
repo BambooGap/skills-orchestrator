@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+import shlex
+import subprocess
 import uuid
 from typing import Optional, Tuple
 
+from skills_orchestrator.security import safe_subprocess_env, subprocess_text_kwargs
+
 from .models import Pipeline, RunState, Step
+
+
+CHECK_COMMAND_TIMEOUT_SECONDS = 60
 
 
 class PipelineEngine:
@@ -93,6 +100,8 @@ class PipelineEngine:
         gate_reason = ""
         if current.gate:
             gate_passed, gate_reason = current.gate.check(state.context)
+            if gate_passed and current.gate.check_command:
+                gate_passed, gate_reason = self._run_check_command(current.gate.check_command)
 
         if not gate_passed:
             # Gate 失败
@@ -142,7 +151,42 @@ class PipelineEngine:
         """检查步骤的门禁条件"""
         if step.gate is None:
             return True, ""
-        return step.gate.check(state.context)
+        passed, reason = step.gate.check(state.context)
+        if passed and step.gate.check_command:
+            return self._run_check_command(step.gate.check_command)
+        return passed, reason
+
+    @staticmethod
+    def _run_check_command(command: str) -> Tuple[bool, str]:
+        """Run a trusted-pipeline verifier without a shell or inherited secrets."""
+        try:
+            args = shlex.split(command)
+        except ValueError as exc:
+            return False, f"检查命令格式无效: {exc}"
+        if not args:
+            return False, "检查命令不能为空"
+
+        try:
+            result = subprocess.run(
+                args,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                env=safe_subprocess_env(),
+                timeout=CHECK_COMMAND_TIMEOUT_SECONDS,
+                check=False,
+                **subprocess_text_kwargs(),
+            )
+        except FileNotFoundError:
+            return False, f"检查命令不存在: {args[0]}"
+        except PermissionError:
+            return False, f"检查命令无执行权限: {args[0]}"
+        except subprocess.TimeoutExpired:
+            return False, f"检查命令超时（>{CHECK_COMMAND_TIMEOUT_SECONDS} 秒）"
+
+        if result.returncode != 0:
+            return False, f"检查命令失败（退出码 {result.returncode}）"
+        return True, ""
 
     def get_current_step(self, state: RunState) -> Optional[Step]:
         """获取当前步骤的 Step 对象"""
