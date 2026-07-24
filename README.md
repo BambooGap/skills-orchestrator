@@ -112,9 +112,9 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-# v4.8.45 is the currently verified public baseline. For a newer pin, first
+# v4.8.47 is the currently verified public baseline. For a newer pin, first
 # confirm that its Release Integrity run is green.
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.45 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.47 --version
 ```
 
 ### 初始化项目
