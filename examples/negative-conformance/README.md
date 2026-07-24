@@ -44,7 +44,7 @@ The machine-readable index is `cases.json`.
 | `invalid-review-window` | `builtin/engineering-grade` | `SO015` |
 | `expired-review-window` | `builtin/engineering-grade` | `SO016` |
 | `external-trust` | `builtin/engineering-grade` | `SO019`, `SO020` |
-| `duplicate-id` | none | `SO002` |
+| `duplicate-id` | none | `SO022` |
 
 ## Why This Matters
 

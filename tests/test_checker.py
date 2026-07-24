@@ -51,7 +51,7 @@ def test_run_check_reports_metadata_and_asymmetric_conflict(tmp_path):
     assert all(d.severity != DiagnosticSeverity.ERROR for d in report.diagnostics)
 
 
-def test_run_check_reports_duplicate_skill_id_as_error(tmp_path):
+def test_run_check_fails_closed_for_duplicate_skill_id(tmp_path):
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
     for filename in ("first.md", "second.md"):
@@ -63,7 +63,7 @@ def test_run_check_reports_duplicate_skill_id_as_error(tmp_path):
 
     report = run_check(str(config))
 
-    duplicate = [diagnostic for diagnostic in report.diagnostics if diagnostic.rule_id == "SO002"]
+    duplicate = [diagnostic for diagnostic in report.diagnostics if diagnostic.rule_id == "SO022"]
     assert len(duplicate) == 1
     assert duplicate[0].severity == DiagnosticSeverity.ERROR
     assert duplicate[0].file == "skills/second.md"

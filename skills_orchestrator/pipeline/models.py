@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
+from urllib.parse import unquote, urlparse
 
 
 SENSITIVE_CONTEXT_KEY_RE = re.compile(
@@ -14,6 +17,7 @@ SENSITIVE_CONTEXT_KEY_RE = re.compile(
     re.IGNORECASE,
 )
 MAX_PERSISTED_STRING_CHARS = 2_000
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$", re.IGNORECASE)
 
 
 @dataclass
@@ -25,6 +29,7 @@ class Gate:
     check_command: str = ""  # 可选：运行命令验证
     max_iterations: int = 0  # 可选：最大重试轮数（0=不限）
     on_failure: Optional[str] = None  # 失败时跳转的步骤 ID
+    require_verified_evidence: bool = False
 
     def required_artifacts(self) -> list[str]:
         """Return normalized artifact keys required by this gate."""
@@ -45,7 +50,9 @@ class Gate:
             return ""
         return ", ".join(artifacts)
 
-    def check(self, context: Dict[str, Any]) -> Tuple[bool, str]:
+    def check(
+        self, context: Dict[str, Any], *, artifact_root: str | Path | None = None
+    ) -> Tuple[bool, str]:
         """检查门禁是否通过，返回 (passed, reason)"""
         required = self.required_artifacts()
         if not required:
@@ -68,27 +75,67 @@ class Gate:
                     )
                 continue
 
-            evidence_type = artifact.get("type")
-            has_reference = any(
-                isinstance(artifact.get(key), str) and artifact[key].strip()
-                for key in ("uri", "sha256")
-            )
-            content = artifact.get("content")
-            if (
-                not isinstance(evidence_type, str)
-                or not evidence_type.strip()
-                or not (has_reference or isinstance(content, (str, bytes)))
-            ):
-                return False, (
-                    f"产出 '{artifact_key}' 的结构化证据必须包含 type，且包含 uri、sha256 或 content"
-                )
-            if self.min_length > 0:
-                if not isinstance(content, (str, bytes)):
-                    return False, f"产出 '{artifact_key}' 需要可测量的 content 才能使用 min_length"
-                if len(content) < self.min_length:
-                    return False, (f"产出 '{artifact_key}' 长度 {len(content)} < {self.min_length}")
+            valid, reason, size = self._validate_evidence(artifact, artifact_root=artifact_root)
+            if not valid:
+                return False, f"产出 '{artifact_key}' 的结构化证据无效: {reason}"
+            if self.min_length > 0 and size < self.min_length:
+                return False, f"产出 '{artifact_key}' 长度 {size} < {self.min_length}"
 
         return True, ""
+
+    def _validate_evidence(
+        self, evidence: dict[str, Any], *, artifact_root: str | Path | None
+    ) -> tuple[bool, str, int]:
+        evidence_type = evidence.get("type")
+        if not isinstance(evidence_type, str) or not evidence_type.strip():
+            return False, "缺少非空 type", 0
+        if self.require_verified_evidence:
+            for field_name in ("producer", "verified_by", "verified_at"):
+                value = evidence.get(field_name)
+                if not isinstance(value, str) or not value.strip():
+                    return False, f"强门禁缺少 {field_name}", 0
+            try:
+                datetime.fromisoformat(evidence["verified_at"].replace("Z", "+00:00"))
+            except ValueError:
+                return False, "verified_at 必须是 ISO-8601 时间", 0
+
+        content = evidence.get("content")
+        if content is not None and (not isinstance(content, (str, bytes)) or not content):
+            return False, "content 必须是非空字符串或字节", 0
+        digest = evidence.get("sha256")
+        if digest is not None and (not isinstance(digest, str) or not SHA256_RE.fullmatch(digest)):
+            return False, "sha256 必须是 64 位十六进制摘要", 0
+
+        uri = evidence.get("uri")
+        if uri is None:
+            if not isinstance(content, (str, bytes)):
+                return False, "必须提供非空 content 或 file:// URI", 0
+            actual = hashlib.sha256(
+                content.encode("utf-8") if isinstance(content, str) else content
+            ).hexdigest()
+            if digest is not None and digest.lower() != actual:
+                return False, "sha256 与 content 不匹配", 0
+            return True, "", len(content)
+
+        if not isinstance(uri, str) or not uri.strip():
+            return False, "uri 必须是非空 file:// URI", 0
+        parsed = urlparse(uri)
+        if parsed.scheme != "file" or not parsed.path:
+            return False, "uri 必须使用 file:// 协议", 0
+        root = Path(artifact_root or Path.cwd()).resolve()
+        path = Path(unquote(parsed.path)).resolve()
+        try:
+            path.relative_to(root)
+        except ValueError:
+            return False, "file URI 超出允许的 artifact 根目录", 0
+        if not path.is_file():
+            return False, "file URI 不指向存在的普通文件", 0
+        if digest is None:
+            return False, "file URI evidence 必须提供 sha256", 0
+        data = path.read_bytes()
+        if digest.lower() != hashlib.sha256(data).hexdigest():
+            return False, "sha256 与 file URI 内容不匹配", 0
+        return True, "", len(data)
 
 
 @dataclass

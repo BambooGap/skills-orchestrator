@@ -228,7 +228,31 @@ def test_duplicate_discovered_skill_id_fails_closed(tmp_path):
     with pytest.raises(SkillDiagnosticError, match="Duplicate skill id") as exc:
         Parser(str(config)).parse()
 
-    assert exc.value.rule_id == "SO002"
+    assert exc.value.rule_id == "SO022"
+
+
+def test_duplicate_explicit_skill_id_fails_closed(tmp_path):
+    config = tmp_path / "skills.yaml"
+    config.write_text(
+        """
+zones: []
+skills:
+  - id: duplicate
+    name: First
+    path: first.md
+    summary: first
+  - id: duplicate
+    name: Second
+    path: second.md
+    summary: second
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SkillDiagnosticError, match="Duplicate skill id") as exc:
+        Parser(str(config)).parse()
+
+    assert exc.value.rule_id == "SO022"
 
 
 def test_resolver_rejects_nonexistent_base(tmp_path):

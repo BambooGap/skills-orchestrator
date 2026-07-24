@@ -5,6 +5,7 @@ from __future__ import annotations
 import shlex
 import subprocess
 import uuid
+from pathlib import Path
 from typing import Optional, Tuple
 
 from skills_orchestrator.security import safe_subprocess_env, subprocess_text_kwargs
@@ -18,11 +19,12 @@ CHECK_COMMAND_TIMEOUT_SECONDS = 60
 class PipelineEngine:
     """Pipeline 执行引擎"""
 
-    def __init__(self, pipeline: Pipeline):
+    def __init__(self, pipeline: Pipeline, *, artifact_root: str | Path | None = None):
         errors = pipeline.validate()
         if errors:
             raise ValueError("Pipeline 定义无效: " + "; ".join(errors))
         self.pipeline = pipeline
+        self.artifact_root = Path(artifact_root or Path.cwd()).resolve()
 
     def start(self, context: Optional[dict] = None) -> RunState:
         """启动 Pipeline，返回初始 RunState"""
@@ -113,7 +115,9 @@ class PipelineEngine:
                     )
                 )
                 return state
-            gate_passed, gate_reason = current.gate.check(state.context)
+            gate_passed, gate_reason = current.gate.check(
+                state.context, artifact_root=self.artifact_root
+            )
             if gate_passed and current.gate.check_command:
                 gate_passed, gate_reason = self._run_check_command(current.gate.check_command)
 
@@ -165,7 +169,7 @@ class PipelineEngine:
         """检查步骤的门禁条件"""
         if step.gate is None:
             return True, ""
-        passed, reason = step.gate.check(state.context)
+        passed, reason = step.gate.check(state.context, artifact_root=self.artifact_root)
         if passed and step.gate.check_command:
             return self._run_check_command(step.gate.check_command)
         return passed, reason

@@ -87,7 +87,7 @@ def test_run_conformance_core_report_validates(tmp_path):
         rule for case in negative["metadata"]["cases"] for rule in case["expected_rules"]
     }
     assert {
-        "SO002",
+        "SO022",
         "SO008",
         "SO009",
         "SO010",

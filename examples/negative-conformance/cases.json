@@ -41,7 +41,7 @@
       "id": "duplicate-id",
       "config": "cases/duplicate-id/config/skills.yaml",
       "policy_packs": [],
-      "expected_rules": ["SO002"]
+      "expected_rules": ["SO022"]
     }
   ]
 }

@@ -33,12 +33,18 @@ class PipelineLoader:
                 check_command = gate_raw.get("check_command", "")
                 if not isinstance(check_command, str):
                     raise ValueError(f"Step '{step_raw['id']}' 的 gate.check_command 必须是字符串")
+                require_verified_evidence = gate_raw.get("require_verified_evidence", False)
+                if not isinstance(require_verified_evidence, bool):
+                    raise ValueError(
+                        f"Step '{step_raw['id']}' 的 gate.require_verified_evidence 必须是 boolean"
+                    )
                 gate = Gate(
                     must_produce=gate_raw.get("must_produce", ""),
                     min_length=gate_raw.get("min_length", 0),
                     check_command=check_command,
                     max_iterations=gate_raw.get("max_iterations", 0),
                     on_failure=gate_raw.get("on_failure"),  # 新增
+                    require_verified_evidence=require_verified_evidence,
                 )
             step = Step(
                 id=step_raw["id"],

@@ -387,7 +387,7 @@ def _negative_conformance_step() -> ConformanceStep:
                 "---\nid: duplicate\nname: Duplicate A\nsummary: A\n---\n# A\n",
                 "---\nid: duplicate\nname: Duplicate B\nsummary: B\n---\n# B\n",
             ],
-            "expected_rules": {"SO002"},
+            "expected_rules": {"SO022"},
         },
     ]
     results = [_run_negative_case(case) for case in cases]

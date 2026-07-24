@@ -1,5 +1,6 @@
 """Pipeline 编排层测试"""
 
+import hashlib
 import os
 import tempfile
 
@@ -71,12 +72,45 @@ class TestGate:
         gate = Gate(must_produce="report", min_length=5)
         passed, reason = gate.check({"report": {"type": "file", "uri": "file://report"}})
         assert not passed
-        assert "可测量" in reason
+        assert "file://" in reason
 
         passed, reason = gate.check(
             {"report": {"type": "report", "content": "enough", "producer": "ci"}}
         )
         assert passed
+
+    @pytest.mark.parametrize(
+        "evidence",
+        [
+            {"type": "report", "content": ""},
+            {"type": "report", "uri": "does-not-exist"},
+            {"type": "report", "sha256": "x"},
+        ],
+    )
+    def test_structured_evidence_rejects_empty_or_unverifiable_claims(self, evidence):
+        passed, _reason = Gate(must_produce="report").check({"report": evidence})
+        assert not passed
+
+    def test_file_evidence_requires_existing_in_root_file_and_matching_hash(self, tmp_path):
+        report = tmp_path / "report.txt"
+        report.write_text("verified report", encoding="utf-8")
+        digest = hashlib.sha256(report.read_bytes()).hexdigest()
+        gate = Gate(must_produce="report", min_length=10, require_verified_evidence=True)
+        evidence = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": digest,
+            "producer": "ci",
+            "verified_by": "unit-test",
+            "verified_at": "2026-07-25T00:00:00Z",
+        }
+        passed, reason = gate.check({"report": evidence}, artifact_root=tmp_path)
+        assert passed, reason
+
+        evidence["sha256"] = "0" * 64
+        passed, reason = gate.check({"report": evidence}, artifact_root=tmp_path)
+        assert not passed
+        assert "不匹配" in reason
 
 
 class TestStep:

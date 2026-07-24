@@ -309,7 +309,9 @@ class TestToolExecutor:
         assert "Prepared Context" in text
         assert "active_skills:" in text
         assert "git-worktrees" in text
-        assert "inactive_skills:" in text
+        assert "inactive_skill_count:" in text
+        assert "inactive_set_hash:" in text
+        assert '"inactive_skills"' not in text
         assert "本任务只遵循 active_skills" in text
         assert "Active Skill Content" in text
         assert "# Git Worktrees 工作流" in text

@@ -727,6 +727,9 @@ class ToolExecutor:
         active_skills = forced_skills + passive_active
         active_ids = [s.id for s in active_skills]
         inactive_ids = [s.id for s in self._registry.all() if s.id not in set(active_ids)]
+        inactive_set_hash = hashlib.sha256(
+            "\0".join(sorted(inactive_ids)).encode("utf-8")
+        ).hexdigest()
         now = datetime.now(timezone.utc)
         task_hash_record = hash_task(task)
         routing_id = uuid.uuid4().hex[:12]
@@ -767,7 +770,8 @@ class ToolExecutor:
                 }
                 for skill in active_skills
             ],
-            "inactive_skills": inactive_ids,
+            "inactive_skill_count": len(inactive_ids),
+            "inactive_set_hash": inactive_set_hash,
             "content_hashes": content_hashes,
         }
 
@@ -782,6 +786,7 @@ class ToolExecutor:
                 "task_hash_alg": task_hash_record["alg"],
                 "active_skill_ids": active_ids,
                 "inactive_skill_count": len(inactive_ids),
+                "inactive_set_hash": inactive_set_hash,
                 "include_content": include_content,
                 "truncated_skill_ids": truncated_skill_ids,
             },
@@ -793,7 +798,8 @@ class ToolExecutor:
             "## Routing Decision",
             "",
             f"active_skills: {', '.join(active_ids)}",
-            f"inactive_skills: {', '.join(inactive_ids) if inactive_ids else '(none)'}",
+            f"inactive_skill_count: {len(inactive_ids)}",
+            f"inactive_set_hash: {inactive_set_hash}",
             "",
             "## Decision Record (JSON)",
             "",
@@ -910,7 +916,7 @@ class ToolExecutor:
                 )
             ]
 
-        engine = PipelineEngine(pipeline)
+        engine = PipelineEngine(pipeline, artifact_root=getattr(self._registry, "_base_dir", None))
         state = engine.start(context=context)
         self._get_store().save(state)
 
@@ -1066,7 +1072,7 @@ class ToolExecutor:
             self._mark_outcome("not_found")
             return [types.TextContent(type="text", text=f"Pipeline 不存在: {state.pipeline_id}")]
 
-        engine = PipelineEngine(pipeline)
+        engine = PipelineEngine(pipeline, artifact_root=getattr(self._registry, "_base_dir", None))
 
         # 更新上下文
         state.context.update(context_updates)
@@ -1175,7 +1181,7 @@ class ToolExecutor:
         if pipeline is None:
             return [types.TextContent(type="text", text=f"Pipeline 不存在: {state.pipeline_id}")]
 
-        engine = PipelineEngine(pipeline)
+        engine = PipelineEngine(pipeline, artifact_root=getattr(self._registry, "_base_dir", None))
         state = engine.resume(state)
         store.save(state)
 

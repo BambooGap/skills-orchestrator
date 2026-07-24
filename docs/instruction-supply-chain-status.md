@@ -74,7 +74,8 @@ Initial rules:
 | --- | --- | --- | --- |
 | SO000 | fatal-error | error | Keeps JSON/SARIF valid when parsing fails. |
 | SO001 | missing-description | warning | Missing `summary` or official `description`. |
-| SO002 | duplicate-skill-id | warning | Parser keeps the first occurrence today. |
+| SO002 | duplicate-skill-id | warning | Compatibility diagnostic retained for historical reports. |
+| SO022 | duplicate-skill-id-blocking | error | Parser rejects duplicate IDs before runtime registry construction. |
 | SO003 | unresolved-conflict | error | Resolver cannot decide a declared conflict. |
 | SO004 | asymmetric-conflict-declaration | warning | One-way conflicts remain valid but weaker for audit. |
 | SO005 | oversized-skill | info | Large skill file deserves review before runtime injection. |

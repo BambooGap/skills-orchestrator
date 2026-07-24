@@ -93,9 +93,8 @@ class Parser:
         explicit_skills = self._parse_skills(raw.get("skills", []))
 
         # 合并：auto_skills 优先，explicit 补充（id 不重复）
-        auto_ids = {s.id for s in auto_skills}
-        extra = [s for s in explicit_skills if s.id not in auto_ids]
-        skills = auto_skills + extra
+        skills = auto_skills + explicit_skills
+        self._validate_unique_skill_ids(skills)
 
         combos = self._parse_combos(raw.get("combos", []))
         skills = self._validate_combos(skills, combos)
@@ -130,7 +129,7 @@ class Parser:
                 skill = self._skill_from_file(md_file)
                 if skill.id in seen_ids:
                     raise SkillDiagnosticError(
-                        "SO002",
+                        "SO022",
                         f"Duplicate skill id '{skill.id}' in '{skill.path}'; first defined in "
                         f"'{seen_ids[skill.id]}'.",
                         file=skill.path,
@@ -142,6 +141,22 @@ class Parser:
                 skills.append(skill)
 
         return skills
+
+    def _validate_unique_skill_ids(self, skills: list[SkillMeta]) -> None:
+        """Reject all duplicate ids before a runtime registry can overwrite one silently."""
+        seen: dict[str, str] = {}
+        for skill in skills:
+            if skill.id in seen:
+                raise SkillDiagnosticError(
+                    "SO022",
+                    f"Duplicate skill id '{skill.id}' in '{skill.path}'; first defined in "
+                    f"'{seen[skill.id]}'.",
+                    file=skill.path,
+                    line=1,
+                    skill_id=skill.id,
+                    suggested_fix="Give every configured or discovered skill a unique id.",
+                )
+            seen[skill.id] = skill.path
 
     def _skill_from_file(self, md_file: Path) -> SkillMeta:
         """从 .md 文件解析 SkillMeta，frontmatter 优先，否则从内容推断。"""

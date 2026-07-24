@@ -48,9 +48,9 @@ RULES: dict[str, DiagnosticRule] = {
     "SO002": DiagnosticRule(
         rule_id="SO002",
         name="duplicate-skill-id",
-        severity=DiagnosticSeverity.ERROR,
+        severity=DiagnosticSeverity.WARNING,
         category=DiagnosticCategory.STRUCTURE,
-        description="Multiple skill files resolve to the same skill id, making the effective instruction ambiguous.",
+        description="Multiple skill files resolve to the same skill id.",
     ),
     "SO003": DiagnosticRule(
         rule_id="SO003",
@@ -177,6 +177,13 @@ RULES: dict[str, DiagnosticRule] = {
         severity=DiagnosticSeverity.ERROR,
         category=DiagnosticCategory.STRUCTURE,
         description="A file that declares YAML frontmatter must contain a valid mapping.",
+    ),
+    "SO022": DiagnosticRule(
+        rule_id="SO022",
+        name="duplicate-skill-id-blocking",
+        severity=DiagnosticSeverity.ERROR,
+        category=DiagnosticCategory.STRUCTURE,
+        description="A runtime registry cannot select a unique instruction for a duplicated skill id.",
     ),
 }
 
