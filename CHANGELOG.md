@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [4.8.46] - 2026-07-12
+## [4.8.46] - source snapshot pending public release
 
 ### Added
 - Made Pipeline `gate.check_command` executable: a reviewed pipeline can now run a local,

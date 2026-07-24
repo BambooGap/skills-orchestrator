@@ -5,7 +5,7 @@
 [![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-v4.8.46-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-release%20pins-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 **开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
@@ -17,12 +17,18 @@ on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE
 
 | Surface | Current status | Entry point |
 |---------|----------------|-------------|
-| OSS CLI | `v4.8.46` on PyPI | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | `v4.8.46` release tag | `BambooGap/skills-orchestrator@v4.8.46` |
-| Container image | Published on GHCR | `ghcr.io/bamboogap/skills-orchestrator:v4.8.46` |
+| OSS CLI | Published version shown by the PyPI badge | `python3.12 -m pip install skills-orchestrator` |
+| GitHub Action | Pin a reviewed public-release commit | `BambooGap/skills-orchestrator@<release-commit-sha>` |
+| Container image | Published tags and digests on GHCR | `ghcr.io/bamboogap/skills-orchestrator:<verified-release-tag>` |
 | SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
 | Enterprise adoption | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/adoption-repos/` |
 | Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
+
+**Release contract:** a Git tag or the version in the source tree is not a public-release claim.
+Treat a version as published only after GitHub Release, PyPI, and GHCR are present and the
+[Release Integrity](https://github.com/BambooGap/skills-orchestrator/actions/workflows/release-integrity.yml)
+run passes. The workflow keeps the full public-artifact report as evidence and retries for up to
+15 minutes while indexes and registries settle.
 
 ### 可验证发布面
 
@@ -37,6 +43,8 @@ on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE
 - [Post-release Smoke](https://github.com/BambooGap/skills-orchestrator/actions/workflows/post-release-smoke.yml):
   发布后核验 GitHub Release、PyPI install、consumer-side hash-locked install、GHCR
   image、Cosign signature、SBOM/provenance attestations、SLSA readiness report 和 starter kit path。
+- [Release Integrity](https://github.com/BambooGap/skills-orchestrator/actions/workflows/release-integrity.yml):
+  GitHub Release 发布后自动运行完整 smoke；只有该 run 成功的版本才能作为公开发布版本引用。
 - [Supply Chain Verification](docs/supply-chain-verification.md): 消费端验证 PyPI
   wheel/sdist attestations、GHCR provenance/SBOM/OS SBOM attestations、Cosign signature、
   Docker digest 和 hash-lock 边界的命令。
@@ -104,7 +112,9 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.46 --version
+# v4.8.45 is the currently verified public baseline. For a newer pin, first
+# confirm that its Release Integrity run is green.
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.45 --version
 ```
 
 ### 初始化项目

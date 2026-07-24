@@ -84,8 +84,23 @@ def test_readme_exposes_release_verification_and_slsa_boundaries():
         in readme
     )
     assert "actions/workflows/post-release-smoke.yml" in readme
+    assert "actions/workflows/release-integrity.yml" in readme
+    assert "a Git tag or the version in the source tree is not a public-release claim" in readme
+    assert "`v4.8.46` on PyPI" not in readme
     assert "[Supply Chain Verification](docs/supply-chain-verification.md)" in readme
     assert "它不是正式 SLSA 等级认证" in readme
     assert "it is not formal SLSA level certification" not in readme
     assert "SLSA Build L3+" in readme
     assert "[Production Adoption](docs/production-adoption.md)" in readme
+
+
+def test_release_integrity_runs_the_reusable_public_artifact_smoke():
+    workflow = (ROOT / ".github" / "workflows" / "release-integrity.yml").read_text(
+        encoding="utf-8"
+    )
+    smoke = (ROOT / ".github" / "workflows" / "post-release-smoke.yml").read_text(encoding="utf-8")
+
+    assert "types: [published]" in workflow
+    assert "uses: ./.github/workflows/post-release-smoke.yml" in workflow
+    assert 'retries: "30"' in workflow
+    assert "workflow_call:" in smoke

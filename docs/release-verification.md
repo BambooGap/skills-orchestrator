@@ -1,6 +1,8 @@
 # Release Verification
 
-Use this checklist before publishing a release or after cutting a tag.
+Use this checklist before publishing a release or after cutting a tag. A source tag is not a
+public release: publishers may call a version released only after its automatic `Release Integrity`
+workflow passes.
 
 If a release is already published and turns out to be wrong, use
 [Release Rollback](release-rollback.md) before deleting tags, assets, or container images.
@@ -134,11 +136,13 @@ Verify:
 
 ## Post-Release Smoke
 
-After PyPI and GHCR workflows finish, run the machine-readable public artifact smoke:
+After PyPI and GHCR workflows finish, run the machine-readable public artifact smoke. The
+`Release Integrity` workflow runs this automatically after every published GitHub Release with a
+15-minute readiness window; run it manually only for a recheck or investigation:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.46 \
+  --version v4.8.45 \
   --retries 8 \
   --retry-delay 15 \
   --format json > post-release-smoke.json
@@ -152,7 +156,7 @@ exercises the starter kit:
 
 ```bash
 python scripts/post_release_smoke.py \
-  --version v4.8.46 \
+  --version v4.8.45 \
   --retries 8 \
   --retry-delay 20 \
   --check-pypi-install \
@@ -178,7 +182,7 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.8.46`. The workflow runs `full_smoke`
+Use the release tag as the `version` input, for example `v4.8.45`. The workflow runs `full_smoke`
 by default so the retained report covers public artifact metadata, PyPI clean install, consumer-side
 hash-locked install, GHCR Cosign signature verification, GHCR OS SBOM attestation verification, the
 SLSA readiness report schema check, starter-kit adopter path, and the default-install MCP extra
@@ -196,7 +200,7 @@ those signatures and attestations. [SLSA Readiness](slsa-readiness.md) documents
 readiness map that links this evidence to SLSA build-track concepts without claiming a formal SLSA
 level.
 
-`skills-orchestrator==4.8.46` is still only an exact version pin, but the full post-release smoke now
+`skills-orchestrator==<verified-release-version>` is still only an exact version pin, but the full post-release smoke now
 proves the release can be installed from a locally generated wheelhouse with `--require-hashes`.
 `verify-container-release` validates local SkillOps release artifacts; it is not a replacement for
 Cosign or GitHub Artifact Attestation verification against a real GHCR digest.
