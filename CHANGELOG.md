@@ -7,7 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [4.8.46] - source snapshot pending public release
+## [4.8.47] - 2026-07-25
+
+### Added
+- Added a fail-closed `production` Pipeline profile. Every production step must use
+  structured evidence, an explicit verifier allowlist, and a repository-controlled
+  `check_command`; skippable production steps are rejected.
+- Added time-limited verifier leases, stable execution IDs, and compact evidence manifests
+  so concurrent callers cannot both run a verifier from the same Pipeline state revision.
+- Added `SO021` for malformed Skill frontmatter and `SO022` for globally duplicated Skill IDs
+  without changing the compatibility meaning of `SO002`.
+
+### Changed
+- Classified all bundled Pipelines as `coordination` workflows. Their caller-reported artifacts
+  track progress and are no longer presented as merge, release, deployment, or security approval.
+- Reduced MCP context growth by replacing the full inactive Skill ID set with a count and
+  deterministic set hash.
+- Updated installation, GitHub Action, and adoption examples to pin `v4.8.47`.
+
+### Fixed
+- Verified structured evidence content and local files against SHA-256, artifact-root boundaries,
+  regular-file type, configurable size limits, verifier allowlists, timezone-aware timestamps,
+  future skew, and maximum evidence age.
+- Streamed artifact hashing with before/after file identity checks instead of loading complete
+  files into memory.
+- Claimed verifier execution before running `check_command`, preserved idempotency across expired
+  lease recovery, and rejected concurrent advancement before external work begins.
+- Recorded Pipeline validation, lookup, conflict, and gate failures with structured audit outcomes
+  and stable error codes.
+- Rejected malformed frontmatter, duplicate explicit or auto-discovered Skill IDs, duplicate
+  Pipeline steps, unsupported multi-target branches, and retries beyond `max_iterations`.
+- Added durable RunState writes with file locking, revision CAS, atomic replacement, and fsync.
+- Aligned release documentation with public artifacts and prevented a source-only version or tag
+  from being described as an available PyPI or GitHub Release.
+
+## [4.8.46] - source snapshot, not publicly released
 
 ### Added
 - Made Pipeline `gate.check_command` executable: a reviewed pipeline can now run a local,

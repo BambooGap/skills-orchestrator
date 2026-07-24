@@ -216,7 +216,7 @@ are promoted to stable.
 Use the optional MCP extra only when the CI job intentionally runs MCP smoke checks:
 
 ```bash
-python3.12 -m pip install "skills-orchestrator[mcp]==4.8.46"
+python3.12 -m pip install "skills-orchestrator[mcp]==4.8.47"
 ```
 
 Exact version pins are not hash-locked installs. If the organization requires hash locking, generate
