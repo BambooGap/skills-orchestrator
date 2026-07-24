@@ -19,6 +19,9 @@ class PipelineEngine:
     """Pipeline 执行引擎"""
 
     def __init__(self, pipeline: Pipeline):
+        errors = pipeline.validate()
+        if errors:
+            raise ValueError("Pipeline 定义无效: " + "; ".join(errors))
         self.pipeline = pipeline
 
     def start(self, context: Optional[dict] = None) -> RunState:
@@ -99,6 +102,17 @@ class PipelineEngine:
         gate_passed = True
         gate_reason = ""
         if current.gate:
+            if (
+                current.gate.max_iterations > 0
+                and state.failed_attempts(current.id) >= current.gate.max_iterations
+            ):
+                state.fail_current(
+                    reason=(
+                        f"步骤 '{current.id}' 已达到 max_iterations="
+                        f"{current.gate.max_iterations}，拒绝继续自动恢复"
+                    )
+                )
+                return state
             gate_passed, gate_reason = current.gate.check(state.context)
             if gate_passed and current.gate.check_command:
                 gate_passed, gate_reason = self._run_check_command(current.gate.check_command)
@@ -199,6 +213,14 @@ class PipelineEngine:
         if state.status == "completed":
             return state
         if state.status == "failed":
+            current = self._get_current_step(state)
+            if (
+                current
+                and current.gate
+                and current.gate.max_iterations > 0
+                and state.failed_attempts(current.id) >= current.gate.max_iterations
+            ):
+                return state
             # 失败状态：回到当前步骤重试
             state.status = "running"
             return state

@@ -2,7 +2,7 @@ import pytest
 import tempfile
 import textwrap
 
-from skills_orchestrator.compiler.parser import Parser
+from skills_orchestrator.compiler.parser import Parser, SkillDiagnosticError
 from skills_orchestrator.compiler.resolver import Resolver
 from skills_orchestrator.models import Zone, SkillMeta, Config, Rule
 
@@ -185,6 +185,50 @@ skill_dirs:
     assert "derived-skill" in skill_map
     assert skill_map["derived-skill"].base == "base-skill"
     assert skill_map["base-skill"].base == ""
+
+
+@pytest.mark.parametrize(
+    "content, expected",
+    [
+        (
+            "---\nid: required\nload_policy: require\nname: [invalid\n---\n",
+            "Invalid YAML frontmatter",
+        ),
+        ("---\nid: required\nload_policy: require\n", "no closing"),
+        ("---\n- not\n- a mapping\n---\n", "must be a YAML mapping"),
+    ],
+)
+def test_invalid_frontmatter_fails_closed_instead_of_falling_back_to_filename(
+    tmp_path, content, expected
+):
+    skill = tmp_path / "policy.md"
+    skill.write_text(content, encoding="utf-8")
+    config = tmp_path / "skills.yaml"
+    config.write_text(
+        "skill_dirs:\n  - .\nzones: []\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SkillDiagnosticError, match=expected) as exc:
+        Parser(str(config)).parse()
+
+    assert exc.value.rule_id == "SO021"
+    assert exc.value.file == "policy.md"
+
+
+def test_duplicate_discovered_skill_id_fails_closed(tmp_path):
+    for filename in ("first.md", "second.md"):
+        (tmp_path / filename).write_text(
+            "---\nid: duplicate\nname: Duplicate\nsummary: duplicate\n---\n",
+            encoding="utf-8",
+        )
+    config = tmp_path / "skills.yaml"
+    config.write_text("skill_dirs:\n  - .\nzones: []\n", encoding="utf-8")
+
+    with pytest.raises(SkillDiagnosticError, match="Duplicate skill id") as exc:
+        Parser(str(config)).parse()
+
+    assert exc.value.rule_id == "SO002"
 
 
 def test_resolver_rejects_nonexistent_base(tmp_path):

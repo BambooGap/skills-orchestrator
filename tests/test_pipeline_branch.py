@@ -248,6 +248,31 @@ steps:
         raise AssertionError("Expected invalid check_command to be rejected")
 
 
+def test_gate_max_iterations_prevents_unlimited_resume():
+    pipeline = PipelineLoader().load_string(
+        """
+id: limited-retry
+name: limited retry
+steps:
+  - id: verify
+    skill: skill-a
+    next: []
+    gate:
+      must_produce: report
+      max_iterations: 1
+"""
+    )
+    engine = PipelineEngine(pipeline)
+    state = engine.start()
+    state = engine.complete_and_advance(state)
+    assert state.status == "failed"
+    assert state.failed_attempts("verify") == 1
+
+    resumed = engine.resume(state)
+    assert resumed.status == "failed"
+    assert resumed.failed_attempts("verify") == 1
+
+
 if __name__ == "__main__":
     test_gate_failure_branch()
     print("✅ test_gate_failure_branch")

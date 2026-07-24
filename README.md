@@ -82,9 +82,9 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 | 多仓 Skill 无法盘点 | 每个 repo 各查各的 | `registry build` / `registry diff` / `registry graph` 导出组织级 skill registry 和治理关系图 |
 | 外部平台难以接入 | Hosted/GitHub App 重写 CLI 语义 | `examples/external-consumer` 固化 hosted registry、GitHub App、multi-repo artifact 输入边界 |
 | 商用审计缺证据包 | 发布时到处找 CI、manifest、SARIF | `evidence export` 一次导出审计证据和 hash ledger |
-| 上下文窗口有限 | 所有 Skill 全量注入，浪费 token | MCP Server 按需加载，500 个 Skill 和 5 个消耗相同 |
+| 上下文窗口有限 | 所有 Skill 全量注入，浪费 token | MCP Server 默认只注入选中内容；未选中 Skill 仍会以计数和审计元数据出现 |
 | 两个 Skill 互相冲突 | 运行时才发现，模型行为不确定 | 编译时 `conflict_with` 强制报错 |
-| 多步骤工作流无保证 | AI 靠自觉推进，容易跳步或遗漏 | Pipeline 编排 + 质量门禁，每步必须产出 |
+| 多步骤工作流无保证 | AI 靠自觉推进，容易跳步或遗漏 | Pipeline 编排 + artifact/evidence 门禁，拒绝仅声明名称或布尔值的伪产出 |
 | Skill 内容重复 | 相似 Skill 各自维护，改一处忘另一处 | Skill Inheritance，子 Skill 继承父 Skill |
 
 ---
@@ -604,7 +604,7 @@ skills-orchestrator usage report --audit-dir .skills-audit
 
 ### 3. Pipeline 编排
 
-把多个 Skill 编排成有序工作流，质量门禁保证每步产出。
+把多个 Skill 编排成有序工作流，并对明确的 artifact/evidence 施加门禁。它不验证模型推理质量，也不是宿主 Agent 的安全沙箱。
 
 ```yaml
 # config/pipelines/quick-fix.yaml
@@ -639,7 +639,7 @@ skills-orchestrator pipeline resume
 
 **关键设计**：
 - `pipeline_start` / `pipeline_advance` / `pipeline_resume` 返回时自动注入当前步骤 Skill 的完整内容，AI 无需额外调用 `get_skill`
-- Gate 质量门禁：`must_produce` 检查上下文中 key 的存在性，`min_length` 检查最小长度；可选 `check_command` 在当前工作目录以无 shell、受限环境执行真实验证（60 秒超时）。Pipeline 配置应只来自受信任仓库；它不验证 Agent 的推理或替代 CI/eval。
+- Gate artifact/evidence 门禁：`must_produce` 要求非空内容、字节或具有 `type` 与 `uri`/`sha256`/`content` 的结构化证据；`min_length` 只接受可测量内容。可选 `check_command` 在受限环境执行真实验证（60 秒超时）。Pipeline 配置应只来自受信任仓库；它不验证 Agent 的推理、不是安全沙箱，也不替代 CI/eval。
 - `skip_if` 条件跳过：满足条件时自动跳过该步骤
 - RunState 持久化：工作流状态存到 `~/.skills-orchestrator/runs/`，中断后可恢复
 

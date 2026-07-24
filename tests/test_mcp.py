@@ -447,6 +447,16 @@ class TestToolExecutor:
         with pytest.raises(ValueError, match="context"):
             self.executor.execute("pipeline_start", {"pipeline_id": "missing", "context": "bad"})
 
+    def test_pipeline_not_found_is_audited_as_not_found(self, tmp_path):
+        executor = ToolExecutor(MockRegistry(), audit_dir=str(tmp_path / "audit"))
+        result = executor.execute("pipeline_start", {"pipeline_id": "missing"})
+        assert "找不到 Pipeline" in self._text(result)
+
+        event = json.loads(
+            (tmp_path / "audit" / "events.jsonl").read_text(encoding="utf-8").strip()
+        )
+        assert event["outcome"] == "not_found"
+
     def test_pipeline_advance_rejects_non_object_context_updates(self):
         with pytest.raises(ValueError, match="context_updates"):
             self.executor.execute(

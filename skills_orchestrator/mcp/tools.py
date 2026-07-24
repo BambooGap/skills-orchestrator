@@ -235,15 +235,15 @@ TOOL_PIPELINE_ADVANCE = types.Tool(
                 "type": "string",
                 "description": "Pipeline ID",
             },
+            "context_updates": {
+                "type": "object",
+                "description": "当前步骤的真实产出。值必须是非空字符串/字节，或包含 type 和 uri、sha256 或 content 的结构化证据。",
+                "additionalProperties": True,
+            },
             "artifacts": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "当前步骤产出的 artifact 键名列表，如 ['implementation_plan', 'code_changes']",
-            },
-            "context_updates": {
-                "type": "object",
-                "description": "上下文更新，键值对",
-                "additionalProperties": True,
+                "description": "兼容字段：每个名称必须同时在 context_updates 中提供真实值；不会自动创建产出。",
             },
         },
         "required": ["run_id", "pipeline_id"],
@@ -303,6 +303,7 @@ class ToolExecutor:
         self._store: RunStateStore | None = None
         self._audit = AuditLogger(audit_dir)
         self._max_content_bytes = self._resolve_max_content_bytes(max_content_bytes)
+        self._call_outcome = "ok"
 
     def _get_store(self) -> RunStateStore:
         from skills_orchestrator.pipeline.store import RunStateStore
@@ -337,6 +338,7 @@ class ToolExecutor:
 
     def execute(self, name: str, arguments: dict[str, Any]) -> list[types.TextContent]:
         arguments = self._validate_arguments(arguments)
+        self._call_outcome = "ok"
         handlers = {
             "list_skills": self._list_skills,
             "search_skills": self._search_skills,
@@ -358,8 +360,12 @@ class ToolExecutor:
         except Exception as err:
             self._audit_call(name, arguments, outcome="error", error_type=type(err).__name__)
             raise
-        self._audit_call(name, arguments, outcome="ok")
+        self._audit_call(name, arguments, outcome=self._call_outcome)
         return result
+
+    def _mark_outcome(self, outcome: str) -> None:
+        """Record the business outcome for the audit event of the current call."""
+        self._call_outcome = outcome
 
     def _audit_call(
         self,
@@ -854,6 +860,7 @@ class ToolExecutor:
         context = self._get_dict(args, "context")
 
         if not pipeline_id:
+            self._mark_outcome("validation_failed")
             # 列出可用的 pipeline
             pipelines_dir = self._pipelines_dir or os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "pipelines"
@@ -872,10 +879,12 @@ class ToolExecutor:
 
         pipeline = self._get_pipeline(pipeline_id)
         if pipeline is None:
+            self._mark_outcome("not_found")
             return [types.TextContent(type="text", text=f"找不到 Pipeline: '{pipeline_id}'")]
 
         structure_errors = pipeline.validate()
         if structure_errors:
+            self._mark_outcome("validation_failed")
             return [
                 types.TextContent(
                     type="text",
@@ -891,6 +900,7 @@ class ToolExecutor:
         known_skills = {s.id for s in self._registry.all()}
         missing = loader.validate_skills(pipeline, known_skills)
         if missing:
+            self._mark_outcome("validation_failed")
             return [
                 types.TextContent(
                     type="text",
@@ -1027,20 +1037,33 @@ class ToolExecutor:
         validate_identifier(pipeline_id, "pipeline_id")
         validate_identifier(run_id, "run_id")
 
-        # 读取 artifacts 参数并合并到 context_updates
-        artifacts = args.get("artifacts", []) or []
-        for artifact in artifacts:
-            if not isinstance(artifact, str):
+        if "artifacts" in args:
+            artifacts = args["artifacts"]
+            if not isinstance(artifacts, list) or not all(
+                isinstance(item, str) for item in artifacts
+            ):
                 return [types.TextContent(type="text", text="artifacts 必须是字符串列表")]
-            context_updates.setdefault(artifact, True)
+            missing_values = [artifact for artifact in artifacts if artifact not in context_updates]
+            if missing_values:
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=(
+                            "artifacts 参数不能仅声明名称；请在 context_updates 提供真实产出："
+                            + ", ".join(missing_values)
+                        ),
+                    )
+                ]
 
         store = self._get_store()
         state = store.load(pipeline_id, run_id)
         if state is None:
+            self._mark_outcome("not_found")
             return [types.TextContent(type="text", text=f"找不到运行记录: {pipeline_id}/{run_id}")]
 
         pipeline = self._get_pipeline(state.pipeline_id)
         if pipeline is None:
+            self._mark_outcome("not_found")
             return [types.TextContent(type="text", text=f"Pipeline 不存在: {state.pipeline_id}")]
 
         engine = PipelineEngine(pipeline)
@@ -1054,6 +1077,7 @@ class ToolExecutor:
 
         # 检查是否失败
         if state.status == "failed":
+            self._mark_outcome("gate_failed")
             lines = [
                 "❌ 步骤执行失败",
                 f"当前步骤: {state.current_step}",

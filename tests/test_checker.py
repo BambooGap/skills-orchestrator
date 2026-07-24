@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from skills_orchestrator.checker import run_check
 from skills_orchestrator.diagnostic import DiagnosticSeverity
@@ -52,7 +51,7 @@ def test_run_check_reports_metadata_and_asymmetric_conflict(tmp_path):
     assert all(d.severity != DiagnosticSeverity.ERROR for d in report.diagnostics)
 
 
-def test_run_check_reports_duplicate_skill_id_as_warning(tmp_path):
+def test_run_check_reports_duplicate_skill_id_as_error(tmp_path):
     skills_dir = tmp_path / "skills"
     skills_dir.mkdir()
     for filename in ("first.md", "second.md"):
@@ -66,9 +65,8 @@ def test_run_check_reports_duplicate_skill_id_as_warning(tmp_path):
 
     duplicate = [diagnostic for diagnostic in report.diagnostics if diagnostic.rule_id == "SO002"]
     assert len(duplicate) == 1
-    assert duplicate[0].severity == DiagnosticSeverity.WARNING
-    assert not Path(duplicate[0].metadata["first_path"]).is_absolute()
-    assert not Path(duplicate[0].metadata["duplicate_path"]).is_absolute()
+    assert duplicate[0].severity == DiagnosticSeverity.ERROR
+    assert duplicate[0].file == "skills/second.md"
     assert str(tmp_path) not in duplicate[0].message
 
 

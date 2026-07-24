@@ -118,7 +118,7 @@ class Parser:
     def _discover_from_dirs(self, skill_dirs: list[str]) -> list[SkillMeta]:
         """递归扫描 skill_dirs，从 frontmatter 解析 skill 元数据。"""
         skills: list[SkillMeta] = []
-        seen_ids: set[str] = set()
+        seen_ids: dict[str, str] = {}
 
         for dir_expr in skill_dirs:
             dir_path = (self.config_dir / self._expand_skill_dir(dir_expr)).resolve()
@@ -129,8 +129,16 @@ class Parser:
             for md_file in sorted(dir_path.rglob("*.md")):
                 skill = self._skill_from_file(md_file)
                 if skill.id in seen_ids:
-                    continue  # 同 id 只取第一个（先声明的目录优先）
-                seen_ids.add(skill.id)
+                    raise SkillDiagnosticError(
+                        "SO002",
+                        f"Duplicate skill id '{skill.id}' in '{skill.path}'; first defined in "
+                        f"'{seen_ids[skill.id]}'.",
+                        file=skill.path,
+                        line=_frontmatter_key_line(md_file.read_text(encoding="utf-8"), "id"),
+                        skill_id=skill.id,
+                        suggested_fix="Give every discovered skill a unique id.",
+                    )
+                seen_ids[skill.id] = skill.path
                 skills.append(skill)
 
         return skills
@@ -138,7 +146,19 @@ class Parser:
     def _skill_from_file(self, md_file: Path) -> SkillMeta:
         """从 .md 文件解析 SkillMeta，frontmatter 优先，否则从内容推断。"""
         content = md_file.read_text(encoding="utf-8")
-        meta = self._read_frontmatter(content)
+
+        # 存相对于项目根目录的路径，并校验防止路径逃逸
+        resolved_md = md_file.resolve()
+        resolved_base = self.base_dir.resolve()
+        try:
+            resolved_md.relative_to(resolved_base)
+            stored_path = str(md_file.relative_to(self.base_dir))
+        except ValueError:
+            raise ValueError(
+                f"安全拦截: Skill 路径 '{md_file}' 尝试逃逸项目根目录 '{self.base_dir}'"
+            )
+
+        meta = self._read_frontmatter(content, file=stored_path)
 
         skill_id = validate_skill_id(meta.get("id", md_file.stem), "skill id")
         name = meta.get("name", md_file.stem.replace("-", " ").title())
@@ -159,17 +179,6 @@ class Parser:
             conflict_with = [conflict_with]
 
         base = meta.get("base", "")
-
-        # 存相对于项目根目录的路径，并校验防止路径逃逸
-        resolved_md = md_file.resolve()
-        resolved_base = self.base_dir.resolve()
-        try:
-            resolved_md.relative_to(resolved_base)
-            stored_path = str(md_file.relative_to(self.base_dir))
-        except ValueError:
-            raise ValueError(
-                f"安全拦截: Skill 路径 '{md_file}' 尝试逃逸项目根目录 '{self.base_dir}'"
-            )
 
         load_policy = _skill_load_policy(
             meta,
@@ -203,18 +212,40 @@ class Parser:
         )
 
     @staticmethod
-    def _read_frontmatter(content: str) -> dict:
-        """解析 YAML frontmatter（--- ... ---），失败返回空 dict。"""
+    def _read_frontmatter(content: str, *, file: str | None = None) -> dict:
+        """Parse YAML frontmatter and fail closed when an opening marker is present."""
         if not content.startswith("---"):
             return {}
         end = content.find("\n---", 3)
         if end == -1:
-            return {}
+            raise SkillDiagnosticError(
+                "SO021",
+                "Skill frontmatter starts with '---' but has no closing '---' marker.",
+                file=file,
+                line=1,
+                suggested_fix="Close the YAML frontmatter with a line containing '---'.",
+            )
         try:
-            meta = yaml.safe_load(content[3:end]) or {}
-            return meta if isinstance(meta, dict) else {}
-        except yaml.YAMLError:
+            meta = yaml.safe_load(content[3:end])
+        except yaml.YAMLError as exc:
+            raise SkillDiagnosticError(
+                "SO021",
+                f"Invalid YAML frontmatter: {exc.problem or 'parse error'}.",
+                file=file,
+                line=(exc.problem_mark.line + 1) if exc.problem_mark else 1,
+                suggested_fix="Fix the YAML frontmatter syntax; it must parse as a mapping.",
+            ) from exc
+        if meta is None:
             return {}
+        if not isinstance(meta, dict):
+            raise SkillDiagnosticError(
+                "SO021",
+                "Skill frontmatter must be a YAML mapping.",
+                file=file,
+                line=1,
+                suggested_fix="Use key: value entries inside the frontmatter block.",
+            )
+        return meta
 
     def _apply_overrides(self, skills: list[SkillMeta], overrides: list[dict]) -> list[SkillMeta]:
         """用 yaml overrides 段覆盖自动发现的字段（只写例外，不写所有人）。"""

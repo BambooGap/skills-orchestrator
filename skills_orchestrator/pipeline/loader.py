@@ -50,12 +50,16 @@ class PipelineLoader:
             )
             steps.append(step)
 
-        return Pipeline(
+        pipeline = Pipeline(
             id=raw["id"],
             name=raw["name"],
             description=raw.get("description", ""),
             steps=steps,
         )
+        errors = pipeline.validate()
+        if errors:
+            raise ValueError("Pipeline 定义无效: " + "; ".join(errors))
+        return pipeline
 
     def _parse_next(self, raw_next: object, step_id: str) -> List[str]:
         """Normalize next edges from YAML.

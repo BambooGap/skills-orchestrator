@@ -48,9 +48,9 @@ RULES: dict[str, DiagnosticRule] = {
     "SO002": DiagnosticRule(
         rule_id="SO002",
         name="duplicate-skill-id",
-        severity=DiagnosticSeverity.WARNING,
+        severity=DiagnosticSeverity.ERROR,
         category=DiagnosticCategory.STRUCTURE,
-        description="Multiple skill files resolve to the same skill id.",
+        description="Multiple skill files resolve to the same skill id, making the effective instruction ambiguous.",
     ),
     "SO003": DiagnosticRule(
         rule_id="SO003",
@@ -170,6 +170,13 @@ RULES: dict[str, DiagnosticRule] = {
         severity=DiagnosticSeverity.WARNING,
         category=DiagnosticCategory.METADATA,
         description="Externally sourced skills should carry import provenance.",
+    ),
+    "SO021": DiagnosticRule(
+        rule_id="SO021",
+        name="invalid-frontmatter",
+        severity=DiagnosticSeverity.ERROR,
+        category=DiagnosticCategory.STRUCTURE,
+        description="A file that declares YAML frontmatter must contain a valid mapping.",
     ),
 }
 

@@ -3,6 +3,7 @@
 import os
 import tempfile
 
+import pytest
 
 from skills_orchestrator.pipeline.models import Gate, Pipeline, RunState, Step
 
@@ -54,10 +55,27 @@ class TestGate:
         assert not passed
         assert "长度" in reason
 
-    def test_artifact_not_string_ignores_length(self):
-        """非字符串 artifact 跳过长度检查"""
+    def test_artifact_not_string_cannot_bypass_length(self):
         gate = Gate(must_produce="data", min_length=100)
         passed, reason = gate.check({"data": [1, 2, 3]})
+        assert not passed
+        assert "必须是内容" in reason
+
+    def test_boolean_artifact_cannot_satisfy_gate(self):
+        gate = Gate(must_produce="report", min_length=100)
+        passed, reason = gate.check({"report": True})
+        assert not passed
+        assert "必须是内容" in reason
+
+    def test_structured_artifact_requires_evidence_and_measurable_content(self):
+        gate = Gate(must_produce="report", min_length=5)
+        passed, reason = gate.check({"report": {"type": "file", "uri": "file://report"}})
+        assert not passed
+        assert "可测量" in reason
+
+        passed, reason = gate.check(
+            {"report": {"type": "report", "content": "enough", "producer": "ci"}}
+        )
         assert passed
 
 
@@ -155,8 +173,7 @@ class TestPipeline:
         errors = pipeline.validate()
         assert any("不存在" in e for e in errors)
 
-    def test_validate_diamond_ok(self):
-        """菱形依赖（非循环）应该通过"""
+    def test_validate_rejects_ambiguous_multi_next(self):
         steps = [
             Step(id="a", skill="s1", next=["b", "c"]),
             Step(id="b", skill="s2", next=["d"]),
@@ -165,7 +182,7 @@ class TestPipeline:
         ]
         pipeline = Pipeline(id="diamond", name="菱形", steps=steps)
         errors = pipeline.validate()
-        assert len(errors) == 0
+        assert any("最多只能包含一个目标" in error for error in errors)
 
     def test_validate_unreachable_step(self):
         """未被 first step 链路引用的 step 应被标记，避免只执行第一步。"""
@@ -186,6 +203,14 @@ class TestPipeline:
         pipeline = Pipeline(id="bad-next", name="坏 next", steps=[step])
         errors = pipeline.validate()
         assert any("next 必须是列表" in e for e in errors)
+
+    def test_validate_rejects_duplicate_step_ids(self):
+        pipeline = Pipeline(
+            id="duplicates",
+            name="重复步骤",
+            steps=[Step(id="same", skill="first"), Step(id="same", skill="second")],
+        )
+        assert any("重复" in error for error in pipeline.validate())
 
 
 # ═══════════════════════════════════════════════════════════
@@ -351,6 +376,37 @@ steps:
         pipeline = loader.load_string(yaml_str)
         assert pipeline.get_step("a").next == ["b"]
         assert pipeline.validate() == []
+
+    def test_loader_rejects_duplicate_step_ids_and_multi_next(self):
+        from skills_orchestrator.pipeline.loader import PipelineLoader
+
+        with pytest.raises(ValueError, match="重复"):
+            PipelineLoader().load_string(
+                """
+id: duplicate
+name: duplicate
+steps:
+  - id: same
+    skill: first
+  - id: same
+    skill: second
+"""
+            )
+        with pytest.raises(ValueError, match="最多只能包含一个目标"):
+            PipelineLoader().load_string(
+                """
+id: branch
+name: branch
+steps:
+  - id: first
+    skill: first
+    next: [second, third]
+  - id: second
+    skill: second
+  - id: third
+    skill: third
+"""
+            )
 
     def test_validate_skills_missing(self):
         from skills_orchestrator.pipeline.loader import PipelineLoader
@@ -659,6 +715,28 @@ class TestRunStateStore:
             assert loaded is not None
             assert loaded.run_id == "r1"
             assert loaded.current_step == "step_a"
+            assert loaded.revision == 1
+
+    def test_save_rejects_stale_concurrent_state(self):
+        from skills_orchestrator.pipeline.store import ConcurrentStateError, RunStateStore
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = RunStateStore(base_dir=tmpdir)
+            store.save(self._make_state())
+            first = store.load("test", "r1")
+            second = store.load("test", "r1")
+            assert first is not None and second is not None
+
+            first.context["artifact_a"] = "preserved"
+            store.save(first)
+            second.context["artifact_b"] = "stale"
+            with pytest.raises(ConcurrentStateError, match="revision"):
+                store.save(second)
+
+            current = store.load("test", "r1")
+            assert current is not None
+            assert current.context["artifact_a"] == "preserved"
+            assert "artifact_b" not in current.context
 
     def test_load_nonexistent(self):
         from skills_orchestrator.pipeline.store import RunStateStore

@@ -5,8 +5,15 @@ from __future__ import annotations
 import json
 import os
 import re
+import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, List, Optional
+
+try:  # POSIX is the supported production runtime for the bundled MCP server.
+    import fcntl
+except ImportError:  # pragma: no cover - exercised only on unsupported runtimes.
+    fcntl = None  # type: ignore[assignment]
 
 from skills_orchestrator.security import safe_child_path, validate_identifier
 
@@ -16,6 +23,10 @@ STATE_FILENAME_RE = re.compile(
     r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}_[A-Za-z0-9][A-Za-z0-9_-]{0,63}\.json$"
 )
 STATE_DIR_ENV = "SKILLS_ORCHESTRATOR_STATE_DIR"
+
+
+class ConcurrentStateError(RuntimeError):
+    """Raised when a caller tries to overwrite a newer persisted RunState."""
 
 
 class RunStateStore:
@@ -39,10 +50,19 @@ class RunStateStore:
     def save(self, state: RunState) -> Path:
         """保存 RunState 到文件，返回文件路径"""
         filepath = self._state_path(state.pipeline_id, state.run_id)
-        filepath.write_text(state.to_json(), encoding="utf-8")
-        filepath.chmod(0o600)
-        # 更新 latest 记录
-        self._update_latest(state)
+        with self._write_lock():
+            current_revision = 0
+            if filepath.exists():
+                current_revision = RunState.from_json(filepath.read_text(encoding="utf-8")).revision
+            if state.revision != current_revision:
+                raise ConcurrentStateError(
+                    f"运行状态已被其他调用者更新（expected revision {state.revision}, "
+                    f"current {current_revision}）"
+                )
+            state.revision = current_revision + 1
+            self._atomic_write(filepath, state.to_json())
+            # 更新 latest 记录必须与状态文件同一把锁，避免引用未提交状态。
+            self._update_latest(state)
         return filepath
 
     def load(self, pipeline_id: str, run_id: str) -> Optional[RunState]:
@@ -109,10 +129,11 @@ class RunStateStore:
     def delete(self, pipeline_id: str, run_id: str) -> bool:
         """删除指定运行记录"""
         filepath = self._state_path(pipeline_id, run_id)
-        if filepath.exists():
-            filepath.unlink()
-            return True
-        return False
+        with self._write_lock():
+            if filepath.exists():
+                filepath.unlink()
+                return True
+            return False
 
     def _update_latest(self, state: RunState) -> None:
         """更新 .latest 记录文件"""
@@ -120,8 +141,41 @@ class RunStateStore:
         run_id = self._validate_run_id(state.run_id)
         filename = f"{pipeline_id}_{run_id}.json"
         latest_file = self.runs_dir / ".latest"
-        latest_file.write_text(filename, encoding="utf-8")
-        latest_file.chmod(0o600)
+        self._atomic_write(latest_file, filename)
+
+    def _atomic_write(self, path: Path, content: str) -> None:
+        """Durably replace one state file without exposing partial JSON to readers."""
+        descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=self.runs_dir)
+        temporary = Path(temporary_name)
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            temporary.chmod(0o600)
+            os.replace(temporary, path)
+            path.chmod(0o600)
+            directory_fd = os.open(self.runs_dir, os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+
+    @contextmanager
+    def _write_lock(self):
+        """Serialize writers across MCP processes before applying revision CAS."""
+        if fcntl is None:  # pragma: no cover - unsupported runtime must not fail open.
+            raise RuntimeError("RunStateStore requires POSIX file locking for writes")
+        lock_path = self.runs_dir / ".state.lock"
+        with lock_path.open("a+", encoding="utf-8") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
     @staticmethod
     def _validate_pipeline_id(pipeline_id: str) -> str:

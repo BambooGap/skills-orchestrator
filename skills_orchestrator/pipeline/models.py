@@ -56,11 +56,37 @@ class Gate:
             if artifact is None:
                 return False, f"缺少产出: {artifact_key}"
 
-            if isinstance(artifact, str) and self.min_length > 0:
-                if len(artifact) < self.min_length:
+            if isinstance(artifact, bool) or not isinstance(artifact, (str, bytes, dict)):
+                return False, f"产出 '{artifact_key}' 必须是内容、字节或结构化证据"
+
+            if isinstance(artifact, (str, bytes)):
+                if not artifact:
+                    return False, f"产出 '{artifact_key}' 不能为空"
+                if self.min_length > 0 and len(artifact) < self.min_length:
                     return False, (
                         f"产出 '{artifact_key}' 长度 {len(artifact)} < {self.min_length}"
                     )
+                continue
+
+            evidence_type = artifact.get("type")
+            has_reference = any(
+                isinstance(artifact.get(key), str) and artifact[key].strip()
+                for key in ("uri", "sha256")
+            )
+            content = artifact.get("content")
+            if (
+                not isinstance(evidence_type, str)
+                or not evidence_type.strip()
+                or not (has_reference or isinstance(content, (str, bytes)))
+            ):
+                return False, (
+                    f"产出 '{artifact_key}' 的结构化证据必须包含 type，且包含 uri、sha256 或 content"
+                )
+            if self.min_length > 0:
+                if not isinstance(content, (str, bytes)):
+                    return False, f"产出 '{artifact_key}' 需要可测量的 content 才能使用 min_length"
+                if len(content) < self.min_length:
+                    return False, (f"产出 '{artifact_key}' 长度 {len(content)} < {self.min_length}")
 
         return True, ""
 
@@ -115,6 +141,12 @@ class Pipeline:
         errors: List[str] = []
         step_ids = set(self._step_map.keys())
 
+        seen_ids: set[str] = set()
+        for step in self.steps:
+            if step.id in seen_ids:
+                errors.append(f"Step id '{step.id}' 重复")
+            seen_ids.add(step.id)
+
         # 检查 next 引用完整性
         for step in self.steps:
             next_ids: List[str] = []
@@ -122,6 +154,10 @@ class Pipeline:
                 errors.append(f"Step '{step.id}' 的 next 必须是列表")
             else:
                 next_ids = step.next
+                if len(next_ids) > 1:
+                    errors.append(
+                        f"Step '{step.id}' 的 next 最多只能包含一个目标；条件分支尚未实现"
+                    )
 
             for next_id in next_ids:
                 if not isinstance(next_id, str):
@@ -144,52 +180,57 @@ class Pipeline:
                         f"Step '{step.id}' 的 on_gate_failure='{step.on_gate_failure}' 不存在"
                     )
 
-        # 简单循环检测：DFS
+        # Iterative DFS avoids recursion-depth failures for long valid pipelines.
         visited: Set[str] = set()
         path: Set[str] = set()
 
-        def _dfs(sid: str) -> None:
-            if sid in path:
-                errors.append(f"检测到循环引用: {sid}")
-                return
-            if sid in visited:
-                return
-            visited.add(sid)
-            path.add(sid)
-            step = self.get_step(sid)
-            if step:
-                for nid in step.next if isinstance(step.next, list) else []:
-                    _dfs(nid)
-                # 也遍历 on_failure 分支
-                if step.gate and step.gate.on_failure:
-                    _dfs(step.gate.on_failure)
-                if step.on_gate_failure:
-                    _dfs(step.on_gate_failure)
-            path.discard(sid)
-
         for s in self.steps:
-            _dfs(s.id)
+            if s.id in visited:
+                continue
+            stack: list[tuple[str, bool]] = [(s.id, False)]
+            while stack:
+                sid, exiting = stack.pop()
+                if exiting:
+                    path.discard(sid)
+                    continue
+                if sid in path:
+                    errors.append(f"检测到循环引用: {sid}")
+                    continue
+                if sid in visited:
+                    continue
+                visited.add(sid)
+                path.add(sid)
+                stack.append((sid, True))
+                step = self.get_step(sid)
+                if not step:
+                    continue
+                edges = list(step.next) if isinstance(step.next, list) else []
+                if step.gate and step.gate.on_failure:
+                    edges.append(step.gate.on_failure)
+                if step.on_gate_failure:
+                    edges.append(step.on_gate_failure)
+                stack.extend((edge, False) for edge in reversed(edges))
 
         # 可达性检测：Pipeline 从第一个 step 开始执行，未被任何边引用的
         # 后续 step 会被静默跳过，通常是配置错误。
         if self.first_step:
             reachable: Set[str] = set()
 
-            def _walk(sid: str) -> None:
+            stack = [self.first_step.id]
+            while stack:
+                sid = stack.pop()
                 if sid in reachable or sid not in step_ids:
-                    return
+                    continue
                 reachable.add(sid)
                 step = self.get_step(sid)
                 if not step:
-                    return
-                for nid in step.next if isinstance(step.next, list) else []:
-                    _walk(nid)
+                    continue
+                edges = list(step.next) if isinstance(step.next, list) else []
                 if step.gate and step.gate.on_failure:
-                    _walk(step.gate.on_failure)
+                    edges.append(step.gate.on_failure)
                 if step.on_gate_failure:
-                    _walk(step.on_gate_failure)
-
-            _walk(self.first_step.id)
+                    edges.append(step.on_gate_failure)
+                stack.extend(reversed(edges))
             for sid in sorted(step_ids - reachable):
                 errors.append(f"Step '{sid}' 不可达：未从 first step '{self.first_step.id}' 引用")
 
@@ -208,12 +249,14 @@ class RunState:
     context: Dict[str, Any] = field(default_factory=dict)  # artifact 存储
     started_at: str = ""
     updated_at: str = ""
+    revision: int = 0
     _step_start_time: Optional[float] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
         if not self.started_at:
             self.started_at = datetime.now().isoformat()
-        self.updated_at = datetime.now().isoformat()
+        if not self.updated_at:
+            self.updated_at = datetime.now().isoformat()
 
     def advance_to(self, step_id: str) -> None:
         """推进到指定步骤"""
@@ -280,6 +323,7 @@ class RunState:
         record: Dict[str, Any] = {
             "step": self.current_step,
             "status": "failed",
+            "attempt": self.failed_attempts(self.current_step) + 1,
             "artifacts": [],
             "reason": reason,
             "started_at": self.updated_at,
@@ -288,6 +332,14 @@ class RunState:
         self.step_history.append(record)
         self.updated_at = now.isoformat()
         self.status = "failed"
+
+    def failed_attempts(self, step_id: str) -> int:
+        """Return the number of failed gate attempts recorded for a step."""
+        return sum(
+            1
+            for record in self.step_history
+            if record.get("step") == step_id and record.get("status") == "failed"
+        )
 
     def to_json(self, *, redact_context: bool = True) -> str:
         """序列化为 JSON"""
@@ -302,6 +354,7 @@ class RunState:
                 "context": context,
                 "started_at": self.started_at,
                 "updated_at": self.updated_at,
+                "revision": self.revision,
             },
             ensure_ascii=False,
             indent=2,
@@ -320,6 +373,7 @@ class RunState:
             context=data.get("context", {}),
             started_at=data.get("started_at", ""),
             updated_at=data.get("updated_at", ""),
+            revision=data.get("revision", 0),
         )
 
 
