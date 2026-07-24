@@ -1,6 +1,7 @@
 id: review-only
 name: 代码审查
-description: 只做审查和合并，适合已有代码的检查
+description: 审查进度协调流程；不表示代码已获合并批准
+profile: coordination
 steps:
   - id: review
     skill: pr-review

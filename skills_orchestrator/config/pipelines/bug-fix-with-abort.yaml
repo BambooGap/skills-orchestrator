@@ -1,6 +1,7 @@
 id: bug-fix-with-abort
 name: Bug 修复（带失败处理）
-description: 完整的 bug 修复流程，支持失败时终止或重试
+description: Bug 修复进度协调流程，支持失败时终止或重试；不用于发布审批
+profile: coordination
 steps:
   - id: debug
     skill: systematic-debugging

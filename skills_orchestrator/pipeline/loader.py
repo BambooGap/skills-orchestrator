@@ -38,6 +38,31 @@ class PipelineLoader:
                     raise ValueError(
                         f"Step '{step_raw['id']}' 的 gate.require_verified_evidence 必须是 boolean"
                     )
+                allowed_verifiers = gate_raw.get("allowed_verifiers", [])
+                if not isinstance(allowed_verifiers, list) or not all(
+                    isinstance(item, str) and item.strip() for item in allowed_verifiers
+                ):
+                    raise ValueError(
+                        f"Step '{step_raw['id']}' 的 gate.allowed_verifiers 必须是非空字符串列表"
+                    )
+                max_evidence_age_seconds = gate_raw.get("max_evidence_age_seconds", 86_400)
+                max_artifact_bytes = gate_raw.get("max_artifact_bytes", 20 * 1024 * 1024)
+                if (
+                    not isinstance(max_evidence_age_seconds, int)
+                    or isinstance(max_evidence_age_seconds, bool)
+                    or max_evidence_age_seconds <= 0
+                ):
+                    raise ValueError(
+                        f"Step '{step_raw['id']}' 的 gate.max_evidence_age_seconds 必须是正整数"
+                    )
+                if (
+                    not isinstance(max_artifact_bytes, int)
+                    or isinstance(max_artifact_bytes, bool)
+                    or max_artifact_bytes <= 0
+                ):
+                    raise ValueError(
+                        f"Step '{step_raw['id']}' 的 gate.max_artifact_bytes 必须是正整数"
+                    )
                 gate = Gate(
                     must_produce=gate_raw.get("must_produce", ""),
                     min_length=gate_raw.get("min_length", 0),
@@ -45,6 +70,9 @@ class PipelineLoader:
                     max_iterations=gate_raw.get("max_iterations", 0),
                     on_failure=gate_raw.get("on_failure"),  # 新增
                     require_verified_evidence=require_verified_evidence,
+                    allowed_verifiers=allowed_verifiers,
+                    max_evidence_age_seconds=max_evidence_age_seconds,
+                    max_artifact_bytes=max_artifact_bytes,
                 )
             step = Step(
                 id=step_raw["id"],
@@ -60,6 +88,7 @@ class PipelineLoader:
             id=raw["id"],
             name=raw["name"],
             description=raw.get("description", ""),
+            profile=raw.get("profile", "coordination"),
             steps=steps,
         )
         errors = pipeline.validate()

@@ -2616,7 +2616,15 @@ def pipeline_advance(
         _validate_pipeline_skills_or_exit(pipeline_id, pipeline, registry)
 
         state.context.update(ctx)
-        state = PipelineEngine(pipeline).complete_and_advance(state)
+        execution_id = None
+        current_step = pipeline.get_step(state.current_step) if state.current_step else None
+        if current_step and current_step.gate and current_step.gate.check_command:
+            execution_id = store.claim_verification(state, current_step.id)
+        state = PipelineEngine(pipeline).complete_and_advance(
+            state,
+            execution_id=execution_id,
+        )
+        state.verification = {}
         store.save(state)
         click.echo(console_safe_text(_format_pipeline_advance(pipeline, state, run_id, registry)))
     except json.JSONDecodeError as e:

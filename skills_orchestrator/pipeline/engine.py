@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import shlex
 import subprocess
 import uuid
@@ -85,7 +87,7 @@ class PipelineEngine:
         state = self._auto_skip(state)
         return state
 
-    def complete_and_advance(self, state: RunState) -> RunState:
+    def complete_and_advance(self, state: RunState, *, execution_id: str | None = None) -> RunState:
         """完成当前步骤并推进到下一步（带 gate 检查和分支逻辑）
 
         这是推荐使用的推进方法，会：
@@ -119,7 +121,11 @@ class PipelineEngine:
                 state.context, artifact_root=self.artifact_root
             )
             if gate_passed and current.gate.check_command:
-                gate_passed, gate_reason = self._run_check_command(current.gate.check_command)
+                gate_passed, gate_reason = self._run_check_command(
+                    current.gate.check_command,
+                    execution_id=execution_id,
+                    evidence_manifest=self._evidence_manifest(current.gate, state.context),
+                )
 
         if not gate_passed:
             # Gate 失败
@@ -171,11 +177,19 @@ class PipelineEngine:
             return True, ""
         passed, reason = step.gate.check(state.context, artifact_root=self.artifact_root)
         if passed and step.gate.check_command:
-            return self._run_check_command(step.gate.check_command)
+            return self._run_check_command(
+                step.gate.check_command,
+                evidence_manifest=self._evidence_manifest(step.gate, state.context),
+            )
         return passed, reason
 
     @staticmethod
-    def _run_check_command(command: str) -> Tuple[bool, str]:
+    def _run_check_command(
+        command: str,
+        *,
+        execution_id: str | None = None,
+        evidence_manifest: list[dict[str, str]] | None = None,
+    ) -> Tuple[bool, str]:
         """Run a trusted-pipeline verifier without a shell or inherited secrets."""
         try:
             args = shlex.split(command)
@@ -185,12 +199,21 @@ class PipelineEngine:
             return False, "检查命令不能为空"
 
         try:
+            env = safe_subprocess_env()
+            if execution_id:
+                env["SKILLS_ORCHESTRATOR_EXECUTION_ID"] = execution_id
+            if evidence_manifest is not None:
+                env["SKILLS_ORCHESTRATOR_EVIDENCE_MANIFEST"] = json.dumps(
+                    evidence_manifest,
+                    ensure_ascii=True,
+                    separators=(",", ":"),
+                )
             result = subprocess.run(
                 args,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                env=safe_subprocess_env(),
+                env=env,
                 timeout=CHECK_COMMAND_TIMEOUT_SECONDS,
                 check=False,
                 **subprocess_text_kwargs(),
@@ -205,6 +228,32 @@ class PipelineEngine:
         if result.returncode != 0:
             return False, f"检查命令失败（退出码 {result.returncode}）"
         return True, ""
+
+    @staticmethod
+    def _evidence_manifest(gate, context: dict) -> list[dict[str, str]]:
+        """Describe the exact evidence set to the repository-controlled verifier."""
+        manifest = []
+        for key in gate.required_artifacts():
+            evidence = context[key]
+            if isinstance(evidence, dict):
+                entry = {
+                    "artifact": key,
+                    "type": str(evidence.get("type") or ""),
+                    "sha256": str(evidence.get("sha256") or ""),
+                }
+                if evidence.get("uri"):
+                    entry["uri"] = str(evidence["uri"])
+                if evidence.get("verified_by"):
+                    entry["verified_by"] = str(evidence["verified_by"])
+            else:
+                raw = evidence.encode("utf-8") if isinstance(evidence, str) else evidence
+                entry = {
+                    "artifact": key,
+                    "type": "inline",
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                }
+            manifest.append(entry)
+        return manifest
 
     def get_current_step(self, state: RunState) -> Optional[Step]:
         """获取当前步骤的 Step 对象"""

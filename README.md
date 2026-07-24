@@ -604,12 +604,15 @@ skills-orchestrator usage report --audit-dir .skills-audit
 
 ### 3. Pipeline 编排
 
-把多个 Skill 编排成有序工作流，并对明确的 artifact/evidence 施加门禁。它不验证模型推理质量，也不是宿主 Agent 的安全沙箱。
+把多个 Skill 编排成有序工作流，并对明确的 artifact/evidence 施加检查。内置
+Pipeline 均为 `coordination`（进度协调）配置，不代表合并、发布或部署已获批准。
+它不验证模型推理质量，也不是宿主 Agent 的安全沙箱。
 
 ```yaml
 # config/pipelines/quick-fix.yaml
 id: quick-fix
 name: 快速修复流程
+profile: coordination
 steps:
   - skill: systematic-debugging
     gate:
@@ -639,7 +642,7 @@ skills-orchestrator pipeline resume
 
 **关键设计**：
 - `pipeline_start` / `pipeline_advance` / `pipeline_resume` 返回时自动注入当前步骤 Skill 的完整内容，AI 无需额外调用 `get_skill`
-- Gate artifact/evidence 门禁：`must_produce` 要求非空内容、字节或具有 `type` 与 `uri`/`sha256`/`content` 的结构化证据；`min_length` 只接受可测量内容。可选 `check_command` 在受限环境执行真实验证（60 秒超时）。Pipeline 配置应只来自受信任仓库；它不验证 Agent 的推理、不是安全沙箱，也不替代 CI/eval。
+- Gate artifact/evidence 检查：`must_produce` 要求非空内容、字节或具有 `type` 与 `uri`/`sha256`/`content` 的结构化证据；`min_length` 只接受可测量内容。`production` profile 的每个步骤必须同时配置强证据、verifier allowlist 与仓库控制的 `check_command`，验证前会先领取状态租约并提供稳定 execution ID。Pipeline 配置应只来自受信任仓库；它不验证 Agent 的推理、不是安全沙箱，也不替代独立 CI/eval。
 - `skip_if` 条件跳过：满足条件时自动跳过该步骤
 - RunState 持久化：工作流状态存到 `~/.skills-orchestrator/runs/`，中断后可恢复
 

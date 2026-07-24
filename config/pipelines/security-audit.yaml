@@ -1,6 +1,7 @@
 id: security-audit
 name: 安全审查流程
-description: 代码安全审查，适合合并前的安全检查或定期安全复查
+description: 审查任务进度协调流程；不表示已通过合并、发布或部署审批
+profile: coordination
 steps:
   - id: code-review
     skill: pr-review

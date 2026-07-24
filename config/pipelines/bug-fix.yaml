@@ -1,6 +1,7 @@
 id: bug-fix
 name: 系统性 Bug 修复
-description: 完整的 bug 修复流程，适合复杂 bug 或影响范围不明确的问题
+description: Bug 修复进度协调流程，适合复杂 bug 或影响范围不明确的问题；不用于发布审批
+profile: coordination
 steps:
   - id: debug
     skill: systematic-debugging

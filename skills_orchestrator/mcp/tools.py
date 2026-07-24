@@ -31,6 +31,16 @@ if TYPE_CHECKING:
 MAX_CONTENT_BYTES_ENV = "SKILLS_ORCHESTRATOR_MAX_CONTENT_BYTES"
 DEFAULT_MAX_CONTENT_BYTES = 40_000
 
+
+class ToolBusinessError(RuntimeError):
+    """A rejected tool call whose outcome must be recorded consistently."""
+
+    def __init__(self, message: str, *, outcome: str, code: str):
+        super().__init__(message)
+        self.outcome = outcome
+        self.code = code
+
+
 TOOL_LIST_SKILLS = types.Tool(
     name="list_skills",
     description=(
@@ -303,7 +313,6 @@ class ToolExecutor:
         self._store: RunStateStore | None = None
         self._audit = AuditLogger(audit_dir)
         self._max_content_bytes = self._resolve_max_content_bytes(max_content_bytes)
-        self._call_outcome = "ok"
 
     def _get_store(self) -> RunStateStore:
         from skills_orchestrator.pipeline.store import RunStateStore
@@ -338,7 +347,6 @@ class ToolExecutor:
 
     def execute(self, name: str, arguments: dict[str, Any]) -> list[types.TextContent]:
         arguments = self._validate_arguments(arguments)
-        self._call_outcome = "ok"
         handlers = {
             "list_skills": self._list_skills,
             "search_skills": self._search_skills,
@@ -357,15 +365,19 @@ class ToolExecutor:
             return [types.TextContent(type="text", text=f"未知工具: {name}")]
         try:
             result = handler(arguments)
+        except ToolBusinessError as err:
+            self._audit_call(
+                name,
+                arguments,
+                outcome=err.outcome,
+                extra={"code": err.code},
+            )
+            return [types.TextContent(type="text", text=str(err))]
         except Exception as err:
             self._audit_call(name, arguments, outcome="error", error_type=type(err).__name__)
             raise
-        self._audit_call(name, arguments, outcome=self._call_outcome)
+        self._audit_call(name, arguments, outcome="ok")
         return result
-
-    def _mark_outcome(self, outcome: str) -> None:
-        """Record the business outcome for the audit event of the current call."""
-        self._call_outcome = outcome
 
     def _audit_call(
         self,
@@ -866,7 +878,6 @@ class ToolExecutor:
         context = self._get_dict(args, "context")
 
         if not pipeline_id:
-            self._mark_outcome("validation_failed")
             # 列出可用的 pipeline
             pipelines_dir = self._pipelines_dir or os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "pipelines"
@@ -876,28 +887,28 @@ class ToolExecutor:
                 for f in sorted(os.listdir(pipelines_dir)):
                     if f.endswith(".yaml"):
                         available.append(f.replace(".yaml", ""))
-            return [
-                types.TextContent(
-                    type="text",
-                    text=f"请提供 pipeline_id。可用的 Pipeline：{', '.join(available) or '无'}",
-                )
-            ]
+            raise ToolBusinessError(
+                f"请提供 pipeline_id。可用的 Pipeline：{', '.join(available) or '无'}",
+                outcome="validation_failed",
+                code="PIPELINE_ID_REQUIRED",
+            )
 
         pipeline = self._get_pipeline(pipeline_id)
         if pipeline is None:
-            self._mark_outcome("not_found")
-            return [types.TextContent(type="text", text=f"找不到 Pipeline: '{pipeline_id}'")]
+            raise ToolBusinessError(
+                f"找不到 Pipeline: '{pipeline_id}'",
+                outcome="not_found",
+                code="PIPELINE_NOT_FOUND",
+            )
 
         structure_errors = pipeline.validate()
         if structure_errors:
-            self._mark_outcome("validation_failed")
-            return [
-                types.TextContent(
-                    type="text",
-                    text=f"Pipeline '{pipeline_id}' 定义无效:\n"
-                    + "\n".join(f"- {error}" for error in structure_errors),
-                )
-            ]
+            raise ToolBusinessError(
+                f"Pipeline '{pipeline_id}' 定义无效:\n"
+                + "\n".join(f"- {error}" for error in structure_errors),
+                outcome="validation_failed",
+                code="PIPELINE_DEFINITION_INVALID",
+            )
 
         # 校验 pipeline 引用的 skill 是否存在于 registry
         from skills_orchestrator.pipeline.loader import PipelineLoader
@@ -906,15 +917,13 @@ class ToolExecutor:
         known_skills = {s.id for s in self._registry.all()}
         missing = loader.validate_skills(pipeline, known_skills)
         if missing:
-            self._mark_outcome("validation_failed")
-            return [
-                types.TextContent(
-                    type="text",
-                    text=f"Pipeline '{pipeline_id}' 引用了不存在的 skill: {', '.join(missing)}\n"
-                    f"可用 skill: {', '.join(sorted(known_skills))}\n"
-                    f"请修复 config/pipelines/{pipeline_id}.yaml 中的 skill 引用。",
-                )
-            ]
+            raise ToolBusinessError(
+                f"Pipeline '{pipeline_id}' 引用了不存在的 skill: {', '.join(missing)}\n"
+                f"可用 skill: {', '.join(sorted(known_skills))}\n"
+                f"请修复 config/pipelines/{pipeline_id}.yaml 中的 skill 引用。",
+                outcome="validation_failed",
+                code="PIPELINE_SKILL_NOT_FOUND",
+            )
 
         engine = PipelineEngine(pipeline, artifact_root=getattr(self._registry, "_base_dir", None))
         state = engine.start(context=context)
@@ -979,7 +988,11 @@ class ToolExecutor:
             state = store.load_latest(pipeline_id or None)
 
         if state is None:
-            return [types.TextContent(type="text", text="没有找到运行记录。")]
+            raise ToolBusinessError(
+                "没有找到运行记录。",
+                outcome="not_found",
+                code="RUN_NOT_FOUND",
+            )
 
         pipeline = self._get_pipeline(state.pipeline_id)
         lines = [
@@ -1048,42 +1061,66 @@ class ToolExecutor:
             if not isinstance(artifacts, list) or not all(
                 isinstance(item, str) for item in artifacts
             ):
-                return [types.TextContent(type="text", text="artifacts 必须是字符串列表")]
+                raise ToolBusinessError(
+                    "artifacts 必须是字符串列表",
+                    outcome="validation_failed",
+                    code="ARTIFACTS_TYPE_INVALID",
+                )
             missing_values = [artifact for artifact in artifacts if artifact not in context_updates]
             if missing_values:
-                return [
-                    types.TextContent(
-                        type="text",
-                        text=(
-                            "artifacts 参数不能仅声明名称；请在 context_updates 提供真实产出："
-                            + ", ".join(missing_values)
-                        ),
-                    )
-                ]
+                raise ToolBusinessError(
+                    "artifacts 参数不能仅声明名称；请在 context_updates 提供真实产出："
+                    + ", ".join(missing_values),
+                    outcome="validation_failed",
+                    code="ARTIFACT_VALUE_REQUIRED",
+                )
 
         store = self._get_store()
         state = store.load(pipeline_id, run_id)
         if state is None:
-            self._mark_outcome("not_found")
-            return [types.TextContent(type="text", text=f"找不到运行记录: {pipeline_id}/{run_id}")]
+            raise ToolBusinessError(
+                f"找不到运行记录: {pipeline_id}/{run_id}",
+                outcome="not_found",
+                code="RUN_NOT_FOUND",
+            )
 
         pipeline = self._get_pipeline(state.pipeline_id)
         if pipeline is None:
-            self._mark_outcome("not_found")
-            return [types.TextContent(type="text", text=f"Pipeline 不存在: {state.pipeline_id}")]
+            raise ToolBusinessError(
+                f"Pipeline 不存在: {state.pipeline_id}",
+                outcome="not_found",
+                code="PIPELINE_NOT_FOUND",
+            )
 
         engine = PipelineEngine(pipeline, artifact_root=getattr(self._registry, "_base_dir", None))
 
         # 更新上下文
         state.context.update(context_updates)
 
+        execution_id = None
+        current_step = pipeline.get_step(state.current_step) if state.current_step else None
+        if current_step and current_step.gate and current_step.gate.check_command:
+            from skills_orchestrator.pipeline.store import (
+                ConcurrentStateError,
+                VerificationLeaseError,
+            )
+
+            try:
+                execution_id = store.claim_verification(state, current_step.id)
+            except (ConcurrentStateError, VerificationLeaseError) as err:
+                raise ToolBusinessError(
+                    str(err),
+                    outcome="conflict",
+                    code="VERIFIER_LEASE_CONFLICT",
+                ) from err
+
         # 使用新的 complete_and_advance 方法（带分支逻辑）
-        state = engine.complete_and_advance(state)
+        state = engine.complete_and_advance(state, execution_id=execution_id)
+        state.verification = {}
         store.save(state)
 
         # 检查是否失败
         if state.status == "failed":
-            self._mark_outcome("gate_failed")
             lines = [
                 "❌ 步骤执行失败",
                 f"当前步骤: {state.current_step}",
@@ -1096,7 +1133,11 @@ class ToolExecutor:
 
             lines.append("")
             lines.append("💡 建议：检查产出是否符合门禁要求，或使用其他 pipeline")
-            return [types.TextContent(type="text", text="\n".join(lines))]
+            raise ToolBusinessError(
+                "\n".join(lines),
+                outcome="gate_failed",
+                code="PIPELINE_GATE_FAILED",
+            )
 
         if state.status == "completed":
             return [
@@ -1168,7 +1209,11 @@ class ToolExecutor:
             state = store.load_latest(pipeline_id or None)
 
         if state is None:
-            return [types.TextContent(type="text", text="没有找到可恢复的运行记录。")]
+            raise ToolBusinessError(
+                "没有找到可恢复的运行记录。",
+                outcome="not_found",
+                code="RUN_NOT_FOUND",
+            )
 
         if state.status == "completed":
             return [
@@ -1179,7 +1224,11 @@ class ToolExecutor:
 
         pipeline = self._get_pipeline(state.pipeline_id)
         if pipeline is None:
-            return [types.TextContent(type="text", text=f"Pipeline 不存在: {state.pipeline_id}")]
+            raise ToolBusinessError(
+                f"Pipeline 不存在: {state.pipeline_id}",
+                outcome="not_found",
+                code="PIPELINE_NOT_FOUND",
+            )
 
         engine = PipelineEngine(pipeline, artifact_root=getattr(self._registry, "_base_dir", None))
         state = engine.resume(state)

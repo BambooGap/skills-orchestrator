@@ -1,6 +1,8 @@
 # Pipelines
 
-Pipelines turn multiple skills into a gated workflow.
+Pipelines turn multiple skills into an ordered workflow. Bundled pipelines use
+`profile: coordination`: their artifact fields are progress records reported by
+the caller, not merge, release, deployment, or security approvals.
 
 ## Gate Verification
 
@@ -18,6 +20,41 @@ constrained environment, and has a 60-second timeout. Treat pipeline YAML as tru
 not allow unreviewed users or remote skill imports to add `check_command`. This is a local
 verification hook, not a substitute for CI isolation, deployment approval, or model evaluation.
 
+For a repository-controlled approval workflow, declare `profile: production`.
+Production profiles fail to load unless every step configures all of:
+
+- `require_verified_evidence: true`
+- a non-empty `allowed_verifiers` list
+- a repository-controlled `check_command`
+
+```yaml
+id: release-review
+name: Release review
+profile: production
+steps:
+  - id: verify
+    skill: team-review
+    next: []
+    gate:
+      must_produce: test_report
+      require_verified_evidence: true
+      allowed_verifiers: [repository-ci]
+      max_evidence_age_seconds: 3600
+      max_artifact_bytes: 20971520
+      check_command: python tools/verify_release.py
+```
+
+Strong evidence requires a matching SHA-256 digest, an allowlisted `verified_by`
+value, a timezone-aware non-future timestamp within the configured age, and
+bounded content. The metadata identifies the expected verifier but is not a
+signature by itself; `check_command` is therefore mandatory in a production
+profile. Before running that command, the state store atomically claims a
+time-limited step lease and exposes a stable
+`SKILLS_ORCHESTRATOR_EXECUTION_ID` so the verifier can implement idempotency.
+It also exposes `SKILLS_ORCHESTRATOR_EVIDENCE_MANIFEST`, a compact JSON list of
+the exact artifact keys, types, digests, and file URIs being checked.
+Pipeline authors must still ensure the verifier is side-effect safe.
+
 ## Minimal Pipeline
 
 Create `config/pipelines/code-review.yaml`:
@@ -25,6 +62,7 @@ Create `config/pipelines/code-review.yaml`:
 ```yaml
 id: code-review
 name: Code Review
+profile: coordination
 steps:
   - id: inspect
     skill: team-debugging

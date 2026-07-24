@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import stat
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import unquote, urlparse
@@ -18,6 +20,10 @@ SENSITIVE_CONTEXT_KEY_RE = re.compile(
 )
 MAX_PERSISTED_STRING_CHARS = 2_000
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$", re.IGNORECASE)
+DEFAULT_MAX_ARTIFACT_BYTES = 20 * 1024 * 1024
+DEFAULT_MAX_EVIDENCE_AGE_SECONDS = 24 * 60 * 60
+MAX_EVIDENCE_FUTURE_SKEW_SECONDS = 5 * 60
+HASH_CHUNK_BYTES = 1024 * 1024
 
 
 @dataclass
@@ -30,6 +36,9 @@ class Gate:
     max_iterations: int = 0  # 可选：最大重试轮数（0=不限）
     on_failure: Optional[str] = None  # 失败时跳转的步骤 ID
     require_verified_evidence: bool = False
+    allowed_verifiers: list[str] = field(default_factory=list)
+    max_evidence_age_seconds: int = DEFAULT_MAX_EVIDENCE_AGE_SECONDS
+    max_artifact_bytes: int = DEFAULT_MAX_ARTIFACT_BYTES
 
     def required_artifacts(self) -> list[str]:
         """Return normalized artifact keys required by this gate."""
@@ -67,6 +76,8 @@ class Gate:
                 return False, f"产出 '{artifact_key}' 必须是内容、字节或结构化证据"
 
             if isinstance(artifact, (str, bytes)):
+                if self.require_verified_evidence:
+                    return False, f"产出 '{artifact_key}' 的强门禁必须使用结构化证据"
                 if not artifact:
                     return False, f"产出 '{artifact_key}' 不能为空"
                 if self.min_length > 0 and len(artifact) < self.min_length:
@@ -90,14 +101,26 @@ class Gate:
         if not isinstance(evidence_type, str) or not evidence_type.strip():
             return False, "缺少非空 type", 0
         if self.require_verified_evidence:
+            if not self.allowed_verifiers:
+                return False, "强门禁未配置 allowed_verifiers", 0
             for field_name in ("producer", "verified_by", "verified_at"):
                 value = evidence.get(field_name)
                 if not isinstance(value, str) or not value.strip():
                     return False, f"强门禁缺少 {field_name}", 0
+            if evidence["verified_by"] not in self.allowed_verifiers:
+                return False, "verified_by 不在允许的 verifier 列表中", 0
             try:
-                datetime.fromisoformat(evidence["verified_at"].replace("Z", "+00:00"))
+                verified_at = datetime.fromisoformat(evidence["verified_at"].replace("Z", "+00:00"))
             except ValueError:
                 return False, "verified_at 必须是 ISO-8601 时间", 0
+            if verified_at.tzinfo is None or verified_at.utcoffset() is None:
+                return False, "verified_at 必须包含时区", 0
+            now = datetime.now(timezone.utc)
+            verified_at = verified_at.astimezone(timezone.utc)
+            if verified_at > now + timedelta(seconds=MAX_EVIDENCE_FUTURE_SKEW_SECONDS):
+                return False, "verified_at 不能是未来时间", 0
+            if verified_at < now - timedelta(seconds=self.max_evidence_age_seconds):
+                return False, "证据已超过允许的最大年龄", 0
 
         content = evidence.get("content")
         if content is not None and (not isinstance(content, (str, bytes)) or not content):
@@ -110,12 +133,15 @@ class Gate:
         if uri is None:
             if not isinstance(content, (str, bytes)):
                 return False, "必须提供非空 content 或 file:// URI", 0
-            actual = hashlib.sha256(
-                content.encode("utf-8") if isinstance(content, str) else content
-            ).hexdigest()
+            content_bytes = content.encode("utf-8") if isinstance(content, str) else content
+            if len(content_bytes) > self.max_artifact_bytes:
+                return False, f"content 超过 {self.max_artifact_bytes} 字节上限", 0
+            if self.require_verified_evidence and digest is None:
+                return False, "强门禁的 content evidence 必须提供 sha256", 0
+            actual = hashlib.sha256(content_bytes).hexdigest()
             if digest is not None and digest.lower() != actual:
                 return False, "sha256 与 content 不匹配", 0
-            return True, "", len(content)
+            return True, "", len(content_bytes)
 
         if not isinstance(uri, str) or not uri.strip():
             return False, "uri 必须是非空 file:// URI", 0
@@ -128,14 +154,47 @@ class Gate:
             path.relative_to(root)
         except ValueError:
             return False, "file URI 超出允许的 artifact 根目录", 0
-        if not path.is_file():
-            return False, "file URI 不指向存在的普通文件", 0
         if digest is None:
             return False, "file URI evidence 必须提供 sha256", 0
-        data = path.read_bytes()
-        if digest.lower() != hashlib.sha256(data).hexdigest():
+        try:
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+            descriptor = os.open(path, flags)
+        except (FileNotFoundError, OSError):
+            return False, "file URI 不指向可读取的普通文件", 0
+        try:
+            before = os.fstat(descriptor)
+            if not stat.S_ISREG(before.st_mode):
+                return False, "file URI 不指向普通文件", 0
+            if before.st_size > self.max_artifact_bytes:
+                return False, f"artifact 超过 {self.max_artifact_bytes} 字节上限", 0
+            hasher = hashlib.sha256()
+            size = 0
+            while True:
+                chunk = os.read(descriptor, HASH_CHUNK_BYTES)
+                if not chunk:
+                    break
+                size += len(chunk)
+                if size > self.max_artifact_bytes:
+                    return False, f"artifact 超过 {self.max_artifact_bytes} 字节上限", 0
+                hasher.update(chunk)
+            after = os.fstat(descriptor)
+        finally:
+            os.close(descriptor)
+        if (
+            before.st_dev,
+            before.st_ino,
+            before.st_size,
+            before.st_mtime_ns,
+        ) != (
+            after.st_dev,
+            after.st_ino,
+            after.st_size,
+            after.st_mtime_ns,
+        ):
+            return False, "artifact 在验证期间发生变化", 0
+        if digest.lower() != hasher.hexdigest():
             return False, "sha256 与 file URI 内容不匹配", 0
-        return True, "", len(data)
+        return True, "", size
 
 
 @dataclass
@@ -169,6 +228,7 @@ class Pipeline:
     name: str
     description: str = ""
     steps: List[Step] = field(default_factory=list)
+    profile: str = "coordination"
 
     def __post_init__(self):
         # 构建 step 索引
@@ -187,6 +247,10 @@ class Pipeline:
         """验证 Pipeline 定义完整性，返回错误列表"""
         errors: List[str] = []
         step_ids = set(self._step_map.keys())
+        if self.profile not in {"coordination", "production"}:
+            errors.append("profile 必须是 coordination 或 production")
+        if self.profile == "production" and not self.steps:
+            errors.append("Production Pipeline 至少需要一个 Step")
 
         seen_ids: set[str] = set()
         for step in self.steps:
@@ -225,6 +289,20 @@ class Pipeline:
                 if step.on_gate_failure not in step_ids:
                     errors.append(
                         f"Step '{step.id}' 的 on_gate_failure='{step.on_gate_failure}' 不存在"
+                    )
+            if self.profile == "production":
+                if step.skip_if:
+                    errors.append(f"Production Step '{step.id}' 不允许使用 skip_if")
+                if not step.gate:
+                    errors.append(f"Production Step '{step.id}' 必须配置 gate")
+                elif not (
+                    step.gate.require_verified_evidence
+                    and step.gate.allowed_verifiers
+                    and step.gate.check_command
+                ):
+                    errors.append(
+                        f"Production Step '{step.id}' 必须配置 require_verified_evidence、"
+                        "allowed_verifiers 和 check_command"
                     )
 
         # Iterative DFS avoids recursion-depth failures for long valid pipelines.
@@ -297,6 +375,7 @@ class RunState:
     started_at: str = ""
     updated_at: str = ""
     revision: int = 0
+    verification: Dict[str, Any] = field(default_factory=dict)
     _step_start_time: Optional[float] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
@@ -402,6 +481,7 @@ class RunState:
                 "started_at": self.started_at,
                 "updated_at": self.updated_at,
                 "revision": self.revision,
+                "verification": self.verification,
             },
             ensure_ascii=False,
             indent=2,
@@ -421,6 +501,7 @@ class RunState:
             started_at=data.get("started_at", ""),
             updated_at=data.get("updated_at", ""),
             revision=data.get("revision", 0),
+            verification=data.get("verification", {}),
         )
 
 

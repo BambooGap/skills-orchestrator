@@ -1,6 +1,7 @@
 id: full-dev
 name: 完整开发流程
-description: 从头脑风暴到上线的全流程，适合新功能开发
+description: 从构想到完成的开发进度协调流程；不用于上线或发布审批
+profile: coordination
 steps:
   - id: brainstorm
     skill: brainstorming

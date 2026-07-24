@@ -459,6 +459,25 @@ class TestToolExecutor:
         )
         assert event["outcome"] == "not_found"
 
+    def test_pipeline_artifact_validation_is_audited_as_failure(self, tmp_path):
+        executor = ToolExecutor(MockRegistry(), audit_dir=str(tmp_path / "audit"))
+        result = executor.execute(
+            "pipeline_advance",
+            {
+                "pipeline_id": "full-dev",
+                "run_id": "run-1",
+                "artifacts": ["report"],
+                "context_updates": {},
+            },
+        )
+        assert "不能仅声明名称" in self._text(result)
+
+        event = json.loads(
+            (tmp_path / "audit" / "events.jsonl").read_text(encoding="utf-8").strip()
+        )
+        assert event["outcome"] == "validation_failed"
+        assert event["code"] == "ARTIFACT_VALUE_REQUIRED"
+
     def test_pipeline_advance_rejects_non_object_context_updates(self):
         with pytest.raises(ValueError, match="context_updates"):
             self.executor.execute(

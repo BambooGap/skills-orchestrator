@@ -3,6 +3,9 @@
 import hashlib
 import os
 import tempfile
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -95,14 +98,19 @@ class TestGate:
         report = tmp_path / "report.txt"
         report.write_text("verified report", encoding="utf-8")
         digest = hashlib.sha256(report.read_bytes()).hexdigest()
-        gate = Gate(must_produce="report", min_length=10, require_verified_evidence=True)
+        gate = Gate(
+            must_produce="report",
+            min_length=10,
+            require_verified_evidence=True,
+            allowed_verifiers=["unit-test"],
+        )
         evidence = {
             "type": "report",
             "uri": report.as_uri(),
             "sha256": digest,
             "producer": "ci",
             "verified_by": "unit-test",
-            "verified_at": "2026-07-25T00:00:00Z",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
         }
         passed, reason = gate.check({"report": evidence}, artifact_root=tmp_path)
         assert passed, reason
@@ -111,6 +119,70 @@ class TestGate:
         passed, reason = gate.check({"report": evidence}, artifact_root=tmp_path)
         assert not passed
         assert "不匹配" in reason
+
+    def test_verified_evidence_rejects_plain_text_self_claim_and_bad_time(self):
+        gate = Gate(
+            must_produce="report",
+            require_verified_evidence=True,
+            allowed_verifiers=["repository-ci"],
+            max_evidence_age_seconds=3600,
+        )
+        passed, reason = gate.check({"report": "done"})
+        assert not passed
+        assert "结构化证据" in reason
+
+        content = "done"
+        evidence = {
+            "type": "report",
+            "content": content,
+            "sha256": hashlib.sha256(content.encode()).hexdigest(),
+            "producer": "agent-self-claim",
+            "verified_by": "agent-self-claim",
+            "verified_at": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+        }
+        passed, reason = gate.check({"report": evidence})
+        assert not passed
+        assert "verifier" in reason
+
+        evidence["verified_by"] = "repository-ci"
+        passed, reason = gate.check({"report": evidence})
+        assert not passed
+        assert "未来" in reason
+
+    def test_verified_inline_evidence_requires_matching_sha256(self):
+        gate = Gate(
+            must_produce="report",
+            require_verified_evidence=True,
+            allowed_verifiers=["repository-ci"],
+        )
+        evidence = {
+            "type": "report",
+            "content": "done",
+            "producer": "ci",
+            "verified_by": "repository-ci",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+        passed, reason = gate.check({"report": evidence})
+        assert not passed
+        assert "sha256" in reason
+
+    def test_file_evidence_is_bounded_and_streamed(self, tmp_path, monkeypatch):
+        report = tmp_path / "report.bin"
+        report.write_bytes(b"x" * 32)
+        gate = Gate(must_produce="report", max_artifact_bytes=16)
+        evidence = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": hashlib.sha256(b"x" * 32).hexdigest(),
+        }
+        monkeypatch.setattr(
+            type(report),
+            "read_bytes",
+            lambda _path: pytest.fail("evidence verification must not call read_bytes"),
+        )
+        passed, reason = gate.check({"report": evidence}, artifact_root=tmp_path)
+        assert not passed
+        assert "字节上限" in reason
 
 
 class TestStep:
@@ -481,6 +553,49 @@ steps:
         plan = pipeline.get_step("plan")
         assert plan.skip_if is None
 
+    def test_production_profile_rejects_self_reported_gate(self):
+        from skills_orchestrator.pipeline.loader import PipelineLoader
+
+        with pytest.raises(ValueError, match="Production Step"):
+            PipelineLoader().load_string(
+                """
+id: release
+name: Release
+profile: production
+steps:
+  - id: finish
+    skill: finish
+    gate:
+      must_produce: report
+"""
+            )
+
+    def test_production_profile_requires_complete_verifier_configuration(self):
+        from skills_orchestrator.pipeline.loader import PipelineLoader
+
+        pipeline = PipelineLoader().load_string(
+            """
+id: release
+name: Release
+profile: production
+steps:
+  - id: finish
+    skill: finish
+    gate:
+      must_produce: report
+      require_verified_evidence: true
+      allowed_verifiers: [repository-ci]
+      max_evidence_age_seconds: 3600
+      max_artifact_bytes: 1024
+      check_command: python tools/verify_release.py
+"""
+        )
+        assert pipeline.profile == "production"
+        gate = pipeline.first_step.gate
+        assert gate is not None
+        assert gate.allowed_verifiers == ["repository-ci"]
+        assert gate.max_artifact_bytes == 1024
+
 
 # ═══════════════════════════════════════════════════════════
 # Task 5: PipelineEngine
@@ -506,6 +621,27 @@ class TestPipelineEngine:
         state = engine.start()
         assert state.current_step == "a"
         assert state.status == "running"
+
+    def test_check_command_receives_stable_execution_id(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+
+        captured = {}
+
+        def fake_run(_args, **kwargs):
+            captured.update(kwargs["env"])
+            return SimpleNamespace(returncode=0)
+
+        monkeypatch.setattr("skills_orchestrator.pipeline.engine.subprocess.run", fake_run)
+        passed, reason = PipelineEngine._run_check_command(
+            "python verifier.py",
+            execution_id="execution-123",
+            evidence_manifest=[{"artifact": "report", "type": "report", "sha256": "a" * 64}],
+        )
+        assert passed, reason
+        assert captured["SKILLS_ORCHESTRATOR_EXECUTION_ID"] == "execution-123"
+        assert '"artifact":"report"' in captured["SKILLS_ORCHESTRATOR_EVIDENCE_MANIFEST"]
 
     def test_advance_step(self):
         from skills_orchestrator.pipeline.engine import PipelineEngine
@@ -772,6 +908,53 @@ class TestRunStateStore:
             assert current.context["artifact_a"] == "preserved"
             assert "artifact_b" not in current.context
 
+    def test_verifier_lease_is_claimed_before_concurrent_execution(self):
+        from skills_orchestrator.pipeline.store import (
+            ConcurrentStateError,
+            RunStateStore,
+            VerificationLeaseError,
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = RunStateStore(base_dir=tmpdir)
+            state = self._make_state()
+            state.advance_to("verify")
+            store.save(state)
+            first = store.load("test", "r1")
+            stale = store.load("test", "r1")
+            assert first is not None and stale is not None
+
+            execution_id = store.claim_verification(first, "verify")
+            assert first.status == "verifying"
+            assert first.verification["execution_id"] == execution_id
+
+            with pytest.raises(ConcurrentStateError):
+                store.claim_verification(stale, "verify")
+
+            current = store.load("test", "r1")
+            assert current is not None
+            with pytest.raises(VerificationLeaseError):
+                store.claim_verification(current, "verify")
+
+    def test_expired_verifier_lease_reuses_execution_id(self):
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = RunStateStore(base_dir=tmpdir)
+            state = self._make_state()
+            state.advance_to("verify")
+            store.save(state)
+            original_id = store.claim_verification(state, "verify", lease_seconds=1)
+            state.verification["expires_at"] = (
+                datetime.now(timezone.utc) - timedelta(seconds=1)
+            ).isoformat()
+            store.save(state)
+
+            recovered = store.load("test", "r1")
+            assert recovered is not None
+            recovered_id = store.claim_verification(recovered, "verify")
+            assert recovered_id == original_id
+
     def test_load_nonexistent(self):
         from skills_orchestrator.pipeline.store import RunStateStore
 
@@ -999,6 +1182,88 @@ class TestPipelineMCPTools:
             result = executor.execute("pipeline_status", {})
             text = result[0].text
             assert "没有找到" in text
+
+    def test_concurrent_advance_runs_verifier_only_after_one_lease(self, tmp_path, monkeypatch):
+        import re
+
+        from skills_orchestrator.mcp.registry import SkillRegistry
+        from skills_orchestrator.mcp.tools import ToolExecutor
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        pipelines_dir = tmp_path / "pipelines"
+        pipelines_dir.mkdir()
+        (pipelines_dir / "leased.yaml").write_text(
+            """
+id: leased
+name: Leased verifier
+profile: coordination
+steps:
+  - id: verify
+    skill: brainstorming
+    gate:
+      must_produce: report
+      check_command: python verifier.py
+""",
+            encoding="utf-8",
+        )
+        config_path = os.path.join(os.path.dirname(__file__), "..", "config", "skills.yaml")
+        store = RunStateStore(base_dir=str(tmp_path / "state"))
+        executors = [
+            ToolExecutor(SkillRegistry(config_path), pipelines_dir=str(pipelines_dir))
+            for _ in range(2)
+        ]
+        for executor in executors:
+            executor._store = store
+
+        started = executors[0].execute("pipeline_start", {"pipeline_id": "leased"})
+        run_id = re.search(r"Run ID: (\w+)", started[0].text).group(1)
+
+        original_load = store.load
+        load_barrier = threading.Barrier(2)
+
+        def synchronized_load(pipeline_id, requested_run_id):
+            state = original_load(pipeline_id, requested_run_id)
+            if requested_run_id == run_id:
+                load_barrier.wait(timeout=5)
+            return state
+
+        monkeypatch.setattr(store, "load", synchronized_load)
+        verifier_calls = []
+
+        def fake_verifier(_command, *, execution_id=None, evidence_manifest=None):
+            verifier_calls.append(execution_id)
+            assert evidence_manifest == [
+                {
+                    "artifact": "report",
+                    "type": "inline",
+                    "sha256": hashlib.sha256(b"done").hexdigest(),
+                }
+            ]
+            return True, ""
+
+        monkeypatch.setattr(
+            PipelineEngine,
+            "_run_check_command",
+            staticmethod(fake_verifier),
+        )
+        arguments = {
+            "pipeline_id": "leased",
+            "run_id": run_id,
+            "context_updates": {"report": "done"},
+        }
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(
+                pool.map(
+                    lambda executor: executor.execute("pipeline_advance", arguments),
+                    executors,
+                )
+            )
+
+        assert len(verifier_calls) == 1
+        combined = "\n".join(result[0].text for result in results)
+        assert "已完成" in combined
+        assert "revision" in combined or "verifier" in combined
 
     def test_full_dev_pipeline_walkthrough(self):
         """完整走一遍 full-dev pipeline：启动→逐步推进→完成"""

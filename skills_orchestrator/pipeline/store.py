@@ -6,7 +6,9 @@ import json
 import os
 import re
 import tempfile
+import uuid
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -27,6 +29,10 @@ STATE_DIR_ENV = "SKILLS_ORCHESTRATOR_STATE_DIR"
 
 class ConcurrentStateError(RuntimeError):
     """Raised when a caller tries to overwrite a newer persisted RunState."""
+
+
+class VerificationLeaseError(RuntimeError):
+    """Raised when another caller owns an active verifier lease."""
 
 
 class RunStateStore:
@@ -71,6 +77,56 @@ class RunStateStore:
         if not filepath.exists():
             return None
         return RunState.from_json(filepath.read_text(encoding="utf-8"))
+
+    def claim_verification(
+        self,
+        state: RunState,
+        step_id: str,
+        *,
+        lease_seconds: int = 120,
+    ) -> str:
+        """Persist a verifier lease before any external check is executed.
+
+        Revision CAS makes two callers racing from the same state unable to both
+        acquire the lease. An expired lease reuses its execution id so a verifier
+        can apply idempotency across crash recovery.
+        """
+        if state.current_step != step_id:
+            raise ValueError(f"当前步骤不是 '{step_id}'")
+        if lease_seconds <= 0:
+            raise ValueError("lease_seconds 必须是正整数")
+
+        now = datetime.now(timezone.utc)
+        current = state.verification
+        execution_id = ""
+        if current and current.get("step_id") == step_id:
+            expires_at_raw = current.get("expires_at")
+            try:
+                expires_at = datetime.fromisoformat(str(expires_at_raw).replace("Z", "+00:00"))
+            except ValueError:
+                expires_at = now
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at > now:
+                raise VerificationLeaseError(
+                    f"步骤 '{step_id}' 的 verifier 正由 execution_id="
+                    f"{current.get('execution_id', 'unknown')} 执行"
+                )
+            execution_id = str(current.get("execution_id") or "")
+
+        if not execution_id:
+            execution_id = uuid.uuid4().hex
+        state.verification = {
+            "step_id": step_id,
+            "execution_id": execution_id,
+            "claimed_at": now.isoformat().replace("+00:00", "Z"),
+            "expires_at": (now + timedelta(seconds=lease_seconds))
+            .isoformat()
+            .replace("+00:00", "Z"),
+        }
+        state.status = "verifying"
+        self.save(state)
+        return execution_id
 
     def load_latest(self, pipeline_id: Optional[str] = None) -> Optional[RunState]:
         """加载最近一次运行的 RunState
