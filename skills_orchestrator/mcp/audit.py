@@ -11,9 +11,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - production MCP runtime is POSIX.
+    fcntl = None  # type: ignore[assignment]
+
 AUDIT_DIR_ENV = "SKILLS_ORCHESTRATOR_AUDIT_DIR"
 AUDIT_SALT_ENV = "SKILLS_ORCHESTRATOR_AUDIT_SALT"
 EVENTS_FILENAME = "events.jsonl"
+AUDIT_LOCK_FILENAME = ".events.lock"
+
+
+class AuditWriteError(RuntimeError):
+    """Raised when a mandatory production audit event cannot be persisted."""
 
 
 def utc_now_iso() -> str:
@@ -44,20 +54,79 @@ class AuditLogger:
             return None
         return self._audit_dir / EVENTS_FILENAME
 
-    def append(self, event: dict[str, Any]) -> None:
-        """Append one audit event. Logging failures are intentionally non-fatal."""
+    def append(self, event: dict[str, Any], *, strict: bool = False) -> dict[str, Any] | None:
+        """Append one hash-chained event.
+
+        Coordination-mode callers keep best-effort behavior. Production callers
+        use ``strict=True`` so a missing or failed audit sink stops approval.
+        """
         path = self.events_path
         if path is None:
-            return
+            if strict:
+                raise AuditWriteError("Production Pipeline 必须配置可写的 audit_dir")
+            return None
         try:
             path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             path.parent.chmod(0o700)
-            payload = {"timestamp": utc_now_iso(), **event}
-            with path.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+            lock_path = path.parent / AUDIT_LOCK_FILENAME
+            with lock_path.open("a+", encoding="utf-8") as lock:
+                if fcntl is not None:
+                    fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+                previous = self._last_event(path)
+                sequence = int(previous.get("sequence", 0)) + 1 if previous else 1
+                previous_hash = str(previous.get("event_hash", "")) if previous else ""
+                payload = {
+                    **event,
+                    "timestamp": utc_now_iso(),
+                    "sequence": sequence,
+                    "previous_event_hash": previous_hash,
+                }
+                canonical = json.dumps(
+                    payload,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                payload["event_hash"] = hashlib.sha256(canonical).hexdigest()
+                with path.open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                if fcntl is not None:
+                    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
             path.chmod(0o600)
-        except OSError:
-            return
+            return payload
+        except (OSError, ValueError, TypeError) as exc:
+            if strict:
+                raise AuditWriteError(f"Production audit 写入失败: {exc}") from exc
+            return None
+
+    @staticmethod
+    def _last_event(path: Path) -> dict[str, Any] | None:
+        if not path.exists():
+            return None
+        last_line = ""
+        with path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if line.strip():
+                    last_line = line
+        if not last_line:
+            return None
+        event = json.loads(last_line)
+        if not isinstance(event, dict):
+            raise ValueError("audit 链尾不是 JSON object")
+        recorded_hash = event.get("event_hash")
+        if recorded_hash is not None:
+            unhashed = {key: value for key, value in event.items() if key != "event_hash"}
+            canonical = json.dumps(
+                unhashed,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            if not hmac.compare_digest(str(recorded_hash), hashlib.sha256(canonical).hexdigest()):
+                raise ValueError("audit 链尾哈希校验失败")
+        return event
 
 
 def hash_task(task: str) -> dict[str, str]:

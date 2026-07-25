@@ -17,3 +17,31 @@ jobs:
       retries: "30"
       retry_delay: "30"
     secrets: inherit
+
+  attach-release-evidence:
+    name: Retain release verification evidence
+    needs: verify-public-artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download smoke report
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: post-release-smoke-${{ github.event.release.tag_name }}
+
+      - name: Create report checksum
+        shell: bash
+        run: sha256sum post-release-smoke.json > post-release-smoke.sha256
+
+      - name: Attach durable evidence to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "$TAG" \
+            post-release-smoke.json \
+            post-release-smoke.sha256 \
+            --clobber

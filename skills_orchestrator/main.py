@@ -2373,7 +2373,8 @@ def pipeline_start(
       skills-orchestrator pipeline start quick-fix --pipelines-dir /path/to/pipelines
     """
     from .mcp.registry import SkillRegistry
-    from .pipeline.engine import PipelineEngine
+    from .mcp.audit import AuditLogger
+    from .pipeline.service import PipelineRunService
 
     config_path = str(Path(config).resolve())
 
@@ -2389,9 +2390,12 @@ def pipeline_start(
         _validate_pipeline_skills_or_exit(pipeline_id, pipeline, registry)
 
         ctx = _parse_pipeline_context(context)
-        state = PipelineEngine(pipeline).start(context=ctx)
         store = _pipeline_store(state_dir)
-        store.save(state)
+        state = PipelineRunService(
+            pipeline,
+            store,
+            audit=AuditLogger(),
+        ).start(context=ctx)
         output = _format_pipeline_start(pipeline, state, registry)
         output += f"\nState dir: {store.base_dir}"
         click.echo(console_safe_text(output))
@@ -2572,7 +2576,8 @@ def pipeline_advance(
       skills-orchestrator pipeline advance bug-fix -z enterprise
     """
     from .mcp.registry import SkillRegistry
-    from .pipeline.engine import PipelineEngine
+    from .mcp.audit import AuditLogger
+    from .pipeline.service import PipelineRunService
 
     config_path = str(Path(config).resolve())
     try:
@@ -2615,17 +2620,11 @@ def pipeline_advance(
         registry = SkillRegistry(config_path, zone_id=zone)
         _validate_pipeline_skills_or_exit(pipeline_id, pipeline, registry)
 
-        state.context.update(ctx)
-        execution_id = None
-        current_step = pipeline.get_step(state.current_step) if state.current_step else None
-        if current_step and current_step.gate and current_step.gate.check_command:
-            execution_id = store.claim_verification(state, current_step.id)
-        state = PipelineEngine(pipeline).complete_and_advance(
-            state,
-            execution_id=execution_id,
-        )
-        state.verification = {}
-        store.save(state)
+        state = PipelineRunService(
+            pipeline,
+            store,
+            audit=AuditLogger(),
+        ).advance(state, context_updates=ctx)
         click.echo(console_safe_text(_format_pipeline_advance(pipeline, state, run_id, registry)))
     except json.JSONDecodeError as e:
         click.echo(_err(f"JSON 解析失败: {e}"), err=True)

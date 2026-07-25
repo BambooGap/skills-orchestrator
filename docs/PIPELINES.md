@@ -46,14 +46,34 @@ steps:
 
 Strong evidence requires a matching SHA-256 digest, an allowlisted `verified_by`
 value, a timezone-aware non-future timestamp within the configured age, and
-bounded content. The metadata identifies the expected verifier but is not a
-signature by itself; `check_command` is therefore mandatory in a production
-profile. Before running that command, the state store atomically claims a
-time-limited step lease and exposes a stable
-`SKILLS_ORCHESTRATOR_EXECUTION_ID` so the verifier can implement idempotency.
-It also exposes `SKILLS_ORCHESTRATOR_EVIDENCE_MANIFEST`, a compact JSON list of
-the exact artifact keys, types, digests, and file URIs being checked.
-Pipeline authors must still ensure the verifier is side-effect safe.
+bounded files. Production profiles reject inline evidence: each artifact must
+use a `file://` URI beneath the configured artifact root. Parent directories
+and the final file are opened without following symlinks.
+
+Production execution also requires a writable audit directory. MCP servers use
+`--audit-dir`; CLI runs use `SKILLS_ORCHESTRATOR_AUDIT_DIR`. The audit log is
+strict for production runs: failure to append the run or step event prevents
+the state transition from being committed. Events include pipeline, run, step,
+execution, evidence digest, and verifier identifiers in a sequenced hash chain.
+
+Before running `check_command`, the shared execution service atomically claims
+a time-limited step lease. The verifier receives:
+
+- `SKILLS_ORCHESTRATOR_EXECUTION_ID`
+- `SKILLS_ORCHESTRATOR_PIPELINE_ID`
+- `SKILLS_ORCHESTRATOR_RUN_ID`
+- `SKILLS_ORCHESTRATOR_STEP_ID`
+- `SKILLS_ORCHESTRATOR_EVIDENCE_DIGEST`
+- `SKILLS_ORCHESTRATOR_VERIFIER`
+- `SKILLS_ORCHESTRATOR_EVIDENCE_MANIFEST`
+
+The command must emit one UTF-8 JSON object, no larger than 64 KiB, with
+`ok: true` and all six binding fields exactly matching the environment. A
+successful exit code without that attestation is a failed production gate.
+This binds the verifier result to the exact lease and evidence set; it does not
+turn an untrusted verifier script into a trusted identity. Repository owners
+must review the verifier and use signed CI/OIDC attestations for higher-risk
+approval.
 
 ## Minimal Pipeline
 

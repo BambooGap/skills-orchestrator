@@ -50,11 +50,14 @@ def create_server(
         return ALL_TOOLS
 
     @server.call_tool()
-    async def call_tool(
-        name: str, arguments: dict
-    ) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
+    async def call_tool(name: str, arguments: dict) -> types.CallToolResult:
         logger.debug("call_tool: %s(argument_keys=%s)", name, _argument_keys(arguments))
-        return executor.execute(name, arguments or {})
+        result = executor.execute_result(name, arguments or {})
+        return types.CallToolResult(
+            content=result.content,
+            structuredContent=result.structured_content,
+            isError=result.is_error,
+        )
 
     return server, executor
 

@@ -82,8 +82,14 @@ skills-orchestrator serve \
 ```
 
 The audit log is JSONL at `events.jsonl`. It records tool names, argument keys, outcomes, routing
-hashes, active skill IDs, zone, and registry generation. It does not store raw task text or skill
-content.
+hashes, active skill IDs, zone, and registry generation. Events carry a sequence number, previous
+event hash, and event hash. Production Pipeline events additionally record non-sensitive pipeline,
+run, step, execution, evidence-digest, and verifier identifiers. It does not store raw task text or
+skill content.
+
+Audit remains best-effort for ordinary MCP routing and `coordination` Pipelines. A `production`
+Pipeline requires `--audit-dir`; a missing sink or write failure stops the production state
+transition.
 
 By default `task_hash` is deterministic SHA-256 for local correlation. For commercial or multi-tenant
 audit logs, set a private salt so hashes use HMAC-SHA256:

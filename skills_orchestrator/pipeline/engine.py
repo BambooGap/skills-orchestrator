@@ -6,7 +6,9 @@ import hashlib
 import json
 import shlex
 import subprocess
+import tempfile
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -16,17 +18,25 @@ from .models import Pipeline, RunState, Step
 
 
 CHECK_COMMAND_TIMEOUT_SECONDS = 60
+MAX_VERIFIER_OUTPUT_BYTES = 64 * 1024
 
 
 class PipelineEngine:
     """Pipeline 执行引擎"""
 
-    def __init__(self, pipeline: Pipeline, *, artifact_root: str | Path | None = None):
+    def __init__(
+        self,
+        pipeline: Pipeline,
+        *,
+        artifact_root: str | Path | None = None,
+        allow_production_execution: bool = False,
+    ):
         errors = pipeline.validate()
         if errors:
             raise ValueError("Pipeline 定义无效: " + "; ".join(errors))
         self.pipeline = pipeline
         self.artifact_root = Path(artifact_root or Path.cwd()).resolve()
+        self._allow_production_execution = allow_production_execution
 
     def start(self, context: Optional[dict] = None) -> RunState:
         """启动 Pipeline，返回初始 RunState"""
@@ -47,6 +57,8 @@ class PipelineEngine:
 
     def advance(self, state: RunState) -> RunState:
         """推进到下一步（假设 gate 已通过）"""
+        if self.pipeline.profile == "production":
+            raise RuntimeError("Production Pipeline 必须通过 PipelineRunService 推进")
         current = self._get_current_step(state)
 
         if current is None:
@@ -101,6 +113,9 @@ class PipelineEngine:
             if state.status == "running":
                 state.status = "completed"
             return state
+        if self.pipeline.profile == "production" and not self._allow_production_execution:
+            state.fail_current(reason="Production Pipeline 必须通过 PipelineRunService 推进")
+            return state
 
         # 检查 gate
         gate_passed = True
@@ -121,11 +136,20 @@ class PipelineEngine:
                 state.context, artifact_root=self.artifact_root
             )
             if gate_passed and current.gate.check_command:
-                gate_passed, gate_reason = self._run_check_command(
-                    current.gate.check_command,
-                    execution_id=execution_id,
-                    evidence_manifest=self._evidence_manifest(current.gate, state.context),
-                )
+                binding: dict[str, str] | None = None
+                if self.pipeline.profile == "production":
+                    binding, gate_reason = self._production_verifier_binding(
+                        state, current, execution_id
+                    )
+                    if binding is None:
+                        gate_passed = False
+                if gate_passed:
+                    gate_passed, gate_reason = self._run_check_command(
+                        current.gate.check_command,
+                        execution_id=execution_id,
+                        evidence_manifest=self._evidence_manifest(current.gate, state.context),
+                        required_attestation=binding,
+                    )
 
         if not gate_passed:
             # Gate 失败
@@ -177,6 +201,8 @@ class PipelineEngine:
             return True, ""
         passed, reason = step.gate.check(state.context, artifact_root=self.artifact_root)
         if passed and step.gate.check_command:
+            if self.pipeline.profile == "production":
+                return False, "Production Pipeline 必须通过 PipelineRunService 验证"
             return self._run_check_command(
                 step.gate.check_command,
                 evidence_manifest=self._evidence_manifest(step.gate, state.context),
@@ -189,6 +215,7 @@ class PipelineEngine:
         *,
         execution_id: str | None = None,
         evidence_manifest: list[dict[str, str]] | None = None,
+        required_attestation: dict[str, str] | None = None,
     ) -> Tuple[bool, str]:
         """Run a trusted-pipeline verifier without a shell or inherited secrets."""
         try:
@@ -198,6 +225,7 @@ class PipelineEngine:
         if not args:
             return False, "检查命令不能为空"
 
+        output = b""
         try:
             env = safe_subprocess_env()
             if execution_id:
@@ -208,16 +236,37 @@ class PipelineEngine:
                     ensure_ascii=True,
                     separators=(",", ":"),
                 )
-            result = subprocess.run(
-                args,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                env=env,
-                timeout=CHECK_COMMAND_TIMEOUT_SECONDS,
-                check=False,
-                **subprocess_text_kwargs(),
-            )
+            if required_attestation is not None:
+                for key, value in required_attestation.items():
+                    env[f"SKILLS_ORCHESTRATOR_{key.upper()}"] = value
+                with tempfile.TemporaryFile() as stdout:
+                    result = subprocess.run(
+                        args,
+                        stdin=subprocess.DEVNULL,
+                        stdout=stdout,
+                        stderr=subprocess.DEVNULL,
+                        env=env,
+                        timeout=CHECK_COMMAND_TIMEOUT_SECONDS,
+                        check=False,
+                    )
+                    size = stdout.tell()
+                    if size > MAX_VERIFIER_OUTPUT_BYTES:
+                        return False, (
+                            f"生产 verifier 输出超过 {MAX_VERIFIER_OUTPUT_BYTES} 字节上限"
+                        )
+                    stdout.seek(0)
+                    output = stdout.read(MAX_VERIFIER_OUTPUT_BYTES + 1)
+            else:
+                result = subprocess.run(
+                    args,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    env=env,
+                    timeout=CHECK_COMMAND_TIMEOUT_SECONDS,
+                    check=False,
+                    **subprocess_text_kwargs(),
+                )
         except FileNotFoundError:
             return False, f"检查命令不存在: {args[0]}"
         except PermissionError:
@@ -227,7 +276,72 @@ class PipelineEngine:
 
         if result.returncode != 0:
             return False, f"检查命令失败（退出码 {result.returncode}）"
+        if required_attestation is not None:
+            try:
+                attestation = json.loads(output.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                return False, "生产 verifier 必须输出单个 UTF-8 JSON attestation"
+            if not isinstance(attestation, dict) or attestation.get("ok") is not True:
+                return False, "生产 verifier attestation 必须包含 ok=true"
+            for key, expected in required_attestation.items():
+                if attestation.get(key) != expected:
+                    return False, f"生产 verifier attestation 的 {key} 与当前执行不匹配"
         return True, ""
+
+    def _production_verifier_binding(
+        self,
+        state: RunState,
+        step: Step,
+        execution_id: str | None,
+    ) -> tuple[dict[str, str] | None, str]:
+        """Bind a production verifier result to its exact lease and evidence set."""
+        if not execution_id:
+            return None, "Production verifier 缺少 execution_id 和已持久化租约"
+        lease = state.verification
+        if (
+            lease.get("execution_id") != execution_id
+            or lease.get("step_id") != step.id
+            or state.status != "verifying"
+        ):
+            return None, "Production verifier 的 execution_id 与当前租约不匹配"
+        try:
+            expires_at = datetime.fromisoformat(
+                str(lease.get("expires_at") or "").replace("Z", "+00:00")
+            )
+        except ValueError:
+            return None, "Production verifier 租约缺少有效过期时间"
+        if expires_at.tzinfo is None or expires_at <= datetime.now(timezone.utc):
+            return None, "Production verifier 租约已过期"
+
+        gate = step.gate
+        if gate is None:
+            return None, "Production Step 缺少 gate"
+        missing = [key for key in gate.required_artifacts() if key not in state.context]
+        if missing:
+            return None, f"Production verifier 缺少 evidence: {', '.join(missing)}"
+        manifest = self._evidence_manifest(gate, state.context)
+        if not manifest or any(not entry.get("uri") for entry in manifest):
+            return None, "Production verifier 只接受 file:// evidence，不接受 inline content"
+        verifiers = {entry.get("verified_by", "") for entry in manifest}
+        if len(verifiers) != 1 or "" in verifiers:
+            return None, "Production evidence 必须绑定同一个 verifier 身份"
+        encoded = json.dumps(
+            manifest,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return (
+            {
+                "execution_id": execution_id,
+                "pipeline_id": state.pipeline_id,
+                "run_id": state.run_id,
+                "step_id": step.id,
+                "evidence_digest": hashlib.sha256(encoded).hexdigest(),
+                "verifier": next(iter(verifiers)),
+            },
+            "",
+        )
 
     @staticmethod
     def _evidence_manifest(gate, context: dict) -> list[dict[str, str]]:

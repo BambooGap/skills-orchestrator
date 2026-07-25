@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, TYPE_CHECKING
@@ -39,6 +40,15 @@ class ToolBusinessError(RuntimeError):
         super().__init__(message)
         self.outcome = outcome
         self.code = code
+
+
+@dataclass(frozen=True)
+class ToolExecutionResult:
+    """Protocol-neutral tool result with explicit business-error semantics."""
+
+    content: list[types.TextContent]
+    is_error: bool = False
+    structured_content: dict[str, Any] | None = None
 
 
 TOOL_LIST_SKILLS = types.Tool(
@@ -346,6 +356,11 @@ class ToolExecutor:
         return pipeline
 
     def execute(self, name: str, arguments: dict[str, Any]) -> list[types.TextContent]:
+        """Compatibility wrapper for direct Python callers."""
+        return self.execute_result(name, arguments).content
+
+    def execute_result(self, name: str, arguments: dict[str, Any]) -> ToolExecutionResult:
+        """Execute a tool while preserving business failures for MCP clients."""
         arguments = self._validate_arguments(arguments)
         handlers = {
             "list_skills": self._list_skills,
@@ -362,7 +377,14 @@ class ToolExecutor:
         handler = handlers.get(name)
         if handler is None:
             self._audit_call(name, arguments, outcome="unknown_tool")
-            return [types.TextContent(type="text", text=f"未知工具: {name}")]
+            payload = {
+                "ok": False,
+                "code": "UNKNOWN_TOOL",
+                "outcome": "unknown_tool",
+                "retryable": False,
+                "message": f"未知工具: {name}",
+            }
+            return self._error_result(payload)
         try:
             result = handler(arguments)
         except ToolBusinessError as err:
@@ -372,12 +394,32 @@ class ToolExecutor:
                 outcome=err.outcome,
                 extra={"code": err.code},
             )
-            return [types.TextContent(type="text", text=str(err))]
+            payload = {
+                "ok": False,
+                "code": err.code,
+                "outcome": err.outcome,
+                "retryable": err.outcome in {"conflict"},
+                "message": str(err),
+            }
+            return self._error_result(payload)
         except Exception as err:
             self._audit_call(name, arguments, outcome="error", error_type=type(err).__name__)
             raise
         self._audit_call(name, arguments, outcome="ok")
-        return result
+        return ToolExecutionResult(content=result)
+
+    @staticmethod
+    def _error_result(payload: dict[str, Any]) -> ToolExecutionResult:
+        return ToolExecutionResult(
+            content=[
+                types.TextContent(
+                    type="text",
+                    text=json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                )
+            ],
+            is_error=True,
+            structured_content=payload,
+        )
 
     def _audit_call(
         self,
@@ -872,7 +914,10 @@ class ToolExecutor:
 
     def _pipeline_start(self, args: dict) -> list[types.TextContent]:
         import os
-        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.service import (
+            PipelineRunService,
+            ProductionAuditError,
+        )
 
         pipeline_id = self._get_string(args, "pipeline_id").strip()
         context = self._get_dict(args, "context")
@@ -925,9 +970,20 @@ class ToolExecutor:
                 code="PIPELINE_SKILL_NOT_FOUND",
             )
 
-        engine = PipelineEngine(pipeline, artifact_root=getattr(self._registry, "_base_dir", None))
-        state = engine.start(context=context)
-        self._get_store().save(state)
+        service = PipelineRunService(
+            pipeline,
+            self._get_store(),
+            artifact_root=getattr(self._registry, "_base_dir", None),
+            audit=self._audit,
+        )
+        try:
+            state = service.start(context=context)
+        except ProductionAuditError as exc:
+            raise ToolBusinessError(
+                str(exc),
+                outcome="audit_failed",
+                code=exc.code,
+            ) from exc
 
         step = pipeline.get_step(state.current_step) if state.current_step else None
         lines = [
@@ -1048,7 +1104,10 @@ class ToolExecutor:
     # ── pipeline_advance ─────────────────────────────────────────
 
     def _pipeline_advance(self, args: dict) -> list[types.TextContent]:
-        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.service import (
+            PipelineRunService,
+            ProductionAuditError,
+        )
 
         run_id = self._get_string(args, "run_id").strip()
         pipeline_id = self._get_string(args, "pipeline_id").strip()
@@ -1091,33 +1150,33 @@ class ToolExecutor:
                 outcome="not_found",
                 code="PIPELINE_NOT_FOUND",
             )
-
-        engine = PipelineEngine(pipeline, artifact_root=getattr(self._registry, "_base_dir", None))
-
-        # 更新上下文
-        state.context.update(context_updates)
-
-        execution_id = None
-        current_step = pipeline.get_step(state.current_step) if state.current_step else None
-        if current_step and current_step.gate and current_step.gate.check_command:
+        service = PipelineRunService(
+            pipeline,
+            store,
+            artifact_root=getattr(self._registry, "_base_dir", None),
+            audit=self._audit,
+        )
+        try:
+            state = service.advance(state, context_updates=context_updates)
+        except ProductionAuditError as exc:
+            raise ToolBusinessError(
+                str(exc),
+                outcome="audit_failed",
+                code=exc.code,
+            ) from exc
+        except Exception as err:
             from skills_orchestrator.pipeline.store import (
                 ConcurrentStateError,
                 VerificationLeaseError,
             )
 
-            try:
-                execution_id = store.claim_verification(state, current_step.id)
-            except (ConcurrentStateError, VerificationLeaseError) as err:
+            if isinstance(err, (ConcurrentStateError, VerificationLeaseError)):
                 raise ToolBusinessError(
                     str(err),
                     outcome="conflict",
                     code="VERIFIER_LEASE_CONFLICT",
                 ) from err
-
-        # 使用新的 complete_and_advance 方法（带分支逻辑）
-        state = engine.complete_and_advance(state, execution_id=execution_id)
-        state.verification = {}
-        store.save(state)
+            raise
 
         # 检查是否失败
         if state.status == "failed":

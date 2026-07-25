@@ -2,6 +2,7 @@
 
 import hashlib
 import os
+import sys
 import tempfile
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -183,6 +184,26 @@ class TestGate:
         passed, reason = gate.check({"report": evidence}, artifact_root=tmp_path)
         assert not passed
         assert "字节上限" in reason
+
+    def test_file_evidence_rejects_symlinked_parent_directory(self, tmp_path):
+        outside = tmp_path.parent / f"{tmp_path.name}-outside"
+        outside.mkdir()
+        report = outside / "report.txt"
+        report.write_text("outside", encoding="utf-8")
+        linked = tmp_path / "linked"
+        linked.symlink_to(outside, target_is_directory=True)
+        evidence = {
+            "type": "report",
+            "uri": (linked / "report.txt").as_uri(),
+            "sha256": hashlib.sha256(b"outside").hexdigest(),
+        }
+
+        passed, reason = Gate(must_produce="report").check(
+            {"report": evidence}, artifact_root=tmp_path
+        )
+
+        assert not passed
+        assert "普通文件" in reason
 
 
 class TestStep:
@@ -642,6 +663,207 @@ class TestPipelineEngine:
         assert passed, reason
         assert captured["SKILLS_ORCHESTRATOR_EXECUTION_ID"] == "execution-123"
         assert '"artifact":"report"' in captured["SKILLS_ORCHESTRATOR_EVIDENCE_MANIFEST"]
+
+    def test_production_engine_direct_call_requires_run_service(self, tmp_path, monkeypatch):
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+
+        report = tmp_path / "report.txt"
+        report.write_text("verified", encoding="utf-8")
+        pipeline = Pipeline(
+            id="release",
+            name="Release",
+            profile="production",
+            steps=[
+                Step(
+                    id="finish",
+                    skill="finish",
+                    gate=Gate(
+                        must_produce="report",
+                        check_command="/usr/bin/true",
+                        require_verified_evidence=True,
+                        allowed_verifiers=["repository-ci"],
+                    ),
+                )
+            ],
+        )
+        state = PipelineEngine(pipeline, artifact_root=tmp_path).start()
+        state.context["report"] = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "producer": "ci",
+            "verified_by": "repository-ci",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+        monkeypatch.setattr(
+            "skills_orchestrator.pipeline.engine.subprocess.run",
+            lambda *_args, **_kwargs: pytest.fail("verifier must not execute without a lease"),
+        )
+
+        state = PipelineEngine(pipeline, artifact_root=tmp_path).complete_and_advance(state)
+
+        assert state.status == "failed"
+        assert "PipelineRunService" in state.step_history[-1]["reason"]
+
+    def test_production_verifier_attestation_binds_run_step_and_evidence(self, tmp_path):
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        verifier = tmp_path / "verifier.py"
+        verifier.write_text(
+            "import json, os\n"
+            "keys = ['execution_id', 'pipeline_id', 'run_id', 'step_id', "
+            "'evidence_digest', 'verifier']\n"
+            "result = {'ok': True}\n"
+            "result.update({key: os.environ['SKILLS_ORCHESTRATOR_' + key.upper()] "
+            "for key in keys})\n"
+            "print(json.dumps(result))\n",
+            encoding="utf-8",
+        )
+        report = tmp_path / "report.txt"
+        report.write_text("verified", encoding="utf-8")
+        pipeline = Pipeline(
+            id="release",
+            name="Release",
+            profile="production",
+            steps=[
+                Step(
+                    id="finish",
+                    skill="finish",
+                    gate=Gate(
+                        must_produce="report",
+                        check_command=f"{sys.executable} {verifier}",
+                        require_verified_evidence=True,
+                        allowed_verifiers=["repository-ci"],
+                    ),
+                )
+            ],
+        )
+        engine = PipelineEngine(
+            pipeline,
+            artifact_root=tmp_path,
+            allow_production_execution=True,
+        )
+        state = engine.start()
+        state.context["report"] = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "producer": "ci",
+            "verified_by": "repository-ci",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+        store = RunStateStore(base_dir=str(tmp_path / "state"))
+        store.save(state)
+        execution_id = store.claim_verification(state, "finish")
+
+        state = engine.complete_and_advance(state, execution_id=execution_id)
+
+        assert state.status == "completed"
+
+    def test_production_true_command_cannot_self_attest(self, tmp_path):
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        report = tmp_path / "report.txt"
+        report.write_text("verified", encoding="utf-8")
+        pipeline = Pipeline(
+            id="release",
+            name="Release",
+            profile="production",
+            steps=[
+                Step(
+                    id="finish",
+                    skill="finish",
+                    gate=Gate(
+                        must_produce="report",
+                        check_command="/usr/bin/true",
+                        require_verified_evidence=True,
+                        allowed_verifiers=["repository-ci"],
+                    ),
+                )
+            ],
+        )
+        engine = PipelineEngine(
+            pipeline,
+            artifact_root=tmp_path,
+            allow_production_execution=True,
+        )
+        state = engine.start()
+        state.context["report"] = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "producer": "ci",
+            "verified_by": "repository-ci",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+        store = RunStateStore(base_dir=str(tmp_path / "state"))
+        store.save(state)
+        execution_id = store.claim_verification(state, "finish")
+
+        state = engine.complete_and_advance(state, execution_id=execution_id)
+
+        assert state.status == "failed"
+        assert "JSON attestation" in state.step_history[-1]["reason"]
+
+    def test_production_service_audit_binds_approval_identifiers(self, tmp_path, monkeypatch):
+        from skills_orchestrator.mcp.audit import AuditLogger, load_events
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.service import PipelineRunService
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        report = tmp_path / "report.txt"
+        report.write_text("verified", encoding="utf-8")
+        pipeline = Pipeline(
+            id="release",
+            name="Release",
+            profile="production",
+            steps=[
+                Step(
+                    id="finish",
+                    skill="finish",
+                    gate=Gate(
+                        must_produce="report",
+                        check_command="repository-verifier",
+                        require_verified_evidence=True,
+                        allowed_verifiers=["repository-ci"],
+                    ),
+                )
+            ],
+        )
+        monkeypatch.setattr(
+            PipelineEngine,
+            "_run_check_command",
+            staticmethod(lambda *_args, **_kwargs: (True, "")),
+        )
+        audit_dir = tmp_path / "audit"
+        service = PipelineRunService(
+            pipeline,
+            RunStateStore(base_dir=str(tmp_path / "state")),
+            artifact_root=tmp_path,
+            audit=AuditLogger(audit_dir),
+        )
+        state = service.start()
+        evidence = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "producer": "ci",
+            "verified_by": "repository-ci",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+        completed = service.advance(state, context_updates={"report": evidence})
+        event = load_events(audit_dir)[-1]
+
+        assert completed.status == "completed"
+        assert event["pipeline_id"] == "release"
+        assert event["run_id"] == state.run_id
+        assert event["step_id"] == "finish"
+        assert len(event["execution_id"]) == 32
+        assert len(event["evidence_digest"]) == 64
+        assert event["verifier"] == "repository-ci"
 
     def test_advance_step(self):
         from skills_orchestrator.pipeline.engine import PipelineEngine
@@ -1231,8 +1453,15 @@ steps:
         monkeypatch.setattr(store, "load", synchronized_load)
         verifier_calls = []
 
-        def fake_verifier(_command, *, execution_id=None, evidence_manifest=None):
+        def fake_verifier(
+            _command,
+            *,
+            execution_id=None,
+            evidence_manifest=None,
+            required_attestation=None,
+        ):
             verifier_calls.append(execution_id)
+            assert required_attestation is None
             assert evidence_manifest == [
                 {
                     "artifact": "report",

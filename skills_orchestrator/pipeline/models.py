@@ -149,16 +149,17 @@ class Gate:
         if parsed.scheme != "file" or not parsed.path:
             return False, "uri 必须使用 file:// 协议", 0
         root = Path(artifact_root or Path.cwd()).resolve()
-        path = Path(unquote(parsed.path)).resolve()
+        path = Path(unquote(parsed.path))
         try:
-            path.relative_to(root)
+            relative = path.relative_to(root)
         except ValueError:
             return False, "file URI 超出允许的 artifact 根目录", 0
+        if not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
+            return False, "file URI 包含不安全的路径组件", 0
         if digest is None:
             return False, "file URI evidence 必须提供 sha256", 0
         try:
-            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-            descriptor = os.open(path, flags)
+            descriptor = self._open_beneath_root(root, relative)
         except (FileNotFoundError, OSError):
             return False, "file URI 不指向可读取的普通文件", 0
         try:
@@ -195,6 +196,34 @@ class Gate:
         if digest.lower() != hasher.hexdigest():
             return False, "sha256 与 file URI 内容不匹配", 0
         return True, "", size
+
+    @staticmethod
+    def _open_beneath_root(root: Path, relative: Path) -> int:
+        """Open a file without following symlinks in any path component."""
+        nofollow = getattr(os, "O_NOFOLLOW", 0)
+        directory = getattr(os, "O_DIRECTORY", 0)
+        root_fd = os.open(root, os.O_RDONLY | directory)
+        current_fd = root_fd
+        try:
+            for part in relative.parts[:-1]:
+                next_fd = os.open(
+                    part,
+                    os.O_RDONLY | directory | nofollow,
+                    dir_fd=current_fd,
+                )
+                if current_fd != root_fd:
+                    os.close(current_fd)
+                current_fd = next_fd
+            descriptor = os.open(
+                relative.parts[-1],
+                os.O_RDONLY | nofollow,
+                dir_fd=current_fd,
+            )
+            return descriptor
+        finally:
+            if current_fd != root_fd:
+                os.close(current_fd)
+            os.close(root_fd)
 
 
 @dataclass

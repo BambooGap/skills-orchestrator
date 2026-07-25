@@ -581,8 +581,9 @@ MCP serving is optional. Install `skills-orchestrator[mcp]` before running `serv
 skills-orchestrator serve --config config/skills.yaml
 ```
 
-需要运行期审计时，指定 audit 目录。审计事件是 JSONL，只记录 tool、参数 key、routing
-hash、active skill id 等治理字段，不记录任务原文或 Skill 正文。
+需要运行期审计时，指定 audit 目录。审计事件是带序号与前序哈希的 JSONL，只记录 tool、
+参数 key、routing hash、active skill id 等治理字段，不记录任务原文或 Skill 正文。
+`production` Pipeline 强制要求可写 audit 目录；写入失败会阻止状态推进。
 
 ```bash
 skills-orchestrator serve --config config/skills.yaml --audit-dir .skills-audit
@@ -642,7 +643,7 @@ skills-orchestrator pipeline resume
 
 **关键设计**：
 - `pipeline_start` / `pipeline_advance` / `pipeline_resume` 返回时自动注入当前步骤 Skill 的完整内容，AI 无需额外调用 `get_skill`
-- Gate artifact/evidence 检查：`must_produce` 要求非空内容、字节或具有 `type` 与 `uri`/`sha256`/`content` 的结构化证据；`min_length` 只接受可测量内容。`production` profile 的每个步骤必须同时配置强证据、verifier allowlist 与仓库控制的 `check_command`，验证前会先领取状态租约并提供稳定 execution ID。Pipeline 配置应只来自受信任仓库；它不验证 Agent 的推理、不是安全沙箱，也不替代独立 CI/eval。
+- Gate artifact/evidence 检查：`must_produce` 要求非空内容、字节或具有 `type` 与 `uri`/`sha256`/`content` 的结构化证据；`min_length` 只接受可测量内容。`production` profile 的每个步骤必须同时配置强证据、verifier allowlist、仓库控制的 `check_command` 和严格审计；只接受受控目录内的文件证据，验证器必须输出绑定 execution ID、运行、步骤与证据摘要的结构化 attestation。Pipeline 配置应只来自受信任仓库；它不验证 Agent 的推理、不是安全沙箱，也不替代独立 CI/eval。
 - `skip_if` 条件跳过：满足条件时自动跳过该步骤
 - RunState 持久化：工作流状态存到 `~/.skills-orchestrator/runs/`，中断后可恢复
 

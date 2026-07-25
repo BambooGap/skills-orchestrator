@@ -1,12 +1,16 @@
 """MCP 模块测试 — Registry、Search、Tools"""
 
+import asyncio
 import json
 import hashlib
 from pathlib import Path
 import pytest
 
 from skills_orchestrator.models import SkillMeta
-from skills_orchestrator.mcp.server import _argument_keys
+from mcp.shared.memory import create_connected_server_and_client_session
+
+from skills_orchestrator.mcp.server import _argument_keys, create_server
+from skills_orchestrator.mcp.audit import AuditLogger, AuditWriteError
 from skills_orchestrator.mcp.search import KeywordSearcher
 from skills_orchestrator.mcp.registry import SkillRegistry
 from skills_orchestrator.mcp.tools import ALL_TOOLS, ToolExecutor
@@ -477,6 +481,115 @@ class TestToolExecutor:
         )
         assert event["outcome"] == "validation_failed"
         assert event["code"] == "ARTIFACT_VALUE_REQUIRED"
+
+    def test_pipeline_business_rejection_is_mcp_protocol_error(self):
+        project_root = Path(__file__).parent.parent
+        server, _ = create_server(str(project_root / "config" / "skills.yaml"))
+
+        async def call_tool():
+            async with create_connected_server_and_client_session(server) as client:
+                return await client.call_tool(
+                    "pipeline_advance",
+                    {
+                        "pipeline_id": "full-dev",
+                        "run_id": "run-1",
+                        "artifacts": ["report"],
+                        "context_updates": {},
+                    },
+                )
+
+        result = asyncio.run(call_tool())
+        assert result.isError is True
+        assert result.structuredContent == {
+            "ok": False,
+            "code": "ARTIFACT_VALUE_REQUIRED",
+            "outcome": "validation_failed",
+            "retryable": False,
+            "message": ("artifacts 参数不能仅声明名称；请在 context_updates 提供真实产出：report"),
+        }
+
+    def test_audit_events_are_sequenced_and_hash_chained(self, tmp_path):
+        audit = AuditLogger(tmp_path / "audit")
+        first = audit.append({"event": "one"}, strict=True)
+        second = audit.append({"event": "two"}, strict=True)
+
+        assert first is not None
+        assert second is not None
+        assert first["sequence"] == 1
+        assert first["previous_event_hash"] == ""
+        assert second["sequence"] == 2
+        assert second["previous_event_hash"] == first["event_hash"]
+
+    def test_strict_audit_rejects_tampered_chain_tail(self, tmp_path):
+        audit = AuditLogger(tmp_path / "audit")
+        audit.append({"event": "one"}, strict=True)
+        events_path = tmp_path / "audit" / "events.jsonl"
+        event = json.loads(events_path.read_text(encoding="utf-8"))
+        event["outcome"] = "tampered"
+        events_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+
+        with pytest.raises(AuditWriteError, match="哈希"):
+            audit.append({"event": "two"}, strict=True)
+
+    def test_production_pipeline_requires_audit_before_state_creation(self, tmp_path):
+        pipelines_dir = tmp_path / "pipelines"
+        pipelines_dir.mkdir()
+        (pipelines_dir / "release.yaml").write_text(
+            """
+id: release
+name: Release
+profile: production
+steps:
+  - id: finish
+    skill: finish-branch
+    gate:
+      must_produce: report
+      require_verified_evidence: true
+      allowed_verifiers: [repository-ci]
+      check_command: /usr/bin/true
+""",
+            encoding="utf-8",
+        )
+        executor = ToolExecutor(MockRegistry(), pipelines_dir=str(pipelines_dir))
+
+        result = executor.execute_result("pipeline_start", {"pipeline_id": "release"})
+
+        assert result.is_error is True
+        assert result.structured_content is not None
+        assert result.structured_content["code"] == "PRODUCTION_AUDIT_REQUIRED"
+
+    def test_production_pipeline_blocks_when_audit_sink_is_not_writable(self, tmp_path):
+        pipelines_dir = tmp_path / "pipelines"
+        pipelines_dir.mkdir()
+        (pipelines_dir / "release.yaml").write_text(
+            """
+id: release
+name: Release
+profile: production
+steps:
+  - id: finish
+    skill: finish-branch
+    gate:
+      must_produce: report
+      require_verified_evidence: true
+      allowed_verifiers: [repository-ci]
+      check_command: /usr/bin/true
+""",
+            encoding="utf-8",
+        )
+        invalid_audit_dir = tmp_path / "audit-file"
+        invalid_audit_dir.write_text("not a directory", encoding="utf-8")
+        executor = ToolExecutor(
+            MockRegistry(),
+            pipelines_dir=str(pipelines_dir),
+            audit_dir=str(invalid_audit_dir),
+        )
+
+        result = executor.execute_result("pipeline_start", {"pipeline_id": "release"})
+
+        assert result.is_error is True
+        assert result.structured_content is not None
+        assert result.structured_content["code"] == "PRODUCTION_AUDIT_WRITE_FAILED"
 
     def test_pipeline_advance_rejects_non_object_context_updates(self):
         with pytest.raises(ValueError, match="context_updates"):
