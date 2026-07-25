@@ -1721,23 +1721,35 @@ def usage():
 @click.option("--json", "as_json", is_flag=True, help="输出 JSON，便于 CI 或报表系统读取")
 def usage_report(audit_dir: str | None, best_effort: bool, as_json: bool):
     """根据 MCP audit events 生成使用汇总。"""
-    from skills_orchestrator.mcp.audit import AUDIT_DIR_ENV, load_events, summarize_events
+    from skills_orchestrator.mcp.audit import (
+        AUDIT_DIR_ENV,
+        load_events_with_integrity,
+        summarize_events,
+    )
 
     try:
-        events = load_events(audit_dir, best_effort=best_effort)
+        events, integrity = load_events_with_integrity(
+            audit_dir,
+            best_effort=best_effort,
+        )
     except (OSError, ValueError, TypeError) as exc:
         raise click.ClickException(f"audit 完整性校验失败: {exc}") from exc
     summary = summarize_events(events)
-    summary["audit_integrity"] = "unverified_best_effort" if best_effort else "verified"
+    summary["audit_integrity"] = integrity
 
     if as_json:
         click.echo(json.dumps(summary, ensure_ascii=False, indent=2))
+        if integrity == "missing":
+            raise click.exceptions.Exit(1)
         return
 
     if not events:
         configured = audit_dir or os.environ.get(AUDIT_DIR_ENV) or "(未设置)"
         click.echo(_warn(f"没有找到 MCP audit events。audit_dir={configured}"))
+        click.echo(f"Audit integrity: {integrity}")
         click.echo("启用方式: skills-orchestrator serve --audit-dir .skills-audit")
+        if integrity == "missing":
+            raise click.exceptions.Exit(1)
         return
 
     lines = [

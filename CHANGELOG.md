@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release verification evidence now receives artifact attestations and cannot overwrite existing
   assets for the same version.
 
+### Fixed
+- Usage reports no longer label absent or empty audit evidence as verified; machine-readable output
+  now distinguishes disabled, missing, empty, verified, and explicit best-effort states.
+
 ## [4.8.48] - 2026-07-25
 
 ### Added

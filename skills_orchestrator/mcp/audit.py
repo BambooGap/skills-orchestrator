@@ -9,7 +9,7 @@ import hashlib
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 try:
     import fcntl
@@ -20,6 +20,13 @@ AUDIT_DIR_ENV = "SKILLS_ORCHESTRATOR_AUDIT_DIR"
 AUDIT_SALT_ENV = "SKILLS_ORCHESTRATOR_AUDIT_SALT"
 EVENTS_FILENAME = "events.jsonl"
 AUDIT_LOCK_FILENAME = ".events.lock"
+AuditIntegrity = Literal[
+    "disabled",
+    "missing",
+    "empty",
+    "verified",
+    "unverified_best_effort",
+]
 
 
 class AuditWriteError(RuntimeError):
@@ -197,15 +204,26 @@ def load_events(
     best_effort: bool = False,
 ) -> list[dict[str, Any]]:
     """Load audit events, verifying the complete chain unless explicitly relaxed."""
+    events, _ = load_events_with_integrity(audit_dir, best_effort=best_effort)
+    return events
+
+
+def load_events_with_integrity(
+    audit_dir: str | os.PathLike[str] | None = None,
+    *,
+    best_effort: bool = False,
+) -> tuple[list[dict[str, Any]], AuditIntegrity]:
+    """Load events and report whether actual audit evidence was verified."""
     path = resolve_audit_dir(audit_dir)
     if path is None:
-        return []
+        return [], "disabled"
 
     events_path = path / EVENTS_FILENAME
     if not events_path.exists():
-        return []
+        return [], "missing"
     if not best_effort:
-        return AuditLogger(path).verify_chain()
+        events = AuditLogger(path).verify_chain()
+        return events, "verified" if events else "empty"
 
     events: list[dict[str, Any]] = []
     with events_path.open(encoding="utf-8") as handle:
@@ -219,7 +237,7 @@ def load_events(
                 continue
             if isinstance(event, dict):
                 events.append(event)
-    return events
+    return events, "unverified_best_effort"
 
 
 def summarize_events(events: list[dict[str, Any]]) -> dict[str, Any]:

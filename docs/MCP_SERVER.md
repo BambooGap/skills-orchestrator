@@ -115,6 +115,11 @@ Reports verify the complete hash chain by default and fail closed on damaged dat
 inspection only, `--best-effort` skips chain verification and marks the output
 `unverified_best_effort`; do not use that mode for production decisions.
 
+`audit_integrity` distinguishes `disabled`, `missing`, `empty`, `verified`, and
+`unverified_best_effort`. Only `verified` means that a non-empty audit chain exists and passed
+validation. A configured audit directory without `events.jsonl` returns `missing` and a non-zero
+CLI exit code.
+
 ## Runtime Content Limits
 
 `get_skill`, `prepare_context`, and Pipeline step injection enforce a per-skill content byte limit.

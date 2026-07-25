@@ -362,6 +362,44 @@ def test_usage_report_json_reads_audit_events(tmp_path):
     assert payload["top_active_skills"]["team-review"] == 1
 
 
+def test_usage_report_json_marks_disabled_audit(monkeypatch):
+    monkeypatch.delenv("SKILLS_ORCHESTRATOR_AUDIT_DIR", raising=False)
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["usage", "report", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["events"] == 0
+    assert payload["audit_integrity"] == "disabled"
+
+
+def test_usage_report_json_rejects_missing_configured_audit(tmp_path):
+    audit_dir = tmp_path / "missing-audit"
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["usage", "report", "--audit-dir", str(audit_dir), "--json"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["events"] == 0
+    assert payload["audit_integrity"] == "missing"
+
+
+def test_usage_report_json_marks_existing_empty_audit(tmp_path):
+    audit_dir = tmp_path / "empty-audit"
+    audit_dir.mkdir()
+    (audit_dir / "events.jsonl").touch()
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["usage", "report", "--audit-dir", str(audit_dir), "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["events"] == 0
+    assert payload["audit_integrity"] == "empty"
+
+
 def test_usage_report_rejects_tampered_audit_by_default(tmp_path):
     from skills_orchestrator.mcp.audit import AuditLogger
 
