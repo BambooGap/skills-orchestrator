@@ -162,13 +162,18 @@ def test_mcp_release_constraints_and_compatibility_matrix_are_retained():
     )
 
     assert pyproject["project"]["optional-dependencies"]["mcp"] == ["mcp>=1.0,<2"]
-    assert "mcp==1.28.1" in constraints
-    assert "sse-starlette==3.4.5" in constraints
-    assert "starlette==1.3.1" in constraints
     scoped_pins = {line for line in constraints.splitlines() if line and not line.startswith("#")}
     all_pins = {line for line in all_constraints.splitlines() if line and not line.startswith("#")}
     assert scoped_pins <= all_pins
-    for profile in ("locked", "minimum", "latest", "fastapi-current", "fastapi-old-unsupported"):
+    for dependency in ("mcp", "sse-starlette", "starlette"):
+        assert any(pin.startswith(f"{dependency}==") for pin in scoped_pins)
+    for profile in (
+        "constrained",
+        "minimum",
+        "latest",
+        "fastapi-current",
+        "fastapi-old-unsupported",
+    ):
         assert f"profile: {profile}" in ci
     assert 'python-version: "3.13"' in ci
     assert "mcp-test list_skills" in ci
@@ -179,3 +184,22 @@ def test_mcp_release_constraints_and_compatibility_matrix_are_retained():
     for asset in ("mcp-runtime-sbom.cdx.json", "constraints-mcp.txt"):
         assert asset in smoke
         assert asset in integrity
+
+
+def test_post_release_evidence_is_bound_to_verified_tag_source():
+    smoke = (ROOT / ".github" / "workflows" / "post-release-smoke.yml").read_text(encoding="utf-8")
+    integrity = (ROOT / ".github" / "workflows" / "release-integrity.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "source_sha:" in smoke
+    assert "required: true" in smoke
+    assert "uses: ./.github/workflows/verify-release-tag.yml" in smoke
+    assert "ref: ${{ needs.verify-release-tag.outputs.target_sha }}" in smoke
+    assert '"$CALLER_SOURCE_SHA" != "$VERIFIED_TARGET_SHA"' in smoke
+    assert 'checked_out_sha="$(git rev-parse HEAD)"' in smoke
+    assert '"$checked_out_sha" != "$VERIFIED_TARGET_SHA"' in smoke
+    assert "--verified-target-sha" in smoke
+    assert "--checked-out-sha" in smoke
+    assert "--constraints-sha256" in smoke
+    assert "source_sha: ${{ needs.verify-release-tag.outputs.target_sha }}" in integrity

@@ -41,8 +41,8 @@ python -m pip check
 skills-orchestrator mcp-test list_skills '{}' --config /absolute/path/to/config/skills.yaml
 ```
 
-For repeatable deployment, download `constraints-mcp.txt` from the matching GitHub Release and use
-it only in the isolated MCP environment:
+For a release-tested, version-constrained deployment set, download `constraints-mcp.txt` from the
+matching GitHub Release and use it only in the isolated MCP environment:
 
 ```bash
 python -m pip install \
@@ -50,11 +50,11 @@ python -m pip install \
   "skills-orchestrator[mcp]==<matching-version>"
 ```
 
-The constraints file records the release-tested MCP dependency closure; it is not a universal lock
-for an unrelated FastAPI service. Always run `pip check` after installation. FastAPI `0.140.0` is
-covered by the compatibility smoke with the current MCP 1.x set. FastAPI `0.116.1` is a documented
-unsupported shared-environment combination because its Starlette range conflicts with the current
-MCP transport stack.
+The constraints file records the release-tested MCP dependency versions, but it does not contain
+artifact hashes and is not a hash lock or a universal lock for an unrelated FastAPI service. Always
+run `pip check` after installation. FastAPI `0.140.0` is covered by the compatibility smoke with the
+current MCP 1.x set. FastAPI `0.116.1` is a documented unsupported shared-environment combination
+because its Starlette range conflicts with the current MCP transport stack.
 
 ## Restricted Or Offline Networks
 

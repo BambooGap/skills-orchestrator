@@ -57,9 +57,10 @@ docker run --rm \
 
 ## Dependency Policy
 
-The image installs the project MCP extra with `constraints-mcp.txt`. This constrains the core CLI
-and MCP dependency set for the build, while post-release smoke verifies that the published PyPI
-package can also install from a consumer-side `--require-hashes` wheelhouse. CI runs
+The image installs the project MCP extra with `constraints-mcp.txt`. This version-constrains the core
+CLI and MCP dependency set for the build; the file does not contain artifact hashes. Post-release
+smoke separately verifies that the published PyPI package can install from a consumer-side
+`--require-hashes` wheelhouse. CI runs
 `scripts/check_pip_constraints.py` so automation cannot accidentally add an unconstrained
 `pip install` path. The image does not run an unpinned pip upgrade step and runs the CLI as a
 non-root user.

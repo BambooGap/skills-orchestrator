@@ -28,6 +28,8 @@ DIGEST_RE = re.compile(r"^Digest:\s+(sha256:[0-9a-f]{64})$", re.MULTILINE)
 PLATFORM_RE = re.compile(r"^\s*Platform:\s+(\S+)\s*$", re.MULTILINE)
 ATTESTATION_RE = re.compile(r"vnd\.docker\.reference\.type:\s+attestation-manifest")
 DEFAULT_TIMEOUT_SECONDS = 60
+COMMIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 @dataclass(frozen=True)
@@ -814,9 +816,79 @@ def pypi_hash_locked_install_smoke(
     return checks
 
 
-def print_checks(checks: list[Check], *, as_json: bool) -> None:
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def release_source_checks(args: argparse.Namespace) -> list[Check]:
+    """Fail closed when release evidence is not bound to the verified tag source."""
+    verified = str(getattr(args, "verified_target_sha", "") or "").lower()
+    checked_out = str(getattr(args, "checked_out_sha", "") or "").lower()
+    expected_constraints = str(getattr(args, "constraints_sha256", "") or "").lower()
+    if not any((verified, checked_out, expected_constraints)):
+        return []
+
+    checks = [
+        Check(
+            "release-source-identifiers",
+            bool(COMMIT_SHA_RE.fullmatch(verified) and COMMIT_SHA_RE.fullmatch(checked_out)),
+            f"verified_target_sha={verified!r}, checked_out_sha={checked_out!r}",
+        ),
+        Check(
+            "release-source-match",
+            bool(verified and checked_out and verified == checked_out),
+            f"verified_target_sha={verified!r}, checked_out_sha={checked_out!r}",
+        ),
+    ]
+
+    constraints_path = Path(
+        getattr(args, "mcp_constraints", None) or REPO_ROOT / "constraints-mcp.txt"
+    )
+    actual_constraints = sha256_file(constraints_path) if constraints_path.is_file() else ""
+    checks.append(
+        Check(
+            "release-constraints-digest",
+            bool(
+                SHA256_RE.fullmatch(expected_constraints)
+                and actual_constraints
+                and expected_constraints == actual_constraints
+            ),
+            (
+                f"constraints_sha256={actual_constraints!r}, "
+                f"expected={expected_constraints!r}, path={str(constraints_path)!r}"
+            ),
+        )
+    )
+    return checks
+
+
+def release_metadata(args: argparse.Namespace) -> dict[str, str]:
+    """Return source-binding fields retained in the machine-readable report."""
+    metadata = {
+        "release_tag": tag_for_version(args.version),
+        "package_version": normalize_version(args.version),
+    }
+    optional = {
+        "verified_target_sha": str(getattr(args, "verified_target_sha", "") or "").lower(),
+        "checked_out_sha": str(getattr(args, "checked_out_sha", "") or "").lower(),
+        "constraints_sha256": str(getattr(args, "constraints_sha256", "") or "").lower(),
+    }
+    metadata.update({key: value for key, value in optional.items() if value})
+    return metadata
+
+
+def print_checks(
+    checks: list[Check],
+    *,
+    as_json: bool,
+    metadata: dict[str, str] | None = None,
+) -> None:
     if as_json:
-        print(json.dumps(build_report(checks), indent=2, ensure_ascii=False))
+        print(json.dumps(build_report(checks, metadata=metadata), indent=2, ensure_ascii=False))
         return
 
     status = "pass" if all(check.ok for check in checks) else "fail"
@@ -829,9 +901,13 @@ def print_checks(checks: list[Check], *, as_json: bool) -> None:
         print(f"[{marker}] {check.name}: {check.message}")
 
 
-def build_report(checks: list[Check]) -> dict[str, Any]:
+def build_report(
+    checks: list[Check],
+    *,
+    metadata: dict[str, str] | None = None,
+) -> dict[str, Any]:
     """Build the machine-readable post-release smoke report."""
-    return {
+    report = {
         "schema_version": "skills-orchestrator.post-release-smoke.v1",
         "status": "pass" if all(check.ok for check in checks) else "fail",
         "summary": {
@@ -840,10 +916,13 @@ def build_report(checks: list[Check]) -> dict[str, Any]:
         },
         "checks": [check.as_dict() for check in checks],
     }
+    if metadata:
+        report.update(metadata)
+    return report
 
 
 def collect_checks(args: argparse.Namespace) -> list[Check]:
-    checks: list[Check] = []
+    checks = release_source_checks(args)
     version = normalize_version(args.version)
     tag = tag_for_version(version)
     ghcr_digest: str | None = None
@@ -1005,6 +1084,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--check-mcp-runtime", action="store_true")
     parser.add_argument("--mcp-constraints", default=None)
     parser.add_argument("--mcp-sbom-output", default=None)
+    parser.add_argument("--verified-target-sha", default=None)
+    parser.add_argument("--checked-out-sha", default=None)
+    parser.add_argument("--constraints-sha256", default=None)
     parser.add_argument("--check-ghcr-signature", action="store_true")
     parser.add_argument("--check-ghcr-os-sbom", action="store_true")
     parser.add_argument("--check-slsa-readiness", action="store_true")
@@ -1038,7 +1120,11 @@ def main(argv: list[str] | None = None) -> int:
                 )
             time.sleep(args.retry_delay)
 
-    print_checks(checks, as_json=args.format == "json")
+    print_checks(
+        checks,
+        as_json=args.format == "json",
+        metadata=release_metadata(args),
+    )
     return 0 if all(check.ok for check in checks) else 1
 
 

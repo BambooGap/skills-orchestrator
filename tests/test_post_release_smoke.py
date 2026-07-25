@@ -1,3 +1,4 @@
+import argparse
 import json
 from pathlib import Path
 
@@ -377,6 +378,56 @@ def test_build_report_has_stable_schema_version():
         "summary": {"passed": 1, "failed": 0},
         "checks": [{"name": "github-release-tag", "ok": True, "message": "ready"}],
     }
+
+
+def test_release_source_checks_bind_checkout_and_constraints(monkeypatch, tmp_path):
+    constraints = tmp_path / "constraints-mcp.txt"
+    constraints.write_text("mcp==1.28.1\n", encoding="utf-8")
+    digest = smoke.sha256_file(constraints)
+    sha = "a" * 40
+    args = argparse.Namespace(
+        verified_target_sha=sha,
+        checked_out_sha=sha,
+        constraints_sha256=digest,
+        mcp_constraints=str(constraints),
+    )
+
+    checks = smoke.release_source_checks(args)
+
+    assert all(check.ok for check in checks)
+
+
+def test_release_source_checks_reject_mismatched_checkout_and_constraints(tmp_path):
+    constraints = tmp_path / "constraints-mcp.txt"
+    constraints.write_text("mcp==1.28.1\n", encoding="utf-8")
+    args = argparse.Namespace(
+        verified_target_sha="a" * 40,
+        checked_out_sha="b" * 40,
+        constraints_sha256="c" * 64,
+        mcp_constraints=str(constraints),
+    )
+
+    by_name = {check.name: check for check in smoke.release_source_checks(args)}
+
+    assert by_name["release-source-match"].ok is False
+    assert by_name["release-constraints-digest"].ok is False
+
+
+def test_build_report_records_release_source_metadata():
+    metadata = {
+        "release_tag": "v4.8.50",
+        "verified_target_sha": "a" * 40,
+        "checked_out_sha": "a" * 40,
+        "constraints_sha256": "b" * 64,
+        "package_version": "4.8.50",
+    }
+
+    report = build_report(
+        [Check("release-source-match", True, "matched")],
+        metadata=metadata,
+    )
+
+    assert {key: report[key] for key in metadata} == metadata
 
 
 def test_supports_optional_mcp_runtime_starts_at_4_8_0():

@@ -260,6 +260,8 @@ For a production CI rollout, keep evidence that:
   `pypi-mcp-protocol`, `pypi-mcp-runtime-versions`, and `pypi-mcp-runtime-sbom`;
 - the Release retains and attests the matching `constraints-mcp.txt` and
   `mcp-runtime-sbom.cdx.json` alongside the smoke report;
+- the smoke report binds `verified_target_sha`, `checked_out_sha`, and `constraints_sha256`, with
+  the two commit SHAs equal;
 - full post-release smoke includes `ghcr-os-sbom-attestation`;
 - full post-release smoke includes `slsa-readiness-report`;
 - the consuming repo has its own dependency hash-locking policy if direct PyPI installation is used;

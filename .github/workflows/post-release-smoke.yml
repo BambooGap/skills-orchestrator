@@ -7,6 +7,10 @@ on:
         description: "Release tag to verify, for example v4.7.10"
         required: true
         type: string
+      source_sha:
+        description: "Commit SHA targeted by the verified annotated release tag"
+        required: true
+        type: string
       full_smoke:
         description: "Install from PyPI and run the starter-kit adopter path"
         required: false
@@ -48,10 +52,40 @@ permissions:
   contents: read
 
 jobs:
+  verify-release-tag:
+    uses: ./.github/workflows/verify-release-tag.yml
+    with:
+      version: ${{ inputs.version }}
+
   post-release-smoke:
+    needs: verify-release-tag
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ needs.verify-release-tag.outputs.target_sha }}
+
+      - name: Bind smoke inputs to verified release source
+        id: release-source
+        shell: bash
+        env:
+          VERIFIED_TARGET_SHA: ${{ needs.verify-release-tag.outputs.target_sha }}
+          CALLER_SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$CALLER_SOURCE_SHA" ] && [ "$CALLER_SOURCE_SHA" != "$VERIFIED_TARGET_SHA" ]; then
+            echo "::error::Caller supplied $CALLER_SOURCE_SHA instead of verified target $VERIFIED_TARGET_SHA."
+            exit 1
+          fi
+          checked_out_sha="$(git rev-parse HEAD)"
+          if [ "$checked_out_sha" != "$VERIFIED_TARGET_SHA" ]; then
+            echo "::error::Checked out $checked_out_sha instead of verified target $VERIFIED_TARGET_SHA."
+            exit 1
+          fi
+          constraints_sha256="$(sha256sum constraints-mcp.txt | awk '{print $1}')"
+          echo "verified_target_sha=$VERIFIED_TARGET_SHA" >> "$GITHUB_OUTPUT"
+          echo "checked_out_sha=$checked_out_sha" >> "$GITHUB_OUTPUT"
+          echo "constraints_sha256=$constraints_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -76,6 +110,9 @@ jobs:
           RETRIES: ${{ inputs.retries }}
           RETRY_DELAY: ${{ inputs.retry_delay }}
           GITHUB_TOKEN: ${{ github.token }}
+          VERIFIED_TARGET_SHA: ${{ steps.release-source.outputs.verified_target_sha }}
+          CHECKED_OUT_SHA: ${{ steps.release-source.outputs.checked_out_sha }}
+          CONSTRAINTS_SHA256: ${{ steps.release-source.outputs.constraints_sha256 }}
         run: |
           set -euo pipefail
           args=(
@@ -83,6 +120,9 @@ jobs:
             --timeout 60
             --retries "$RETRIES"
             --retry-delay "$RETRY_DELAY"
+            --verified-target-sha "$VERIFIED_TARGET_SHA"
+            --checked-out-sha "$CHECKED_OUT_SHA"
+            --constraints-sha256 "$CONSTRAINTS_SHA256"
           )
           if [ "$FULL_SMOKE" = "true" ]; then
             args+=(

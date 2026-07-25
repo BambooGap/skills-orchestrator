@@ -1,10 +1,11 @@
-# Reproducible MCP server deployment constraints.
+# Version-constrained MCP server deployment set.
 #
 # Install a matching skills-orchestrator release with:
 #   python -m pip install -c constraints-mcp.txt "skills-orchestrator[mcp]==<version>"
 #
 # This file intentionally contains only the core CLI and optional MCP runtime
-# closure. It is not a universal application lock and must not be layered into
+# closure. It does not contain artifact hashes, is not a universal application
+# lock, and must not be layered into
 # an existing FastAPI service without running pip check and the documented
 # compatibility smoke tests.
 

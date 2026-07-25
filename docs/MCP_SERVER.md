@@ -13,9 +13,10 @@ python3.12 -m pip install "skills-orchestrator[mcp]"
 
 Use `pipx`, `uv tool`, a dedicated virtual environment, or the repository Dockerfile. Do not install
 the MCP extra into an existing business FastAPI environment. In particular, FastAPI `0.116.1` and
-the current MCP transport dependencies have incompatible Starlette requirements. The release-tested
-deployment set is published as `constraints-mcp.txt`; use it only in an isolated MCP environment,
-then require both `python -m pip check` and a real protocol smoke:
+the current MCP transport dependencies have incompatible Starlette requirements. The release-tested,
+version-constrained deployment set is published as `constraints-mcp.txt`; it does not contain
+artifact hashes and is not a hash lock. Use it only in an isolated MCP environment, then require
+both `python -m pip check` and a real protocol smoke:
 
 ```bash
 python3.12 -m venv .venv-skillops-mcp

@@ -25,6 +25,7 @@ jobs:
     uses: ./.github/workflows/post-release-smoke.yml
     with:
       version: ${{ github.event.release.tag_name || inputs.version }}
+      source_sha: ${{ needs.verify-release-tag.outputs.target_sha }}
       full_smoke: true
       retries: "30"
       retry_delay: "30"

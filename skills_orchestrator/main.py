@@ -1961,6 +1961,11 @@ def supply_chain_sbom(
     installed_environment: bool,
 ):
     """生成 Python package CycloneDX SBOM。"""
+    if no_dependencies and installed_environment:
+        raise click.UsageError(
+            "--no-dependencies and --installed-environment are mutually exclusive"
+        )
+
     from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
 
     try:

@@ -7,6 +7,11 @@
   "properties": {
     "schema_version": { "const": "skills-orchestrator.post-release-smoke.v1" },
     "status": { "enum": ["pass", "fail"] },
+    "release_tag": { "type": "string", "pattern": "^v[^\\s]+$" },
+    "verified_target_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "checked_out_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "constraints_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "package_version": { "type": "string", "minLength": 1 },
     "summary": {
       "type": "object",
       "required": ["passed", "failed"],

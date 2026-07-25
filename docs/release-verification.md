@@ -164,6 +164,12 @@ attaching them to the Release. The retained subject set also includes `mcp-runti
 and the matching `constraints-mcp.txt`. Existing assets are never overwritten; a repeated run for
 the same version fails instead of replacing the earlier evidence.
 
+The workflow first resolves the GitHub-verified annotated Tag to its target commit and checks out
+that exact SHA. A manual run performs the same Tag verification; the `version` input never causes
+the workflow to reuse files from the selected branch. The report records `release_tag`,
+`verified_target_sha`, `checked_out_sha`, `constraints_sha256`, and `package_version`, and fails
+unless the checked-out commit and constraints digest match the verified inputs.
+
 For a slower adopter-path check that installs the PyPI package in a clean virtual environment and
 exercises the starter kit:
 
@@ -195,8 +201,9 @@ The default smoke checks:
 - GHCR attestation manifests.
 
 The same check is available from the GitHub Actions UI through the `Post-release Smoke` workflow.
-Use the release tag as the `version` input, for example `v4.8.49`. The workflow runs `full_smoke`
-by default so the retained report covers public artifact metadata, PyPI clean install, consumer-side
+Use the release tag as the `version` input, for example `v4.8.49`. The manual workflow verifies that
+Tag and checks out its target commit before reading constraints or scripts. The workflow runs
+`full_smoke` by default so the retained report covers public artifact metadata, PyPI clean install, consumer-side
 hash-locked install, GHCR Cosign signature verification, GHCR OS SBOM attestation verification, the
 SLSA readiness report schema check, starter-kit adopter path, the default-install MCP extra hint,
 and an isolated `[mcp]` install with `pip check`, real `mcp-test list_skills`, resolved runtime

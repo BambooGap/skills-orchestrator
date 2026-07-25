@@ -40,6 +40,21 @@ def test_python_sbom_cli_installed_environment_is_schema_valid(tmp_path):
     assert validate_document("supply-chain-sbom", str(output)).valid is True
 
 
+def test_python_sbom_rejects_conflicting_dependency_modes():
+    result = CliRunner().invoke(
+        cli,
+        [
+            "supply-chain",
+            "sbom",
+            "--no-dependencies",
+            "--installed-environment",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "mutually exclusive" in result.output
+
+
 def test_container_image_sbom_binds_to_digest():
     digest = "sha256:" + ("b" * 64)
 
