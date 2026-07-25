@@ -101,8 +101,33 @@ def test_release_integrity_runs_the_reusable_public_artifact_smoke():
     smoke = (ROOT / ".github" / "workflows" / "post-release-smoke.yml").read_text(encoding="utf-8")
 
     assert "types: [published]" in workflow
+    assert "uses: ./.github/workflows/verify-release-tag.yml" in workflow
+    assert "needs: verify-release-tag" in workflow
     assert "uses: ./.github/workflows/post-release-smoke.yml" in workflow
     assert 'retries: "30"' in workflow
     assert "--clobber" not in workflow
     assert "actions/attest-build-provenance@" in workflow
     assert "workflow_call:" in smoke
+
+
+def test_release_publishers_require_a_github_verified_annotated_tag():
+    verifier = (ROOT / ".github" / "workflows" / "verify-release-tag.yml").read_text(
+        encoding="utf-8"
+    )
+    publish = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
+    ghcr = (ROOT / ".github" / "workflows" / "ghcr.yml").read_text(encoding="utf-8")
+
+    assert "workflow_call:" in verifier
+    assert "Require a GitHub-verified annotated tag" in verifier
+    assert "ref_type" in verifier
+    assert ".verification.verified" in verifier
+    assert ".verification.reason" in verifier
+    assert "target_type" in verifier
+    assert "target_sha" in verifier
+
+    for workflow in (publish, ghcr):
+        assert "uses: ./.github/workflows/verify-release-tag.yml" in workflow
+        assert "needs: verify-release-tag" in workflow
+
+    assert "ref: ${{ github.event.release.tag_name || inputs.version || github.sha }}" in ghcr
+    assert 'source_sha="$(git rev-parse HEAD)"' in ghcr

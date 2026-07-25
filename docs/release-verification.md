@@ -136,6 +136,14 @@ Verify:
 
 ## Post-Release Smoke
 
+The PyPI, GHCR, and Release Integrity workflows first resolve the release ref through the GitHub
+Git Data API. They require an annotated tag whose SSH or GPG signature GitHub reports as
+`verification.verified=true`, and they require that tag to target a commit. Register the signing
+public key as a GitHub signing key before creating a release. An `unknown_key`, unsigned, invalid,
+or lightweight tag fails closed before package or release-evidence publication. Published tags are
+immutable; fix signing-key registration for future verification or issue a new version instead of
+moving an existing tag.
+
 After PyPI and GHCR workflows finish, run the machine-readable public artifact smoke. The
 `Release Integrity` workflow runs this automatically after every published GitHub Release with a
 15-minute readiness window; run it manually only for a recheck or investigation:

@@ -5,7 +5,13 @@ on:
     types: [published]
 
 jobs:
+  verify-release-tag:
+    uses: ./.github/workflows/verify-release-tag.yml
+    with:
+      version: ${{ github.event.release.tag_name }}
+
   publish:
+    needs: verify-release-tag
     runs-on: ubuntu-latest
     environment:
       name: pypi

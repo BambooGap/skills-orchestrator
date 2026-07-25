@@ -14,8 +14,14 @@ permissions:
   contents: read
 
 jobs:
+  verify-release-tag:
+    uses: ./.github/workflows/verify-release-tag.yml
+    with:
+      version: ${{ github.event.release.tag_name || inputs.version }}
+
   verify-public-artifacts:
     name: Verify public artifacts and evidence
+    needs: verify-release-tag
     uses: ./.github/workflows/post-release-smoke.yml
     with:
       version: ${{ github.event.release.tag_name || inputs.version }}

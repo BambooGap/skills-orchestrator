@@ -17,10 +17,24 @@ permissions:
   attestations: write
 
 jobs:
+  verify-release-tag:
+    if: ${{ github.event_name == 'release' || inputs.version != '' }}
+    uses: ./.github/workflows/verify-release-tag.yml
+    with:
+      version: ${{ github.event.release.tag_name || inputs.version }}
+
   publish-ghcr:
+    needs: verify-release-tag
+    if: >-
+      ${{
+        needs.verify-release-tag.result == 'success' ||
+        (github.event_name == 'workflow_dispatch' && inputs.version == '')
+      }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.version || github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
@@ -53,9 +67,10 @@ jobs:
               version="manual-${GITHUB_SHA::12}"
             fi
           fi
+          source_sha="$(git rev-parse HEAD)"
           echo "image=ghcr.io/${owner}/${repo}" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "sha_tag=sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=sha-${source_sha::12}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         shell: bash

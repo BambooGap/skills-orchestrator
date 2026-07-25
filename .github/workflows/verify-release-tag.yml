@@ -1,0 +1,64 @@
+name: Verify Release Tag
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Git tag that identifies the release
+        required: true
+        type: string
+    outputs:
+      target_sha:
+        description: Commit targeted by the verified annotated tag
+        value: ${{ jobs.verify-release-tag.outputs.target_sha }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-release-tag:
+    name: Require a GitHub-verified annotated tag
+    runs-on: ubuntu-latest
+    outputs:
+      target_sha: ${{ steps.verify.outputs.target_sha }}
+    steps:
+      - name: Verify tag signature and target
+        id: verify
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          ref_json="$(gh api "repos/${GH_REPO}/git/ref/tags/${TAG}")"
+          ref_type="$(jq -r '.object.type' <<<"$ref_json")"
+          if [ "$ref_type" != "tag" ]; then
+            echo "::error::Release tag $TAG must be an annotated tag, got $ref_type."
+            exit 1
+          fi
+
+          tag_object_sha="$(jq -r '.object.sha' <<<"$ref_json")"
+          tag_json="$(gh api "repos/${GH_REPO}/git/tags/${tag_object_sha}")"
+          declared_tag="$(jq -r '.tag' <<<"$tag_json")"
+          target_type="$(jq -r '.object.type' <<<"$tag_json")"
+          target_sha="$(jq -r '.object.sha' <<<"$tag_json")"
+          verified="$(jq -r '.verification.verified' <<<"$tag_json")"
+          reason="$(jq -r '.verification.reason' <<<"$tag_json")"
+
+          if [ "$declared_tag" != "$TAG" ]; then
+            echo "::error::Tag object declares $declared_tag instead of $TAG."
+            exit 1
+          fi
+          if [ "$target_type" != "commit" ]; then
+            echo "::error::Release tag $TAG must target a commit, got $target_type."
+            exit 1
+          fi
+          if [ "$verified" != "true" ]; then
+            echo "::error::GitHub did not verify the signature for $TAG (reason: $reason)."
+            exit 1
+          fi
+
+          echo "target_sha=$target_sha" >> "$GITHUB_OUTPUT"
+          echo "GitHub verified $TAG at commit $target_sha."
