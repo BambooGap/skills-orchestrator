@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.49] - 2026-07-25
+
 ### Changed
 - Production approval recovery now requires the original canonical audit sink and an identical
   stable event payload, while successful approvals clear their outbox immediately.
@@ -14,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   untrusted.
 - Release verification evidence now receives artifact attestations and cannot overwrite existing
   assets for the same version.
+- Updated current installation and adoption examples to `v4.8.49`.
 
 ### Fixed
 - Usage reports no longer label absent or empty audit evidence as verified; machine-readable output
