@@ -44,7 +44,8 @@ run passes. The workflow keeps the full public-artifact report as evidence and r
   发布后核验 GitHub Release、PyPI install、consumer-side hash-locked install、GHCR
   image、Cosign signature、SBOM/provenance attestations、SLSA readiness report 和 starter kit path。
 - [Release Integrity](https://github.com/BambooGap/skills-orchestrator/actions/workflows/release-integrity.yml):
-  GitHub Release 发布后自动运行完整 smoke；只有该 run 成功的版本才能作为公开发布版本引用。
+  GitHub Release 发布后自动运行完整 smoke，并为报告生成 artifact attestation；同名 Release
+  证据禁止覆盖。只有该 run 成功的版本才能作为公开发布版本引用。
 - [Supply Chain Verification](docs/supply-chain-verification.md): 消费端验证 PyPI
   wheel/sdist attestations、GHCR provenance/SBOM/OS SBOM attestations、Cosign signature、
   Docker digest 和 hash-lock 边界的命令。

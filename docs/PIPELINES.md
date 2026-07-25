@@ -57,7 +57,10 @@ the state transition from becoming approved. Before a `gate_passed` event is
 written, the candidate state and a stable approval outbox record are saved.
 If the state save fails, no passing event is emitted. If the audit write fails,
 the persisted run materializes as `pending_audit`; retrying the advance flushes
-the same idempotent event without rerunning the verifier. Events include
+the same idempotent event without rerunning the verifier. Recovery requires the
+same canonical audit directory and the exact stable event payload; a changed
+sink fails with `PRODUCTION_AUDIT_SINK_MISMATCH`. Successful writes clear the
+approval outbox immediately. Events include
 pipeline, run, step, execution, evidence digest, and verifier identifiers in a
 sequenced hash chain.
 

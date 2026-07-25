@@ -330,38 +330,84 @@ def test_pipeline_list_runs_text_and_json(workspace, monkeypatch):
 
 
 def test_usage_report_json_reads_audit_events(tmp_path):
+    from skills_orchestrator.mcp.audit import AuditLogger
+
     audit_dir = tmp_path / "audit"
-    audit_dir.mkdir()
-    (audit_dir / "events.jsonl").write_text(
-        "\n".join(
-            [
-                json.dumps(
-                    {
-                        "event": "prepare_context_decision",
-                        "tool": "prepare_context",
-                        "outcome": "decision",
-                        "active_skill_ids": ["team-review"],
-                    }
-                ),
-                json.dumps(
-                    {
-                        "event": "mcp_tool_call",
-                        "tool": "prepare_context",
-                        "outcome": "ok",
-                    }
-                ),
-            ]
-        ),
-        encoding="utf-8",
+    audit = AuditLogger(audit_dir)
+    audit.append(
+        {
+            "event": "prepare_context_decision",
+            "tool": "prepare_context",
+            "outcome": "decision",
+            "active_skill_ids": ["team-review"],
+        },
+        strict=True,
+    )
+    audit.append(
+        {
+            "event": "mcp_tool_call",
+            "tool": "prepare_context",
+            "outcome": "ok",
+        },
+        strict=True,
     )
 
     runner = CliRunner()
     result = runner.invoke(cli, ["usage", "report", "--audit-dir", str(audit_dir), "--json"])
     assert result.exit_code == 0
     payload = json.loads(result.output)
+    assert payload["audit_integrity"] == "verified"
     assert payload["events"] == 2
     assert payload["tools"]["prepare_context"] == 1
     assert payload["top_active_skills"]["team-review"] == 1
+
+
+def test_usage_report_rejects_tampered_audit_by_default(tmp_path):
+    from skills_orchestrator.mcp.audit import AuditLogger
+
+    audit_dir = tmp_path / "audit"
+    audit = AuditLogger(audit_dir)
+    audit.append({"event": "mcp_tool_call", "outcome": "ok"}, strict=True)
+    events_path = audit_dir / "events.jsonl"
+    event = json.loads(events_path.read_text(encoding="utf-8"))
+    event["outcome"] = "forged-success"
+    events_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["usage", "report", "--audit-dir", str(audit_dir), "--json"])
+
+    assert result.exit_code == 1
+    assert "完整性校验失败" in result.output
+
+
+def test_usage_report_best_effort_marks_tampered_data_untrusted(tmp_path):
+    from skills_orchestrator.mcp.audit import AuditLogger
+
+    audit_dir = tmp_path / "audit"
+    audit = AuditLogger(audit_dir)
+    audit.append({"event": "mcp_tool_call", "outcome": "ok"}, strict=True)
+    events_path = audit_dir / "events.jsonl"
+    event = json.loads(events_path.read_text(encoding="utf-8"))
+    event["outcome"] = "forged-success"
+    events_path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "usage",
+            "report",
+            "--audit-dir",
+            str(audit_dir),
+            "--best-effort",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["audit_integrity"] == "unverified_best_effort"
+    assert payload["outcomes"]["forged-success"] == 1
 
 
 def test_status_happy_path(workspace):

@@ -91,7 +91,9 @@ Audit remains best-effort for ordinary MCP routing and `coordination` Pipelines.
 Pipeline requires `--audit-dir`; a missing sink or write failure stops the production state
 transition. Every strict production append validates the complete chain rather than only the tail.
 Production step results are durably recorded in an approval outbox before a passing event is
-written; an interrupted audit remains `pending_audit` and is idempotently recovered on retry.
+written. The outbox is bound to the canonical audit directory and stable event payload; recovery
+refuses a changed sink or conflicting event ID. Successful writes clear the outbox immediately.
+An interrupted audit remains `pending_audit` and is idempotently recovered on retry.
 
 By default `task_hash` is deterministic SHA-256 for local correlation. For commercial or multi-tenant
 audit logs, set a private salt so hashes use HMAC-SHA256:
@@ -108,6 +110,10 @@ Generate a compact report:
 skills-orchestrator usage report --audit-dir /absolute/path/to/.skills-audit
 skills-orchestrator usage report --audit-dir /absolute/path/to/.skills-audit --json
 ```
+
+Reports verify the complete hash chain by default and fail closed on damaged data. For incident
+inspection only, `--best-effort` skips chain verification and marks the output
+`unverified_best_effort`; do not use that mode for production decisions.
 
 ## Runtime Content Limits
 

@@ -862,9 +862,10 @@ class TestPipelineEngine:
             staticmethod(lambda *_args, **_kwargs: (True, "")),
         )
         audit_dir = tmp_path / "audit"
+        store = RunStateStore(base_dir=str(tmp_path / "state"))
         service = PipelineRunService(
             pipeline,
-            RunStateStore(base_dir=str(tmp_path / "state")),
+            store,
             artifact_root=tmp_path,
             audit=AuditLogger(audit_dir),
         )
@@ -880,8 +881,14 @@ class TestPipelineEngine:
 
         completed = service.advance(state, context_updates={"report": evidence})
         event = load_events(audit_dir)[-1]
+        raw_state = RunState.from_json(
+            store._state_path("release", state.run_id).read_text(encoding="utf-8")
+        )
 
         assert completed.status == "completed"
+        assert completed.approval_outbox == {}
+        assert raw_state.status == "completed"
+        assert raw_state.approval_outbox == {}
         assert event["pipeline_id"] == "release"
         assert event["run_id"] == state.run_id
         assert event["step_id"] == "finish"
@@ -1024,6 +1031,91 @@ class TestPipelineEngine:
 
         assert recovered.status == "completed"
         assert store.load("release", state.run_id).status == "completed"
+
+    def test_production_outbox_rejects_audit_sink_change(self, tmp_path, monkeypatch):
+        from skills_orchestrator.mcp.audit import AuditLogger
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.service import PipelineRunService, ProductionAuditError
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        report = tmp_path / "report.txt"
+        report.write_text("verified", encoding="utf-8")
+        pipeline = Pipeline(
+            id="release",
+            name="Release",
+            profile="production",
+            steps=[
+                Step(
+                    id="finish",
+                    skill="finish",
+                    gate=Gate(
+                        must_produce="report",
+                        check_command="repository-verifier",
+                        require_verified_evidence=True,
+                        allowed_verifiers=["repository-ci"],
+                    ),
+                )
+            ],
+        )
+        monkeypatch.setattr(
+            PipelineEngine,
+            "_run_check_command",
+            staticmethod(lambda *_args, **_kwargs: (True, "")),
+        )
+        store = RunStateStore(base_dir=str(tmp_path / "state"))
+        audit_a = AuditLogger(tmp_path / "audit-a")
+        service_a = PipelineRunService(
+            pipeline,
+            store,
+            artifact_root=tmp_path,
+            audit=audit_a,
+        )
+        state = service_a.start()
+        evidence = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "producer": "ci",
+            "verified_by": "repository-ci",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+        original_append = audit_a.append
+
+        def fail_step_event(event, *, strict=False):
+            if event.get("event") == "pipeline_step_evaluated":
+                raise OSError("simulated audit failure")
+            return original_append(event, strict=strict)
+
+        monkeypatch.setattr(audit_a, "append", fail_step_event)
+        with pytest.raises(ProductionAuditError):
+            service_a.advance(state, context_updates={"report": evidence})
+
+        pending = store.load("release", state.run_id)
+        assert pending is not None
+        service_b = PipelineRunService(
+            pipeline,
+            store,
+            artifact_root=tmp_path,
+            audit=AuditLogger(tmp_path / "audit-b"),
+        )
+
+        with pytest.raises(ProductionAuditError) as exc_info:
+            service_b.advance(pending)
+
+        assert exc_info.value.code == "PRODUCTION_AUDIT_SINK_MISMATCH"
+        assert not (tmp_path / "audit-b" / "events.jsonl").exists()
+
+        pending.approval_outbox["event"]["event_id"] = "different-event"
+        service_a_recovered = PipelineRunService(
+            pipeline,
+            store,
+            artifact_root=tmp_path,
+            audit=AuditLogger(tmp_path / "audit-a"),
+        )
+        with pytest.raises(ProductionAuditError) as exc_info:
+            service_a_recovered.advance(pending)
+
+        assert exc_info.value.code == "PRODUCTION_OUTBOX_INVALID"
 
     def test_production_outbox_allows_next_step_after_committed_event(self, tmp_path, monkeypatch):
         from skills_orchestrator.mcp.audit import AuditLogger

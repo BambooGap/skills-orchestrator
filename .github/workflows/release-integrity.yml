@@ -30,7 +30,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
+      attestations: write
       contents: write
+      id-token: write
     steps:
       - name: Download smoke report
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -41,6 +43,13 @@ jobs:
         shell: bash
         run: sha256sum post-release-smoke.json > post-release-smoke.sha256
 
+      - name: Attest release verification evidence
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: |
+            post-release-smoke.json
+            post-release-smoke.sha256
+
       - name: Attach durable evidence to GitHub Release
         shell: bash
         env:
@@ -50,5 +59,4 @@ jobs:
         run: |
           gh release upload "$TAG" \
             post-release-smoke.json \
-            post-release-smoke.sha256 \
-            --clobber
+            post-release-smoke.sha256

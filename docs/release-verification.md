@@ -151,6 +151,10 @@ skills-orchestrator schema validate \
   --input post-release-smoke.json
 ```
 
+The workflow creates GitHub artifact attestations for the smoke report and checksum before
+attaching them to the Release. Existing assets are never overwritten; a repeated run for the same
+version fails instead of replacing the earlier evidence.
+
 For a slower adopter-path check that installs the PyPI package in a clean virtual environment and
 exercises the starter kit:
 

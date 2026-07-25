@@ -108,15 +108,14 @@ class PipelineRunService:
             state.verification = {}
             state.approval_outbox = {
                 "event_id": event["event_id"],
-                "audit_dir": str(self.audit.audit_dir),
+                "audit_dir": str(self.audit.audit_dir.expanduser().resolve()),
                 "candidate_status": state.status,
                 "event": event,
             }
             # The candidate state and its recovery record must be durable before
             # an audit event is allowed to claim the gate outcome.
             self.store.save(state)
-            self._append_production_event(event)
-            return state
+            return self._flush_approval_outbox(state)
 
         state.verification = {}
         self.store.save(state)
@@ -125,11 +124,37 @@ class PipelineRunService:
     def _flush_approval_outbox(self, state: RunState) -> RunState:
         outbox = state.approval_outbox
         event = outbox.get("event")
+        event_id = outbox.get("event_id")
+        audit_dir = outbox.get("audit_dir")
         candidate_status = outbox.get("candidate_status")
-        if not isinstance(event, dict) or not isinstance(candidate_status, str):
+        if (
+            not isinstance(event, dict)
+            or not isinstance(event_id, str)
+            or not event_id
+            or event.get("event_id") != event_id
+            or not isinstance(audit_dir, str)
+            or not audit_dir
+            or not isinstance(candidate_status, str)
+        ):
             raise ProductionAuditError(
                 "Production approval outbox 无效，无法恢复",
                 code="PRODUCTION_OUTBOX_INVALID",
+            )
+        self._require_production_audit()
+        assert self.audit is not None
+        assert self.audit.audit_dir is not None
+        try:
+            recorded_dir = Path(audit_dir).expanduser().resolve()
+            current_dir = self.audit.audit_dir.expanduser().resolve()
+        except (OSError, RuntimeError) as exc:
+            raise ProductionAuditError(
+                f"Production approval outbox 的 audit_dir 无法规范化: {exc}",
+                code="PRODUCTION_OUTBOX_INVALID",
+            ) from exc
+        if recorded_dir != current_dir:
+            raise ProductionAuditError(
+                "Production approval outbox 绑定的 audit_dir 与当前配置不一致",
+                code="PRODUCTION_AUDIT_SINK_MISMATCH",
             )
         self._append_production_event(event)
         state.status = candidate_status

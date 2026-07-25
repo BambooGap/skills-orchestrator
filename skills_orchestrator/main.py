@@ -1713,13 +1713,22 @@ def usage():
     default=None,
     help="MCP JSONL 审计事件目录；默认读取 SKILLS_ORCHESTRATOR_AUDIT_DIR。",
 )
+@click.option(
+    "--best-effort",
+    is_flag=True,
+    help="跳过审计链完整性校验并尽力读取；输出会明确标记为不可信。",
+)
 @click.option("--json", "as_json", is_flag=True, help="输出 JSON，便于 CI 或报表系统读取")
-def usage_report(audit_dir: str | None, as_json: bool):
+def usage_report(audit_dir: str | None, best_effort: bool, as_json: bool):
     """根据 MCP audit events 生成使用汇总。"""
     from skills_orchestrator.mcp.audit import AUDIT_DIR_ENV, load_events, summarize_events
 
-    events = load_events(audit_dir)
+    try:
+        events = load_events(audit_dir, best_effort=best_effort)
+    except (OSError, ValueError, TypeError) as exc:
+        raise click.ClickException(f"audit 完整性校验失败: {exc}") from exc
     summary = summarize_events(events)
+    summary["audit_integrity"] = "unverified_best_effort" if best_effort else "verified"
 
     if as_json:
         click.echo(json.dumps(summary, ensure_ascii=False, indent=2))
@@ -1733,6 +1742,7 @@ def usage_report(audit_dir: str | None, as_json: bool):
 
     lines = [
         "Skills Orchestrator usage report",
+        f"Audit integrity: {summary['audit_integrity']}",
         f"Events: {summary['events']}",
         "",
         "Tools:",

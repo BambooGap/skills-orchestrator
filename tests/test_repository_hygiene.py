@@ -103,4 +103,6 @@ def test_release_integrity_runs_the_reusable_public_artifact_smoke():
     assert "types: [published]" in workflow
     assert "uses: ./.github/workflows/post-release-smoke.yml" in workflow
     assert 'retries: "30"' in workflow
+    assert "--clobber" not in workflow
+    assert "actions/attest-build-provenance@" in workflow
     assert "workflow_call:" in smoke

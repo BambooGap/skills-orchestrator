@@ -84,6 +84,19 @@ class AuditLogger:
                         None,
                     )
                     if existing is not None:
+                        stored_event = {
+                            key: value
+                            for key, value in existing.items()
+                            if key
+                            not in {
+                                "timestamp",
+                                "sequence",
+                                "previous_event_hash",
+                                "event_hash",
+                            }
+                        }
+                        if stored_event != event:
+                            raise ValueError(f"audit event_id={event_id!r} 已存在但事件内容不一致")
                         return existing
                 previous = events[-1] if events else None
                 sequence = int(previous.get("sequence", 0)) + 1 if previous else 1
@@ -178,8 +191,12 @@ def hash_task(task: str) -> dict[str, str]:
     return {"alg": "SHA-256", "value": hashlib.sha256(task.encode("utf-8")).hexdigest()}
 
 
-def load_events(audit_dir: str | os.PathLike[str] | None = None) -> list[dict[str, Any]]:
-    """Load well-formed JSONL audit events from the configured audit directory."""
+def load_events(
+    audit_dir: str | os.PathLike[str] | None = None,
+    *,
+    best_effort: bool = False,
+) -> list[dict[str, Any]]:
+    """Load audit events, verifying the complete chain unless explicitly relaxed."""
     path = resolve_audit_dir(audit_dir)
     if path is None:
         return []
@@ -187,6 +204,8 @@ def load_events(audit_dir: str | os.PathLike[str] | None = None) -> list[dict[st
     events_path = path / EVENTS_FILENAME
     if not events_path.exists():
         return []
+    if not best_effort:
+        return AuditLogger(path).verify_chain()
 
     events: list[dict[str, Any]] = []
     with events_path.open(encoding="utf-8") as handle:

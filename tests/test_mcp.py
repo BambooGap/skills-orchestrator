@@ -556,6 +556,26 @@ class TestToolExecutor:
         with pytest.raises(AuditWriteError, match="sequence"):
             audit.append({"event": "three"}, strict=True)
 
+    def test_strict_audit_rejects_duplicate_event_id_with_different_payload(self, tmp_path):
+        audit = AuditLogger(tmp_path / "audit")
+        first = audit.append(
+            {"event_id": "stable-id", "event": "gate", "outcome": "gate_passed"},
+            strict=True,
+        )
+        repeated = audit.append(
+            {"event_id": "stable-id", "event": "gate", "outcome": "gate_passed"},
+            strict=True,
+        )
+
+        assert repeated == first
+        assert len(audit.verify_chain()) == 1
+
+        with pytest.raises(AuditWriteError, match="event_id"):
+            audit.append(
+                {"event_id": "stable-id", "event": "gate", "outcome": "gate_failed"},
+                strict=True,
+            )
+
     def test_production_pipeline_requires_audit_before_state_creation(self, tmp_path):
         pipelines_dir = tmp_path / "pipelines"
         pipelines_dir.mkdir()
