@@ -76,7 +76,9 @@ class RunStateStore:
         filepath = self._state_path(pipeline_id, run_id)
         if not filepath.exists():
             return None
-        return RunState.from_json(filepath.read_text(encoding="utf-8"))
+        return self._materialize_approval_status(
+            RunState.from_json(filepath.read_text(encoding="utf-8"))
+        )
 
     def claim_verification(
         self,
@@ -140,7 +142,9 @@ class RunStateStore:
                 raise ValueError(f"非法 latest 记录: {ref!r}")
             filepath = safe_child_path(self.runs_dir, ref)
             if filepath.exists():
-                state = RunState.from_json(filepath.read_text(encoding="utf-8"))
+                state = self._materialize_approval_status(
+                    RunState.from_json(filepath.read_text(encoding="utf-8"))
+                )
                 if pipeline_id is None or state.pipeline_id == self._validate_pipeline_id(
                     pipeline_id
                 ):
@@ -152,7 +156,9 @@ class RunStateStore:
             return None
         candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
         for filepath in candidates:
-            state = RunState.from_json(filepath.read_text(encoding="utf-8"))
+            state = self._materialize_approval_status(
+                RunState.from_json(filepath.read_text(encoding="utf-8"))
+            )
             if pipeline_id is None or state.pipeline_id == self._validate_pipeline_id(pipeline_id):
                 return state
         return None
@@ -165,7 +171,9 @@ class RunStateStore:
         results = []
         for filepath in sorted(self.runs_dir.glob("*.json"), reverse=True):
             try:
-                state = RunState.from_json(filepath.read_text(encoding="utf-8"))
+                state = self._materialize_approval_status(
+                    RunState.from_json(filepath.read_text(encoding="utf-8"))
+                )
             except (json.JSONDecodeError, KeyError):
                 continue
             if pipeline_id and state.pipeline_id != self._validate_pipeline_id(pipeline_id):
@@ -181,6 +189,30 @@ class RunStateStore:
                 }
             )
         return results
+
+    @staticmethod
+    def _materialize_approval_status(state: RunState) -> RunState:
+        """Treat an unflushed production outbox as non-approved state."""
+        outbox = state.approval_outbox
+        if not outbox:
+            return state
+        event_id = outbox.get("event_id")
+        audit_dir = outbox.get("audit_dir")
+        candidate_status = outbox.get("candidate_status")
+        if not all(isinstance(value, str) and value for value in (event_id, audit_dir)):
+            state.status = "pending_audit"
+            return state
+        try:
+            from skills_orchestrator.mcp.audit import AuditLogger
+
+            committed = AuditLogger(audit_dir).contains_event(event_id)
+        except (OSError, ValueError, TypeError):
+            committed = False
+        if committed and isinstance(candidate_status, str) and candidate_status:
+            state.status = candidate_status
+        else:
+            state.status = "pending_audit"
+        return state
 
     def delete(self, pipeline_id: str, run_id: str) -> bool:
         """删除指定运行记录"""

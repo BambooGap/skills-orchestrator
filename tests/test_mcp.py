@@ -531,6 +531,31 @@ class TestToolExecutor:
         with pytest.raises(AuditWriteError, match="哈希"):
             audit.append({"event": "two"}, strict=True)
 
+    def test_strict_audit_rejects_tampered_earlier_event(self, tmp_path):
+        audit = AuditLogger(tmp_path / "audit")
+        audit.append({"event": "one"}, strict=True)
+        audit.append({"event": "two"}, strict=True)
+        events_path = tmp_path / "audit" / "events.jsonl"
+        lines = events_path.read_text(encoding="utf-8").splitlines()
+        first = json.loads(lines[0])
+        first["outcome"] = "tampered"
+        lines[0] = json.dumps(first)
+        events_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        with pytest.raises(AuditWriteError, match="第 1 行哈希"):
+            audit.append({"event": "three"}, strict=True)
+
+    def test_strict_audit_rejects_deleted_prefix(self, tmp_path):
+        audit = AuditLogger(tmp_path / "audit")
+        audit.append({"event": "one"}, strict=True)
+        audit.append({"event": "two"}, strict=True)
+        events_path = tmp_path / "audit" / "events.jsonl"
+        lines = events_path.read_text(encoding="utf-8").splitlines()
+        events_path.write_text(lines[1] + "\n", encoding="utf-8")
+
+        with pytest.raises(AuditWriteError, match="sequence"):
+            audit.append({"event": "three"}, strict=True)
+
     def test_production_pipeline_requires_audit_before_state_creation(self, tmp_path):
         pipelines_dir = tmp_path / "pipelines"
         pipelines_dir.mkdir()

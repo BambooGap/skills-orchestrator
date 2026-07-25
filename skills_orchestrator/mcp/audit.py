@@ -49,6 +49,10 @@ class AuditLogger:
         return self._audit_dir is not None
 
     @property
+    def audit_dir(self) -> Path | None:
+        return self._audit_dir
+
+    @property
     def events_path(self) -> Path | None:
         if self._audit_dir is None:
             return None
@@ -72,7 +76,16 @@ class AuditLogger:
             with lock_path.open("a+", encoding="utf-8") as lock:
                 if fcntl is not None:
                     fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-                previous = self._last_event(path)
+                events = self._verify_chain_path(path)
+                event_id = event.get("event_id")
+                if event_id:
+                    existing = next(
+                        (item for item in events if item.get("event_id") == event_id),
+                        None,
+                    )
+                    if existing is not None:
+                        return existing
+                previous = events[-1] if events else None
                 sequence = int(previous.get("sequence", 0)) + 1 if previous else 1
                 previous_hash = str(previous.get("event_hash", "")) if previous else ""
                 payload = {
@@ -101,32 +114,54 @@ class AuditLogger:
                 raise AuditWriteError(f"Production audit 写入失败: {exc}") from exc
             return None
 
+    def verify_chain(self) -> list[dict[str, Any]]:
+        """Validate the complete JSONL chain and return its events."""
+        path = self.events_path
+        if path is None:
+            return []
+        return self._verify_chain_path(path)
+
+    def contains_event(self, event_id: str) -> bool:
+        """Return whether a valid chain contains an event with this stable id."""
+        return any(event.get("event_id") == event_id for event in self.verify_chain())
+
     @staticmethod
-    def _last_event(path: Path) -> dict[str, Any] | None:
+    def _verify_chain_path(path: Path) -> list[dict[str, Any]]:
         if not path.exists():
-            return None
-        last_line = ""
+            return []
+        events: list[dict[str, Any]] = []
+        expected_previous_hash = ""
         with path.open(encoding="utf-8") as handle:
-            for line in handle:
-                if line.strip():
-                    last_line = line
-        if not last_line:
-            return None
-        event = json.loads(last_line)
-        if not isinstance(event, dict):
-            raise ValueError("audit 链尾不是 JSON object")
-        recorded_hash = event.get("event_hash")
-        if recorded_hash is not None:
-            unhashed = {key: value for key, value in event.items() if key != "event_hash"}
-            canonical = json.dumps(
-                unhashed,
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            ).encode("utf-8")
-            if not hmac.compare_digest(str(recorded_hash), hashlib.sha256(canonical).hexdigest()):
-                raise ValueError("audit 链尾哈希校验失败")
-        return event
+            for line_number, line in enumerate(handle, start=1):
+                if not line.strip():
+                    continue
+                event = json.loads(line)
+                if not isinstance(event, dict):
+                    raise ValueError(f"audit 第 {line_number} 行不是 JSON object")
+                expected_sequence = len(events) + 1
+                if event.get("sequence") != expected_sequence:
+                    raise ValueError(
+                        f"audit sequence 不连续: expected {expected_sequence}, "
+                        f"got {event.get('sequence')}"
+                    )
+                if event.get("previous_event_hash") != expected_previous_hash:
+                    raise ValueError(f"audit 第 {line_number} 行的 previous_event_hash 不匹配")
+                recorded_hash = event.get("event_hash")
+                if not isinstance(recorded_hash, str) or not recorded_hash:
+                    raise ValueError(f"audit 第 {line_number} 行缺少 event_hash")
+                unhashed = {key: value for key, value in event.items() if key != "event_hash"}
+                canonical = json.dumps(
+                    unhashed,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                calculated = hashlib.sha256(canonical).hexdigest()
+                if not hmac.compare_digest(recorded_hash, calculated):
+                    raise ValueError(f"audit 第 {line_number} 行哈希校验失败")
+                events.append(event)
+                expected_previous_hash = recorded_hash
+        return events
 
 
 def hash_task(task: str) -> dict[str, str]:

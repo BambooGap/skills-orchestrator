@@ -53,8 +53,18 @@ and the final file are opened without following symlinks.
 Production execution also requires a writable audit directory. MCP servers use
 `--audit-dir`; CLI runs use `SKILLS_ORCHESTRATOR_AUDIT_DIR`. The audit log is
 strict for production runs: failure to append the run or step event prevents
-the state transition from being committed. Events include pipeline, run, step,
-execution, evidence digest, and verifier identifiers in a sequenced hash chain.
+the state transition from becoming approved. Before a `gate_passed` event is
+written, the candidate state and a stable approval outbox record are saved.
+If the state save fails, no passing event is emitted. If the audit write fails,
+the persisted run materializes as `pending_audit`; retrying the advance flushes
+the same idempotent event without rerunning the verifier. Events include
+pipeline, run, step, execution, evidence digest, and verifier identifiers in a
+sequenced hash chain.
+
+Strict writes validate the complete chain from sequence 1 through the current
+tail, including every event hash, sequence continuity, and each
+`previous_event_hash` link. Rotate a legacy unchained log before enabling a
+production profile.
 
 Before running `check_command`, the shared execution service atomically claims
 a time-limited step lease. The verifier receives:
@@ -74,6 +84,18 @@ This binds the verifier result to the exact lease and evidence set; it does not
 turn an untrusted verifier script into a trusted identity. Repository owners
 must review the verifier and use signed CI/OIDC attestations for higher-risk
 approval.
+
+Generate evidence URIs with the canonical artifact root, especially on macOS
+where `/var` may resolve to `/private/var`:
+
+```python
+from skills_orchestrator.pipeline import build_evidence_uri
+
+uri = build_evidence_uri("reports/test.json", artifact_root=".")
+```
+
+The helper resolves both paths, rejects files outside the root, and returns the
+canonical `file://` URI expected by the no-symlink file opener.
 
 ## Minimal Pipeline
 

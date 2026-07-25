@@ -89,7 +89,9 @@ skill content.
 
 Audit remains best-effort for ordinary MCP routing and `coordination` Pipelines. A `production`
 Pipeline requires `--audit-dir`; a missing sink or write failure stops the production state
-transition.
+transition. Every strict production append validates the complete chain rather than only the tail.
+Production step results are durably recorded in an approval outbox before a passing event is
+written; an interrupted audit remains `pending_audit` and is idempotently recovered on retry.
 
 By default `task_hash` is deterministic SHA-256 for local correlation. For commercial or multi-tenant
 audit logs, set a private salt so hashes use HMAC-SHA256:

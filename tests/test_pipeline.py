@@ -10,7 +10,13 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from skills_orchestrator.pipeline.models import Gate, Pipeline, RunState, Step
+from skills_orchestrator.pipeline.models import (
+    Gate,
+    Pipeline,
+    RunState,
+    Step,
+    build_evidence_uri,
+)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -204,6 +210,24 @@ class TestGate:
 
         assert not passed
         assert "普通文件" in reason
+
+    def test_build_evidence_uri_uses_canonical_root_and_passes_gate(self, tmp_path):
+        report = tmp_path / "report.txt"
+        report.write_text("canonical", encoding="utf-8")
+        uri = build_evidence_uri(report, artifact_root=tmp_path)
+        evidence = {
+            "type": "report",
+            "uri": uri,
+            "sha256": hashlib.sha256(b"canonical").hexdigest(),
+        }
+
+        passed, reason = Gate(must_produce="report").check(
+            {"report": evidence},
+            artifact_root=tmp_path.resolve(),
+        )
+
+        assert uri == report.resolve().as_uri()
+        assert passed, reason
 
 
 class TestStep:
@@ -864,6 +888,205 @@ class TestPipelineEngine:
         assert len(event["execution_id"]) == 32
         assert len(event["evidence_digest"]) == 64
         assert event["verifier"] == "repository-ci"
+
+    def test_production_candidate_state_is_saved_before_gate_passed_audit(
+        self, tmp_path, monkeypatch
+    ):
+        from skills_orchestrator.mcp.audit import AuditLogger, load_events
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.service import PipelineRunService
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        report = tmp_path / "report.txt"
+        report.write_text("verified", encoding="utf-8")
+        pipeline = Pipeline(
+            id="release",
+            name="Release",
+            profile="production",
+            steps=[
+                Step(
+                    id="finish",
+                    skill="finish",
+                    gate=Gate(
+                        must_produce="report",
+                        check_command="repository-verifier",
+                        require_verified_evidence=True,
+                        allowed_verifiers=["repository-ci"],
+                    ),
+                )
+            ],
+        )
+        monkeypatch.setattr(
+            PipelineEngine,
+            "_run_check_command",
+            staticmethod(lambda *_args, **_kwargs: (True, "")),
+        )
+        audit_dir = tmp_path / "audit"
+        store = RunStateStore(base_dir=str(tmp_path / "state"))
+        service = PipelineRunService(
+            pipeline,
+            store,
+            artifact_root=tmp_path,
+            audit=AuditLogger(audit_dir),
+        )
+        state = service.start()
+        evidence = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "producer": "ci",
+            "verified_by": "repository-ci",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+        original_save = store.save
+
+        def fail_candidate_save(candidate):
+            if candidate.approval_outbox:
+                raise OSError("simulated candidate save failure")
+            return original_save(candidate)
+
+        monkeypatch.setattr(store, "save", fail_candidate_save)
+
+        with pytest.raises(OSError, match="candidate save failure"):
+            service.advance(state, context_updates={"report": evidence})
+
+        persisted = store.load("release", state.run_id)
+        events = load_events(audit_dir)
+        assert persisted is not None
+        assert persisted.status == "verifying"
+        assert not any(event.get("outcome") == "gate_passed" for event in events)
+
+    def test_production_outbox_recovers_after_audit_failure(self, tmp_path, monkeypatch):
+        from skills_orchestrator.mcp.audit import AuditLogger
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.service import PipelineRunService, ProductionAuditError
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        report = tmp_path / "report.txt"
+        report.write_text("verified", encoding="utf-8")
+        pipeline = Pipeline(
+            id="release",
+            name="Release",
+            profile="production",
+            steps=[
+                Step(
+                    id="finish",
+                    skill="finish",
+                    gate=Gate(
+                        must_produce="report",
+                        check_command="repository-verifier",
+                        require_verified_evidence=True,
+                        allowed_verifiers=["repository-ci"],
+                    ),
+                )
+            ],
+        )
+        monkeypatch.setattr(
+            PipelineEngine,
+            "_run_check_command",
+            staticmethod(lambda *_args, **_kwargs: (True, "")),
+        )
+        audit_dir = tmp_path / "audit"
+        audit = AuditLogger(audit_dir)
+        store = RunStateStore(base_dir=str(tmp_path / "state"))
+        service = PipelineRunService(
+            pipeline,
+            store,
+            artifact_root=tmp_path,
+            audit=audit,
+        )
+        state = service.start()
+        evidence = {
+            "type": "report",
+            "uri": report.as_uri(),
+            "sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "producer": "ci",
+            "verified_by": "repository-ci",
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+        original_append = audit.append
+
+        def fail_step_event(event, *, strict=False):
+            if event.get("event") == "pipeline_step_evaluated":
+                raise OSError("simulated audit failure")
+            return original_append(event, strict=strict)
+
+        monkeypatch.setattr(audit, "append", fail_step_event)
+        with pytest.raises(ProductionAuditError, match="audit failure"):
+            service.advance(state, context_updates={"report": evidence})
+
+        pending = store.load("release", state.run_id)
+        assert pending is not None
+        assert pending.status == "pending_audit"
+        monkeypatch.setattr(audit, "append", original_append)
+
+        recovered = service.advance(pending)
+
+        assert recovered.status == "completed"
+        assert store.load("release", state.run_id).status == "completed"
+
+    def test_production_outbox_allows_next_step_after_committed_event(self, tmp_path, monkeypatch):
+        from skills_orchestrator.mcp.audit import AuditLogger
+        from skills_orchestrator.pipeline.engine import PipelineEngine
+        from skills_orchestrator.pipeline.service import PipelineRunService
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        report_a = tmp_path / "a.txt"
+        report_b = tmp_path / "b.txt"
+        report_a.write_text("a", encoding="utf-8")
+        report_b.write_text("b", encoding="utf-8")
+
+        def gate(name):
+            return Gate(
+                must_produce=name,
+                check_command="repository-verifier",
+                require_verified_evidence=True,
+                allowed_verifiers=["repository-ci"],
+            )
+
+        pipeline = Pipeline(
+            id="release",
+            name="Release",
+            profile="production",
+            steps=[
+                Step(id="first", skill="first", next=["second"], gate=gate("report_a")),
+                Step(id="second", skill="second", gate=gate("report_b")),
+            ],
+        )
+        monkeypatch.setattr(
+            PipelineEngine,
+            "_run_check_command",
+            staticmethod(lambda *_args, **_kwargs: (True, "")),
+        )
+        store = RunStateStore(base_dir=str(tmp_path / "state"))
+        service = PipelineRunService(
+            pipeline,
+            store,
+            artifact_root=tmp_path,
+            audit=AuditLogger(tmp_path / "audit"),
+        )
+        state = service.start()
+
+        def evidence(path):
+            return {
+                "type": "report",
+                "uri": path.as_uri(),
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                "producer": "ci",
+                "verified_by": "repository-ci",
+                "verified_at": datetime.now(timezone.utc).isoformat(),
+            }
+
+        state = service.advance(state, context_updates={"report_a": evidence(report_a)})
+        state = store.load("release", state.run_id)
+        assert state is not None
+        assert state.status == "running"
+        assert state.current_step == "second"
+
+        state = service.advance(state, context_updates={"report_b": evidence(report_b)})
+
+        assert state.status == "completed"
+        assert [record["step"] for record in state.step_history] == ["first", "second"]
 
     def test_advance_step(self):
         from skills_orchestrator.pipeline.engine import PipelineEngine

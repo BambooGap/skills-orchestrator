@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Protocol
+import uuid
 
 from .engine import PipelineEngine
 from .models import Pipeline, RunState
@@ -13,6 +14,9 @@ from .store import RunStateStore
 class AuditSink(Protocol):
     @property
     def enabled(self) -> bool: ...
+
+    @property
+    def audit_dir(self) -> Path | None: ...
 
     def append(self, event: dict[str, Any], *, strict: bool = False) -> dict[str, Any] | None: ...
 
@@ -66,6 +70,10 @@ class PipelineRunService:
         context_updates: dict[str, Any] | None = None,
     ) -> RunState:
         self._require_production_audit()
+        if self.pipeline.profile == "production" and state.approval_outbox:
+            state = self._flush_approval_outbox(state)
+            if state.status in {"completed", "failed"}:
+                return state
         if context_updates:
             state.context.update(context_updates)
 
@@ -80,6 +88,7 @@ class PipelineRunService:
         state = self.engine.complete_and_advance(state, execution_id=execution_id)
         if self.pipeline.profile == "production":
             event: dict[str, Any] = {
+                "event_id": uuid.uuid4().hex,
                 "event": "pipeline_step_evaluated",
                 "outcome": "gate_failed" if state.status == "failed" else "gate_passed",
                 "pipeline_id": state.pipeline_id,
@@ -94,10 +103,44 @@ class PipelineRunService:
                         "verifier": binding["verifier"],
                     }
                 )
+            assert self.audit is not None
+            assert self.audit.audit_dir is not None
+            state.verification = {}
+            state.approval_outbox = {
+                "event_id": event["event_id"],
+                "audit_dir": str(self.audit.audit_dir),
+                "candidate_status": state.status,
+                "event": event,
+            }
+            # The candidate state and its recovery record must be durable before
+            # an audit event is allowed to claim the gate outcome.
+            self.store.save(state)
             self._append_production_event(event)
+            return state
 
         state.verification = {}
         self.store.save(state)
+        return state
+
+    def _flush_approval_outbox(self, state: RunState) -> RunState:
+        outbox = state.approval_outbox
+        event = outbox.get("event")
+        candidate_status = outbox.get("candidate_status")
+        if not isinstance(event, dict) or not isinstance(candidate_status, str):
+            raise ProductionAuditError(
+                "Production approval outbox 无效，无法恢复",
+                code="PRODUCTION_OUTBOX_INVALID",
+            )
+        self._append_production_event(event)
+        state.status = candidate_status
+        state.approval_outbox = {}
+        try:
+            self.store.save(state)
+        except Exception as exc:
+            raise ProductionAuditError(
+                f"Production approval outbox 清理失败: {exc}",
+                code="PRODUCTION_OUTBOX_CLEANUP_FAILED",
+            ) from exc
         return state
 
     def _require_production_audit(self) -> None:

@@ -26,6 +26,23 @@ MAX_EVIDENCE_FUTURE_SKEW_SECONDS = 5 * 60
 HASH_CHUNK_BYTES = 1024 * 1024
 
 
+def build_evidence_uri(
+    path: str | os.PathLike[str],
+    *,
+    artifact_root: str | os.PathLike[str],
+) -> str:
+    """Return a canonical file URI that is safely contained by artifact_root."""
+    root = Path(artifact_root).expanduser().resolve(strict=True)
+    candidate = Path(path).expanduser().resolve(strict=True)
+    try:
+        candidate.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("evidence path 超出 artifact_root") from exc
+    if not candidate.is_file():
+        raise ValueError("evidence path 必须指向普通文件")
+    return candidate.as_uri()
+
+
 @dataclass
 class Gate:
     """质量门禁：Step 完成前必须满足的条件"""
@@ -405,6 +422,7 @@ class RunState:
     updated_at: str = ""
     revision: int = 0
     verification: Dict[str, Any] = field(default_factory=dict)
+    approval_outbox: Dict[str, Any] = field(default_factory=dict)
     _step_start_time: Optional[float] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self):
@@ -511,6 +529,7 @@ class RunState:
                 "updated_at": self.updated_at,
                 "revision": self.revision,
                 "verification": self.verification,
+                "approval_outbox": self.approval_outbox,
             },
             ensure_ascii=False,
             indent=2,
@@ -531,6 +550,7 @@ class RunState:
             updated_at=data.get("updated_at", ""),
             revision=data.get("revision", 0),
             verification=data.get("verification", {}),
+            approval_outbox=data.get("approval_outbox", {}),
         )
 
 
