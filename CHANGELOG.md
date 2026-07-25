@@ -7,8 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.48] - 2026-07-25
+
+### Added
+- Added `PipelineRunService` as the shared CLI/MCP production execution boundary.
+- Added idempotent production approval outbox recovery so an interrupted audit can resume
+  without rerunning the verifier.
+- Added `build_evidence_uri()` for canonical `file://` evidence paths beneath an artifact root.
+
 ### Changed
-- Updated current verified-baseline examples to the publicly validated `v4.8.47` release.
+- MCP business rejections now return protocol-level `isError=true` with structured error codes,
+  outcomes, retryability, and messages.
+- Production verifiers must emit bounded JSON attestations bound to the execution, pipeline, run,
+  step, evidence digest, and verifier identity.
+- Strict production audit writes now validate every event hash, sequence, and previous-hash link
+  from the beginning of the chain.
+- Release Integrity now attaches the public smoke report and checksum to each GitHub Release.
+- Updated current installation and adoption examples to `v4.8.48`.
+
+### Fixed
+- Persisted the candidate state and recovery record before emitting `gate_passed`, preventing audit
+  records from claiming approval when the final state write failed.
+- Materialized interrupted production approvals as `pending_audit` and recovered them
+  idempotently without duplicate verifier execution.
+- Rejected inline production evidence and prevented symlink traversal in every file path component.
+- Preserved MCP rejection semantics through the real protocol transport instead of returning a
+  successful text result.
 
 ## [4.8.47] - 2026-07-25
 

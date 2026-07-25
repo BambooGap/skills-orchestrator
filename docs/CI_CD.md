@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.47
+      - uses: BambooGap/skills-orchestrator@v4.8.48
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
