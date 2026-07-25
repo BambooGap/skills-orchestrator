@@ -3,6 +3,12 @@ name: Release Integrity
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag to verify
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -12,7 +18,7 @@ jobs:
     name: Verify public artifacts and evidence
     uses: ./.github/workflows/post-release-smoke.yml
     with:
-      version: ${{ github.event.release.tag_name }}
+      version: ${{ github.event.release.tag_name || inputs.version }}
       full_smoke: true
       retries: "30"
       retry_delay: "30"
@@ -29,7 +35,7 @@ jobs:
       - name: Download smoke report
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: post-release-smoke-${{ github.event.release.tag_name }}
+          name: post-release-smoke-${{ github.event.release.tag_name || inputs.version }}
 
       - name: Create report checksum
         shell: bash
@@ -39,7 +45,8 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.event.release.tag_name }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name || inputs.version }}
         run: |
           gh release upload "$TAG" \
             post-release-smoke.json \
