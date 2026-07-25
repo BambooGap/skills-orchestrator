@@ -168,7 +168,11 @@ The workflow first resolves the GitHub-verified annotated Tag to its target comm
 that exact SHA. A manual run performs the same Tag verification; the `version` input never causes
 the workflow to reuse files from the selected branch. The report records `release_tag`,
 `verified_target_sha`, `checked_out_sha`, `constraints_sha256`, and `package_version`, and fails
-unless the checked-out commit and constraints digest match the verified inputs.
+unless the checked-out commit and constraints digest match the verified inputs. The
+`package_version` field is read from the checked-out `pyproject.toml`; the
+`release-source-package-version` check also requires it to match the Tag version and the local
+package `__version__`. The public PyPI checks then bind that same version to the published wheel
+and source distribution.
 
 For a slower adopter-path check that installs the PyPI package in a clean virtual environment and
 exercises the starter kit:

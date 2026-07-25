@@ -8,19 +8,46 @@ import re
 from pathlib import Path
 
 
-CONFLICT_MARKERS = re.compile(
-    r"conflict|incompatib|resolutionimpossible|depends on|requires?|has requirement",
+NETWORK_FAILURE_MARKERS = re.compile(
+    (
+        r"newconnectionerror|nameresolutionerror|readtimeout|connectionerror|"
+        r"could not fetch url|could not reach|temporary failure in name resolution|"
+        r"failed to establish a new connection|connection reset|connection timed out|"
+        r"network is unreachable"
+    ),
+    re.IGNORECASE,
+)
+INSTALL_RESOLVER_MARKERS = re.compile(
+    r"resolutionimpossible|conflicting dependencies|dependency conflict|"
+    r"error:\s+cannot install[\s\S]+because",
+    re.IGNORECASE,
+)
+PIP_CHECK_MARKERS = re.compile(
+    r"has requirement|requires?|incompatib|conflict",
     re.IGNORECASE,
 )
 
 
-def is_fastapi_starlette_conflict(text: str) -> bool:
+def _mentions_fastapi_and_starlette(text: str) -> bool:
     lowered = text.lower()
+    return "fastapi" in lowered and "starlette" in lowered
+
+
+def has_network_failure(text: str) -> bool:
+    return NETWORK_FAILURE_MARKERS.search(text) is not None
+
+
+def is_install_resolver_conflict(text: str) -> bool:
     return (
-        "fastapi" in lowered
-        and "starlette" in lowered
-        and CONFLICT_MARKERS.search(text) is not None
+        _mentions_fastapi_and_starlette(text)
+        and not has_network_failure(text)
+        and INSTALL_RESOLVER_MARKERS.search(text) is not None
     )
+
+
+def is_fastapi_starlette_conflict(text: str) -> bool:
+    """Classify the precise dependency conflict emitted by ``pip check``."""
+    return _mentions_fastapi_and_starlette(text) and PIP_CHECK_MARKERS.search(text) is not None
 
 
 def verify_rejection(
@@ -31,7 +58,9 @@ def verify_rejection(
     pip_check_log: str = "",
 ) -> tuple[bool, str]:
     if install_status != 0:
-        if is_fastapi_starlette_conflict(install_log):
+        if has_network_failure(install_log):
+            return False, "installation failed because of a network or package-index error"
+        if is_install_resolver_conflict(install_log):
             return True, "known FastAPI/Starlette conflict rejected during installation"
         return False, "installation failed for a reason other than the known dependency conflict"
 

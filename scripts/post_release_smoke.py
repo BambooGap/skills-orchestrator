@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -23,6 +24,8 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+
+from skills_orchestrator import __version__ as LOCAL_PACKAGE_VERSION  # noqa: E402
 
 DIGEST_RE = re.compile(r"^Digest:\s+(sha256:[0-9a-f]{64})$", re.MULTILINE)
 PLATFORM_RE = re.compile(r"^\s*Platform:\s+(\S+)\s*$", re.MULTILINE)
@@ -824,26 +827,62 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def source_package_version(pyproject_path: Path | None = None) -> str:
+    """Read the package version declared by the checked-out release source."""
+    path = pyproject_path or REPO_ROOT / "pyproject.toml"
+    with path.open("rb") as handle:
+        payload = tomllib.load(handle)
+    version = payload.get("project", {}).get("version")
+    if not isinstance(version, str) or not version.strip():
+        raise ValueError(f"{path} does not declare a non-empty project.version")
+    return version.strip()
+
+
 def release_source_checks(args: argparse.Namespace) -> list[Check]:
     """Fail closed when release evidence is not bound to the verified tag source."""
     verified = str(getattr(args, "verified_target_sha", "") or "").lower()
     checked_out = str(getattr(args, "checked_out_sha", "") or "").lower()
     expected_constraints = str(getattr(args, "constraints_sha256", "") or "").lower()
-    if not any((verified, checked_out, expected_constraints)):
-        return []
+    tag_version = normalize_version(args.version)
+    try:
+        source_version = source_package_version()
+        source_error = ""
+    except (OSError, ValueError, tomllib.TOMLDecodeError) as exc:
+        source_version = ""
+        source_error = str(exc)
 
     checks = [
         Check(
-            "release-source-identifiers",
-            bool(COMMIT_SHA_RE.fullmatch(verified) and COMMIT_SHA_RE.fullmatch(checked_out)),
-            f"verified_target_sha={verified!r}, checked_out_sha={checked_out!r}",
-        ),
-        Check(
-            "release-source-match",
-            bool(verified and checked_out and verified == checked_out),
-            f"verified_target_sha={verified!r}, checked_out_sha={checked_out!r}",
-        ),
+            "release-source-package-version",
+            bool(
+                source_version
+                and tag_version == source_version
+                and source_version == LOCAL_PACKAGE_VERSION
+            ),
+            (
+                f"tag_version={tag_version!r}, source_version={source_version!r}, "
+                f"local_package_version={LOCAL_PACKAGE_VERSION!r}"
+                + (f", error={source_error!r}" if source_error else "")
+            ),
+        )
     ]
+    if not any((verified, checked_out, expected_constraints)):
+        return checks
+
+    checks.extend(
+        [
+            Check(
+                "release-source-identifiers",
+                bool(COMMIT_SHA_RE.fullmatch(verified) and COMMIT_SHA_RE.fullmatch(checked_out)),
+                f"verified_target_sha={verified!r}, checked_out_sha={checked_out!r}",
+            ),
+            Check(
+                "release-source-match",
+                bool(verified and checked_out and verified == checked_out),
+                f"verified_target_sha={verified!r}, checked_out_sha={checked_out!r}",
+            ),
+        ]
+    )
 
     constraints_path = Path(
         getattr(args, "mcp_constraints", None) or REPO_ROOT / "constraints-mcp.txt"
@@ -868,9 +907,13 @@ def release_source_checks(args: argparse.Namespace) -> list[Check]:
 
 def release_metadata(args: argparse.Namespace) -> dict[str, str]:
     """Return source-binding fields retained in the machine-readable report."""
+    try:
+        package_version = source_package_version()
+    except (OSError, ValueError, tomllib.TOMLDecodeError):
+        package_version = "unavailable"
     metadata = {
         "release_tag": tag_for_version(args.version),
-        "package_version": normalize_version(args.version),
+        "package_version": package_version,
     }
     optional = {
         "verified_target_sha": str(getattr(args, "verified_target_sha", "") or "").lower(),

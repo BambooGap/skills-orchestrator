@@ -331,14 +331,14 @@ def test_collect_checks_flags_slsa_readiness_without_ghcr_digest():
     )
 
     checks = smoke.collect_checks(args)
+    by_name = {check.name: check for check in checks}
 
-    assert checks == [
-        Check(
-            "slsa-readiness-report",
-            False,
-            "could not resolve GHCR digest for SLSA readiness subject",
-        )
-    ]
+    assert by_name["release-source-package-version"].ok is False
+    assert by_name["slsa-readiness-report"] == Check(
+        "slsa-readiness-report",
+        False,
+        "could not resolve GHCR digest for SLSA readiness subject",
+    )
 
 
 def test_main_retries_until_checks_pass(monkeypatch):
@@ -386,6 +386,7 @@ def test_release_source_checks_bind_checkout_and_constraints(monkeypatch, tmp_pa
     digest = smoke.sha256_file(constraints)
     sha = "a" * 40
     args = argparse.Namespace(
+        version="v4.8.49",
         verified_target_sha=sha,
         checked_out_sha=sha,
         constraints_sha256=digest,
@@ -401,6 +402,7 @@ def test_release_source_checks_reject_mismatched_checkout_and_constraints(tmp_pa
     constraints = tmp_path / "constraints-mcp.txt"
     constraints.write_text("mcp==1.28.1\n", encoding="utf-8")
     args = argparse.Namespace(
+        version="v4.8.49",
         verified_target_sha="a" * 40,
         checked_out_sha="b" * 40,
         constraints_sha256="c" * 64,
@@ -411,6 +413,25 @@ def test_release_source_checks_reject_mismatched_checkout_and_constraints(tmp_pa
 
     assert by_name["release-source-match"].ok is False
     assert by_name["release-constraints-digest"].ok is False
+
+
+def test_release_source_package_version_is_read_from_checkout(monkeypatch, tmp_path):
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "skills-orchestrator"\nversion = "9.9.9"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(smoke, "REPO_ROOT", tmp_path)
+    args = argparse.Namespace(
+        version="v4.8.49",
+        verified_target_sha="",
+        checked_out_sha="",
+        constraints_sha256="",
+    )
+
+    by_name = {check.name: check for check in smoke.release_source_checks(args)}
+
+    assert by_name["release-source-package-version"].ok is False
+    assert smoke.release_metadata(args)["package_version"] == "9.9.9"
 
 
 def test_build_report_records_release_source_metadata():

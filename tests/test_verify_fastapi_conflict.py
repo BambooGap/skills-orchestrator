@@ -26,6 +26,35 @@ def test_network_failure_is_not_misclassified_as_dependency_conflict():
     )
 
     assert ok is False
+    assert "network" in message
+
+
+def test_network_failure_wins_over_dependency_context_in_install_log():
+    ok, message = verify_rejection(
+        install_status=1,
+        install_log=(
+            "Collecting fastapi==0.116.1\n"
+            "fastapi 0.116.1 requires starlette<0.48.0\n"
+            "Retrying after NewConnectionError while fetching starlette\n"
+            "ERROR: Could not reach pypi.org\n"
+        ),
+    )
+
+    assert ok is False
+    assert "network" in message
+
+
+def test_install_failure_requires_explicit_resolver_terminal_marker():
+    ok, message = verify_rejection(
+        install_status=1,
+        install_log=(
+            "Collecting fastapi==0.116.1\n"
+            "fastapi 0.116.1 requires starlette<0.48.0\n"
+            "ERROR: subprocess exited unexpectedly\n"
+        ),
+    )
+
+    assert ok is False
     assert "other than" in message
 
 
