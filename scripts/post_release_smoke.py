@@ -513,6 +513,167 @@ def pypi_install_smoke(
     return checks
 
 
+def mcp_runtime_install_smoke(
+    *,
+    package: str,
+    version: str,
+    python: str,
+    constraints: str | None,
+    sbom_output: str | None,
+    timeout: float,
+) -> list[Check]:
+    """Install the public MCP extra in isolation and exercise the real protocol path."""
+    normalized = normalize_version(version)
+    checks: list[Check] = []
+    constraint_path = Path(constraints).resolve() if constraints else None
+    if constraint_path is not None and not constraint_path.is_file():
+        return [
+            Check(
+                "pypi-mcp-constraints",
+                False,
+                f"MCP constraints file does not exist: {constraint_path}",
+            )
+        ]
+
+    with tempfile.TemporaryDirectory(prefix="skillops-post-release-mcp-") as temp_dir:
+        root = Path(temp_dir)
+        venv = root / "venv"
+        try:
+            cp = run_command([python, "-m", "venv", str(venv)], timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return [Check("pypi-mcp-venv", False, f"timed out after {timeout:.0f}s")]
+        if cp.returncode != 0:
+            return [Check("pypi-mcp-venv", False, cp.stderr.strip() or cp.stdout.strip())]
+
+        py = venv / "bin" / "python"
+        cli = venv / "bin" / "skills-orchestrator"
+        install_command = [
+            str(py),
+            "-m",
+            "pip",
+            "install",
+            "--no-cache-dir",
+        ]
+        if constraint_path is not None:
+            install_command.extend(["--constraint", str(constraint_path)])
+        install_command.append(f"{package}[mcp]=={normalized}")
+        try:
+            install = run_command(install_command, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return [Check("pypi-mcp-install", False, f"timed out after {timeout:.0f}s")]
+        checks.append(
+            Check(
+                "pypi-mcp-install",
+                install.returncode == 0,
+                "isolated MCP extra installed"
+                if install.returncode == 0
+                else (install.stderr or install.stdout).strip().splitlines()[-1],
+            )
+        )
+        if install.returncode != 0:
+            return checks
+
+        pip_check = run_command([str(py), "-m", "pip", "check"], timeout=timeout)
+        checks.append(
+            Check(
+                "pypi-mcp-pip-check",
+                pip_check.returncode == 0,
+                pip_check.stdout.strip() or pip_check.stderr.strip(),
+            )
+        )
+
+        project = root / "project"
+        project.mkdir()
+        init = run_command(
+            [str(cli), "init", "--template", "team-standard", "--non-interactive"],
+            cwd=project,
+            timeout=timeout,
+        )
+        if init.returncode != 0:
+            checks.append(
+                Check(
+                    "pypi-mcp-protocol",
+                    False,
+                    init.stderr.strip() or init.stdout.strip(),
+                )
+            )
+        else:
+            protocol = run_command(
+                [str(cli), "mcp-test", "list_skills", "{}"],
+                cwd=project,
+                timeout=timeout,
+            )
+            checks.append(
+                Check(
+                    "pypi-mcp-protocol",
+                    protocol.returncode == 0,
+                    "mcp-test list_skills completed"
+                    if protocol.returncode == 0
+                    else protocol.stderr.strip() or protocol.stdout.strip(),
+                )
+            )
+
+        versions_cp = run_command(
+            [str(py), str(REPO_ROOT / "scripts" / "report_mcp_versions.py")],
+            timeout=timeout,
+        )
+        try:
+            versions = json.loads(versions_cp.stdout) if versions_cp.returncode == 0 else {}
+        except json.JSONDecodeError:
+            versions = {}
+        required_versions = {"mcp", "starlette", "sse-starlette"}
+        versions_ok = versions_cp.returncode == 0 and required_versions <= set(versions)
+        checks.append(
+            Check(
+                "pypi-mcp-runtime-versions",
+                versions_ok,
+                json.dumps(versions, sort_keys=True)
+                if versions_ok
+                else versions_cp.stderr.strip() or versions_cp.stdout.strip(),
+            )
+        )
+
+        sbom_path = root / "mcp-runtime-sbom.cdx.json"
+        sbom_cp = run_command(
+            [
+                str(cli),
+                "supply-chain",
+                "sbom",
+                "--installed-environment",
+                "--output",
+                str(sbom_path),
+            ],
+            timeout=timeout,
+        )
+        sbom_names: set[str] = set()
+        if sbom_cp.returncode == 0 and sbom_path.is_file():
+            try:
+                sbom = json.loads(sbom_path.read_text(encoding="utf-8"))
+                sbom_names = {
+                    str(component.get("name", "")).lower()
+                    for component in sbom.get("components", [])
+                }
+            except (json.JSONDecodeError, OSError):
+                sbom_names = set()
+        required_sbom_names = {"mcp", "starlette", "sse-starlette"}
+        missing_sbom_names = sorted(required_sbom_names - sbom_names)
+        sbom_ok = sbom_cp.returncode == 0 and not missing_sbom_names
+        if sbom_ok and sbom_output:
+            destination = Path(sbom_output)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(sbom_path, destination)
+        checks.append(
+            Check(
+                "pypi-mcp-runtime-sbom",
+                sbom_ok,
+                "CycloneDX SBOM contains mcp, starlette, and sse-starlette"
+                if sbom_ok
+                else f"missing components: {missing_sbom_names}",
+            )
+        )
+    return checks
+
+
 def pypi_hash_locked_install_smoke(
     *,
     package: str,
@@ -812,6 +973,18 @@ def collect_checks(args: argparse.Namespace) -> list[Check]:
             )
         )
 
+    if getattr(args, "check_mcp_runtime", False):
+        checks.extend(
+            mcp_runtime_install_smoke(
+                package=args.package,
+                version=version,
+                python=args.python,
+                constraints=getattr(args, "mcp_constraints", None),
+                sbom_output=getattr(args, "mcp_sbom_output", None),
+                timeout=max(args.timeout, 300),
+            )
+        )
+
     return checks
 
 
@@ -829,6 +1002,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-ghcr", action="store_true")
     parser.add_argument("--check-pypi-install", action="store_true")
     parser.add_argument("--check-pypi-hash-lock", action="store_true")
+    parser.add_argument("--check-mcp-runtime", action="store_true")
+    parser.add_argument("--mcp-constraints", default=None)
+    parser.add_argument("--mcp-sbom-output", default=None)
     parser.add_argument("--check-ghcr-signature", action="store_true")
     parser.add_argument("--check-ghcr-os-sbom", action="store_true")
     parser.add_argument("--check-slsa-readiness", action="store_true")

@@ -13,10 +13,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY pyproject.toml README.md LICENSE constraints.txt ./
+COPY pyproject.toml README.md LICENSE constraints.txt constraints-mcp.txt ./
 COPY skills_orchestrator ./skills_orchestrator
 
-RUN python -m pip install -c constraints.txt . \
+RUN python -m pip install -c constraints-mcp.txt ".[mcp]" \
     && adduser --disabled-password --gecos "" --uid 10001 appuser
 
 USER appuser

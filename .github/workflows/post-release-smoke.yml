@@ -88,6 +88,9 @@ jobs:
             args+=(
               --check-pypi-install
               --check-pypi-hash-lock
+              --check-mcp-runtime
+              --mcp-constraints constraints-mcp.txt
+              --mcp-sbom-output mcp-runtime-sbom.cdx.json
               --check-ghcr-signature
               --check-ghcr-os-sbom
               --check-slsa-readiness
@@ -102,5 +105,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: post-release-smoke-${{ inputs.version }}
-          path: post-release-smoke.json
+          path: |
+            post-release-smoke.json
+            mcp-runtime-sbom.cdx.json
+            constraints-mcp.txt
           if-no-files-found: error

@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import scripts.post_release_smoke as smoke
 from scripts.post_release_smoke import (
     Check,
@@ -432,6 +435,69 @@ def test_pypi_install_smoke_checks_default_mcp_extra_hint(monkeypatch):
     by_name = {check.name: check for check in checks}
     assert by_name["pypi-default-without-mcp"].ok is True
     assert by_name["pypi-mcp-extra-hint"].ok is True
+
+
+def test_mcp_runtime_install_smoke_records_protocol_versions_and_sbom(monkeypatch, tmp_path):
+    def fake_run_command(command, *, cwd=None, timeout=120):
+        del cwd, timeout
+        if len(command) >= 4 and command[1:3] == ["-m", "venv"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "", "")
+        if command[1:4] == ["-m", "pip", "install"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "installed\n", "")
+        if command[1:4] == ["-m", "pip", "check"]:
+            return smoke.subprocess.CompletedProcess(
+                command, 0, "No broken requirements found.\n", ""
+            )
+        if command[1:3] == ["init", "--template"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "initialized\n", "")
+        if command[1:4] == ["mcp-test", "list_skills", "{}"]:
+            return smoke.subprocess.CompletedProcess(command, 0, "skills\n", "")
+        if command[1].endswith("report_mcp_versions.py"):
+            return smoke.subprocess.CompletedProcess(
+                command,
+                0,
+                json.dumps(
+                    {
+                        "mcp": "1.28.1",
+                        "starlette": "1.3.1",
+                        "sse-starlette": "3.4.5",
+                    }
+                ),
+                "",
+            )
+        if command[1:4] == ["supply-chain", "sbom", "--installed-environment"]:
+            output = Path(command[command.index("--output") + 1])
+            output.write_text(
+                json.dumps(
+                    {
+                        "components": [
+                            {"name": "mcp"},
+                            {"name": "starlette"},
+                            {"name": "sse-starlette"},
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            return smoke.subprocess.CompletedProcess(command, 0, "written\n", "")
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(smoke, "run_command", fake_run_command)
+    output = tmp_path / "mcp-runtime-sbom.cdx.json"
+
+    checks = smoke.mcp_runtime_install_smoke(
+        package="skills-orchestrator",
+        version="4.8.49",
+        python="python3.12",
+        constraints=None,
+        sbom_output=str(output),
+        timeout=30,
+    )
+
+    assert all(check.ok for check in checks)
+    assert output.is_file()
+    by_name = {check.name: check for check in checks}
+    assert json.loads(by_name["pypi-mcp-runtime-versions"].message)["mcp"] == "1.28.1"
 
 
 def test_pypi_install_smoke_checks_stable_schema_audit_for_new_user_path(monkeypatch):

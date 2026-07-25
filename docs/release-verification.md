@@ -160,8 +160,9 @@ skills-orchestrator schema validate \
 ```
 
 The workflow creates GitHub artifact attestations for the smoke report and checksum before
-attaching them to the Release. Existing assets are never overwritten; a repeated run for the same
-version fails instead of replacing the earlier evidence.
+attaching them to the Release. The retained subject set also includes `mcp-runtime-sbom.cdx.json`
+and the matching `constraints-mcp.txt`. Existing assets are never overwritten; a repeated run for
+the same version fails instead of replacing the earlier evidence.
 
 For a slower adopter-path check that installs the PyPI package in a clean virtual environment and
 exercises the starter kit:
@@ -197,8 +198,10 @@ The same check is available from the GitHub Actions UI through the `Post-release
 Use the release tag as the `version` input, for example `v4.8.49`. The workflow runs `full_smoke`
 by default so the retained report covers public artifact metadata, PyPI clean install, consumer-side
 hash-locked install, GHCR Cosign signature verification, GHCR OS SBOM attestation verification, the
-SLSA readiness report schema check, starter-kit adopter path, and the default-install MCP extra
-hint. Disable `full_smoke` only when you intentionally want a faster metadata-only check. The
+SLSA readiness report schema check, starter-kit adopter path, the default-install MCP extra hint,
+and an isolated `[mcp]` install with `pip check`, real `mcp-test list_skills`, resolved runtime
+versions, and an installed-environment CycloneDX SBOM. Disable `full_smoke` only when you
+intentionally want a faster metadata-only check. The
 workflow uploads `post-release-smoke.json` as a retained run artifact so platform teams can review or
 archive the release verification evidence after the job finishes.
 

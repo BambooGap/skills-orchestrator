@@ -20,6 +20,7 @@ def build_python_package_sbom(
     *,
     project_name: str = "skills-orchestrator",
     include_dependencies: bool = True,
+    include_installed_environment: bool = False,
 ) -> dict[str, Any]:
     """Build a small CycloneDX SBOM for the installed Python package.
 
@@ -28,7 +29,13 @@ def build_python_package_sbom(
     """
     project_version = _distribution_version(project_name) or __version__
     components = []
-    if include_dependencies:
+    if include_installed_environment:
+        dependency_versions = _installed_environment_dependencies(project_name)
+    elif include_dependencies:
+        dependency_versions = _installed_dependencies(project_name)
+    else:
+        dependency_versions = []
+    if dependency_versions:
         components = [
             {
                 "type": "library",
@@ -37,7 +44,7 @@ def build_python_package_sbom(
                 "version": version,
                 "purl": f"pkg:pypi/{name}@{version}",
             }
-            for name, version in _installed_dependencies(project_name)
+            for name, version in dependency_versions
         ]
 
     serial = uuid5(NAMESPACE_URL, f"pkg:pypi/{project_name}@{project_version}")
@@ -468,6 +475,30 @@ def _installed_dependencies(project_name: str) -> list[tuple[str, str]]:
         if version:
             dependencies.append((name, version))
     return dependencies
+
+
+def _installed_environment_dependencies(project_name: str) -> list[tuple[str, str]]:
+    """Return every installed distribution except the SBOM subject itself.
+
+    This mode is intended for a controlled, isolated release environment such
+    as the MCP post-release smoke venv. It must be opt-in because a developer's
+    shared environment can contain unrelated packages.
+    """
+    project_key = _normalized_distribution_name(project_name)
+    dependencies: dict[str, tuple[str, str]] = {}
+    for distribution in metadata.distributions():
+        name = distribution.metadata.get("Name")
+        if not name or _normalized_distribution_name(name) == project_key:
+            continue
+        version = distribution.version
+        if not version:
+            continue
+        dependencies[_normalized_distribution_name(name)] = (name, version)
+    return sorted(dependencies.values(), key=lambda item: item[0].lower())
+
+
+def _normalized_distribution_name(name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower()
 
 
 def _distribution_version(name: str) -> str | None:

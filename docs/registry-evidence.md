@@ -109,6 +109,20 @@ skills-orchestrator registry comment-body registry-diff.md \
 
 The registry is file-based by design. It does not run agents, index code, or require a database.
 
+### Consume Registry JSON
+
+Validate the public contract before extracting fields, and dispatch parsers by `schema_version`:
+
+```bash
+skills-orchestrator schema validate --kind registry --input registry.json
+jq '.schema_version, .summary, .configs[].skills' registry.json
+jq '.configs[].zone' registry.json
+```
+
+Skills live under `.configs[].skills`, zones under `.configs[].zone`, and the aggregate counts under
+`.summary`. There is intentionally no top-level `.skills` array. Consumers must follow the published
+Schema rather than infer JSON fields from human-readable CLI output.
+
 Export a structural graph when platform teams need ownership and dependency review:
 
 ```bash
@@ -234,6 +248,21 @@ The bundle writes:
 `evidence-manifest.json` includes a `ledger` object with `artifact_hashes`, `bundle_hash`, and
 `previous_bundle_hash`. These hashes are useful for release comparison and audit continuity. They
 are not a replacement for signed provenance or external attestation.
+
+Consume the evidence manifest through its Schema and versioned fields:
+
+```bash
+skills-orchestrator schema validate \
+  --kind evidence \
+  --input evidence/evidence-manifest.json
+jq '.schema_version, .ledger.bundle_hash, (.files | length)' \
+  evidence/evidence-manifest.json
+jq '.ledger.artifact_hashes' evidence/evidence-manifest.json
+```
+
+The file list is `.files`; the bundle digest is `.ledger.bundle_hash`; per-artifact digests are
+`.ledger.artifact_hashes`. Consumers must not guess a top-level `manifest`, `artifacts`, or `skills`
+field from CLI prose. CI integrations should run `schema validate` before any `jq` extraction.
 
 `registry-graph.json` is now part of the evidence bundle because it is derived from the same
 registry snapshot. `registry-diff.json` still requires a base and head registry and remains a

@@ -47,7 +47,9 @@ jobs:
 
       - name: Create report checksum
         shell: bash
-        run: sha256sum post-release-smoke.json > post-release-smoke.sha256
+        run: >-
+          sha256sum post-release-smoke.json mcp-runtime-sbom.cdx.json constraints-mcp.txt
+          > post-release-smoke.sha256
 
       - name: Attest release verification evidence
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
@@ -55,6 +57,8 @@ jobs:
           subject-path: |
             post-release-smoke.json
             post-release-smoke.sha256
+            mcp-runtime-sbom.cdx.json
+            constraints-mcp.txt
 
       - name: Attach durable evidence to GitHub Release
         shell: bash
@@ -65,4 +69,6 @@ jobs:
         run: |
           gh release upload "$TAG" \
             post-release-smoke.json \
-            post-release-smoke.sha256
+            post-release-smoke.sha256 \
+            mcp-runtime-sbom.cdx.json \
+            constraints-mcp.txt

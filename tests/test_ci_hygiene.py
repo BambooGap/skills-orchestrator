@@ -17,7 +17,7 @@ steps:
     issues = find_unconstrained_installs(workflow)
 
     assert len(issues) == 1
-    assert "missing constraints.txt" in issues[0]
+    assert "missing a constraints file" in issues[0]
 
 
 def test_pip_constraints_check_accepts_constraints_file(tmp_path: Path):
@@ -26,6 +26,19 @@ def test_pip_constraints_check_accepts_constraints_file(tmp_path: Path):
         """
 steps:
   - run: python -m pip install -c constraints.txt pip-audit==2.10.1
+""",
+        encoding="utf-8",
+    )
+
+    assert find_unconstrained_installs(workflow) == []
+
+
+def test_pip_constraints_check_accepts_scoped_mcp_constraints_file(tmp_path: Path):
+    workflow = tmp_path / "workflow.yml"
+    workflow.write_text(
+        """
+steps:
+  - run: python -m pip install -c constraints-mcp.txt '.[mcp]'
 """,
         encoding="utf-8",
     )

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when automation installs Python dependencies without constraints.txt."""
+"""Fail when automation installs Python dependencies without a constraints file."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 
 PIP_INSTALL_RE = re.compile(r"\b(?:python(?:\d(?:\.\d+)*)?\s+-m\s+)?pip\s+install\b")
+CONSTRAINT_OPTION_RE = re.compile(r"(?:^|\s)(?:-c(?:\s|=)|--constraint(?:\s|=))")
+CONSTRAINT_FILE_RE = re.compile(r"constraints(?:-[A-Za-z0-9_.-]+)?\.txt")
 
 ALLOWED_UNCONSTRAINED_SNIPPETS = (
     "dist/*.whl",
@@ -47,11 +49,16 @@ def find_unconstrained_installs(path: Path, *, display_path: Path | None = None)
             continue
         if not PIP_INSTALL_RE.search(stripped):
             continue
-        if "constraints.txt" in stripped or "PIP_CONSTRAINT" in stripped:
+        has_constraint_file = CONSTRAINT_OPTION_RE.search(stripped) and CONSTRAINT_FILE_RE.search(
+            stripped
+        )
+        if has_constraint_file or "PIP_CONSTRAINT" in stripped:
             continue
         if any(snippet in stripped for snippet in ALLOWED_UNCONSTRAINED_SNIPPETS):
             continue
-        issues.append(f"{label}:{line_number}: pip install is missing constraints.txt: {stripped}")
+        issues.append(
+            f"{label}:{line_number}: pip install is missing a constraints file: {stripped}"
+        )
     return issues
 
 

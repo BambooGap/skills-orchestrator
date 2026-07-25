@@ -19,6 +19,19 @@ docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.49 --version
 This project does not publish or recommend a floating `:latest` tag. Use a release tag for
 interactive smoke checks and a verified digest for production CI.
 
+The repository image installs `skills-orchestrator[mcp]` with the release-reviewed
+`constraints-mcp.txt`. This makes the container an isolated MCP server deployment as well as a CLI
+image without adding MCP to the default PyPI installation:
+
+```bash
+docker build -t skills-orchestrator:mcp .
+docker run --rm \
+  -v "$PWD:/workspace" \
+  -w /workspace \
+  skills-orchestrator:mcp \
+  mcp-test list_skills '{}' --config config/skills.yaml
+```
+
 ## Run Against A Repository
 
 Mount the repository at `/workspace` and run commands from that directory:
@@ -44,11 +57,12 @@ docker run --rm \
 
 ## Dependency Policy
 
-The image installs the project with `constraints.txt`. This constrains the dependency set for the
-build, while post-release smoke verifies that the published PyPI package can also install from a
-consumer-side `--require-hashes` wheelhouse. CI runs `scripts/check_pip_constraints.py` so automation
-cannot accidentally add an unconstrained `pip install` path. The image does not run an unpinned pip
-upgrade step and runs the CLI as a non-root user.
+The image installs the project MCP extra with `constraints-mcp.txt`. This constrains the core CLI
+and MCP dependency set for the build, while post-release smoke verifies that the published PyPI
+package can also install from a consumer-side `--require-hashes` wheelhouse. CI runs
+`scripts/check_pip_constraints.py` so automation cannot accidentally add an unconstrained
+`pip install` path. The image does not run an unpinned pip upgrade step and runs the CLI as a
+non-root user.
 
 The Docker base image is pinned to the `python:3.12.13-slim-trixie` manifest-list digest in the
 Dockerfile. CI runs `scripts/check_docker_base_digest.py` so Dockerfile changes cannot

@@ -132,3 +132,50 @@ def test_release_publishers_require_a_github_verified_annotated_tag():
 
     assert "ref: ${{ github.event.release.tag_name || inputs.version || github.sha }}" in ghcr
     assert 'source_sha="$(git rev-parse HEAD)"' in ghcr
+
+
+def test_mcp_isolation_and_json_consumer_contracts_are_documented():
+    install = (ROOT / "docs" / "install.md").read_text(encoding="utf-8")
+    mcp = (ROOT / "docs" / "MCP_SERVER.md").read_text(encoding="utf-8")
+    registry = (ROOT / "docs" / "registry-evidence.md").read_text(encoding="utf-8")
+    release = (ROOT / "docs" / "release-verification.md").read_text(encoding="utf-8")
+
+    assert "pipx install" in install
+    assert "uv tool install" in install
+    assert "FastAPI `0.116.1`" in install
+    assert "constraints-mcp.txt" in install
+    assert "does not force a lower Starlette ceiling" in mcp
+    assert "jq '.schema_version, .summary, .configs[].skills'" in registry
+    assert "jq '.schema_version, .ledger.bundle_hash, (.files | length)'" in registry
+    assert "schema validate" in registry
+    assert "mcp-runtime-sbom.cdx.json" in release
+
+
+def test_mcp_release_constraints_and_compatibility_matrix_are_retained():
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    constraints = (ROOT / "constraints-mcp.txt").read_text(encoding="utf-8")
+    all_constraints = (ROOT / "constraints.txt").read_text(encoding="utf-8")
+    ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    smoke = (ROOT / ".github" / "workflows" / "post-release-smoke.yml").read_text(encoding="utf-8")
+    integrity = (ROOT / ".github" / "workflows" / "release-integrity.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert pyproject["project"]["optional-dependencies"]["mcp"] == ["mcp>=1.0,<2"]
+    assert "mcp==1.28.1" in constraints
+    assert "sse-starlette==3.4.5" in constraints
+    assert "starlette==1.3.1" in constraints
+    scoped_pins = {line for line in constraints.splitlines() if line and not line.startswith("#")}
+    all_pins = {line for line in all_constraints.splitlines() if line and not line.startswith("#")}
+    assert scoped_pins <= all_pins
+    for profile in ("locked", "minimum", "latest", "fastapi-current", "fastapi-old-unsupported"):
+        assert f"profile: {profile}" in ci
+    assert 'python-version: "3.13"' in ci
+    assert "mcp-test list_skills" in ci
+    assert "fastapi==0.140.0" in ci
+    assert "fastapi==0.116.1" in ci
+    assert "--check-mcp-runtime" in smoke
+    assert "--mcp-constraints constraints-mcp.txt" in smoke
+    for asset in ("mcp-runtime-sbom.cdx.json", "constraints-mcp.txt"):
+        assert asset in smoke
+        assert asset in integrity

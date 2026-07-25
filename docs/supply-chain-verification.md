@@ -256,6 +256,10 @@ For a production CI rollout, keep evidence that:
 - `slsa-readiness.json` passes schema validation and remains explicitly non-certifying;
 - full post-release smoke includes `pypi-hash-lock-install`, `pypi-hash-lock-pip-check`, and
   `ghcr-cosign-signature`;
+- full post-release smoke includes `pypi-mcp-install`, `pypi-mcp-pip-check`,
+  `pypi-mcp-protocol`, `pypi-mcp-runtime-versions`, and `pypi-mcp-runtime-sbom`;
+- the Release retains and attests the matching `constraints-mcp.txt` and
+  `mcp-runtime-sbom.cdx.json` alongside the smoke report;
 - full post-release smoke includes `ghcr-os-sbom-attestation`;
 - full post-release smoke includes `slsa-readiness-report`;
 - the consuming repo has its own dependency hash-locking policy if direct PyPI installation is used;

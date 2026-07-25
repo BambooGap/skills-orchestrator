@@ -11,6 +11,26 @@ before using `serve` or `mcp-test`:
 python3.12 -m pip install "skills-orchestrator[mcp]"
 ```
 
+Use `pipx`, `uv tool`, a dedicated virtual environment, or the repository Dockerfile. Do not install
+the MCP extra into an existing business FastAPI environment. In particular, FastAPI `0.116.1` and
+the current MCP transport dependencies have incompatible Starlette requirements. The release-tested
+deployment set is published as `constraints-mcp.txt`; use it only in an isolated MCP environment,
+then require both `python -m pip check` and a real protocol smoke:
+
+```bash
+python3.12 -m venv .venv-skillops-mcp
+. .venv-skillops-mcp/bin/activate
+python -m pip install \
+  --constraint constraints-mcp.txt \
+  "skills-orchestrator[mcp]==<matching-version>"
+python -m pip check
+skills-orchestrator mcp-test list_skills '{}' --config /absolute/path/to/config/skills.yaml
+```
+
+The project tests Python 3.12 and 3.13, the minimum supported MCP `1.0.0`, the latest compatible
+MCP 1.x, FastAPI `0.140.0` with an HTTP 200 smoke, and the known-unsupported FastAPI `0.116.1`
+shared-environment case. It deliberately does not force a lower Starlette ceiling.
+
 ## Start The Server
 
 ```bash

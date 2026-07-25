@@ -1948,11 +1948,17 @@ def supply_chain():
     is_flag=True,
     help="只输出当前包组件，不枚举已安装依赖。",
 )
+@click.option(
+    "--installed-environment",
+    is_flag=True,
+    help="枚举当前隔离环境中的全部已安装包；仅用于受控发布或部署 SBOM。",
+)
 def supply_chain_sbom(
     project_name: str,
     output: str | None,
     force: bool,
     no_dependencies: bool,
+    installed_environment: bool,
 ):
     """生成 Python package CycloneDX SBOM。"""
     from skills_orchestrator.supply_chain import build_python_package_sbom, format_sbom_json
@@ -1961,6 +1967,7 @@ def supply_chain_sbom(
         sbom = build_python_package_sbom(
             project_name=project_name,
             include_dependencies=not no_dependencies,
+            include_installed_environment=installed_environment,
         )
         rendered = format_sbom_json(sbom)
         if output:

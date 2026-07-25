@@ -6,10 +6,38 @@ from click.testing import CliRunner
 from skills_orchestrator.main import cli
 from skills_orchestrator.schema_validation import validate_document
 from skills_orchestrator.supply_chain import (
+    build_python_package_sbom,
     build_container_image_sbom,
     build_slsa_readiness,
     verify_container_release,
 )
+
+
+def test_python_sbom_can_capture_an_isolated_installed_environment():
+    sbom = build_python_package_sbom(include_installed_environment=True)
+
+    names = {component["name"].lower() for component in sbom["components"]}
+    assert "skills-orchestrator" not in names
+    assert {"click", "jsonschema", "pyyaml"} <= names
+
+
+def test_python_sbom_cli_installed_environment_is_schema_valid(tmp_path):
+    output = tmp_path / "mcp-runtime-sbom.cdx.json"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "supply-chain",
+            "sbom",
+            "--installed-environment",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert validate_document("supply-chain-sbom", str(output)).valid is True
 
 
 def test_container_image_sbom_binds_to_digest():

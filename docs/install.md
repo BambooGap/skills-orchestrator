@@ -21,6 +21,41 @@ The default package installs the lightweight governance CLI for `check`, `schema
 python3.12 -m pip install "skills-orchestrator[mcp]"
 ```
 
+Run the MCP server in its own environment. Do not add it to an existing application environment,
+especially one that already pins an older FastAPI/Starlette stack. A later MCP install can resolve a
+newer Starlette that satisfies MCP but breaks the pre-existing web application. A clean install is
+the supported deployment model:
+
+```bash
+# pipx
+pipx install "skills-orchestrator[mcp]" --python python3.12
+
+# uv tool
+uv tool install --python 3.12 "skills-orchestrator[mcp]"
+
+# dedicated virtual environment
+python3.12 -m venv .venv-skillops-mcp
+. .venv-skillops-mcp/bin/activate
+python -m pip install "skills-orchestrator[mcp]"
+python -m pip check
+skills-orchestrator mcp-test list_skills '{}' --config /absolute/path/to/config/skills.yaml
+```
+
+For repeatable deployment, download `constraints-mcp.txt` from the matching GitHub Release and use
+it only in the isolated MCP environment:
+
+```bash
+python -m pip install \
+  --constraint constraints-mcp.txt \
+  "skills-orchestrator[mcp]==<matching-version>"
+```
+
+The constraints file records the release-tested MCP dependency closure; it is not a universal lock
+for an unrelated FastAPI service. Always run `pip check` after installation. FastAPI `0.140.0` is
+covered by the compatibility smoke with the current MCP 1.x set. FastAPI `0.116.1` is a documented
+unsupported shared-environment combination because its Starlette range conflicts with the current
+MCP transport stack.
+
 ## Restricted Or Offline Networks
 
 For enterprise networks, regional network controls, or CI systems without direct PyPI/GHCR access,
@@ -142,6 +177,8 @@ docker run --rm -v "$PWD:/workspace" -w /workspace \
 ```
 
 See [Docker Usage](docker.md) for more examples.
+The repository Dockerfile installs the MCP extra from `constraints-mcp.txt`, so building that image
+is the container-isolated option for `serve` and `mcp-test`.
 For production CI, run the GHCR image by digest instead of a mutable tag. See
 [Production Adoption](production-adoption.md).
 For artifact attestation verification and hash-lock boundaries, see

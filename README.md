@@ -67,6 +67,10 @@ when you want `serve` or `mcp-test`:
 python3.12 -m pip install "skills-orchestrator[mcp]"
 ```
 
+Deploy the MCP server with `pipx`, `uv tool`, a dedicated virtual environment, or Docker. Do not
+install it into an existing business FastAPI environment. See [Install](docs/install.md) for the
+tested compatibility matrix and the release-matched `constraints-mcp.txt` workflow.
+
 ---
 
 ## 为什么需要它？

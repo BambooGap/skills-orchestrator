@@ -161,6 +161,128 @@ jobs:
           /tmp/skills-orchestrator-wheel-smoke/bin/skills-orchestrator schema list --format json | python -m json.tool >/dev/null
           /tmp/skills-orchestrator-wheel-smoke/bin/skills-orchestrator schema validate --kind config --input config/skills.yaml
 
+  mcp-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.12"
+            profile: locked
+          - python-version: "3.13"
+            profile: locked
+          - python-version: "3.12"
+            profile: minimum
+          - python-version: "3.12"
+            profile: latest
+          - python-version: "3.12"
+            profile: fastapi-current
+          - python-version: "3.12"
+            profile: fastapi-old-unsupported
+
+    name: MCP compatibility (${{ matrix.python-version }}, ${{ matrix.profile }})
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install locked MCP deployment set
+        if: matrix.profile == 'locked'
+        run: python -m pip install -c constraints-mcp.txt -e ".[mcp]"
+
+      - name: Install minimum supported MCP
+        if: matrix.profile == 'minimum'
+        run: PIP_CONSTRAINT=/dev/null python -m pip install -e ".[mcp]" "mcp==1.0.0"
+
+      - name: Install latest compatible MCP 1.x
+        if: matrix.profile == 'latest'
+        run: PIP_CONSTRAINT=/dev/null python -m pip install -e ".[mcp]" "mcp<2"
+
+      - name: Install current supported FastAPI combination
+        if: matrix.profile == 'fastapi-current'
+        run: >-
+          PIP_CONSTRAINT=/dev/null python -m pip install -e ".[mcp]"
+          "mcp<2" "fastapi==0.140.0"
+
+      - name: Confirm old FastAPI shared environment is rejected
+        if: matrix.profile == 'fastapi-old-unsupported'
+        shell: bash
+        run: |
+          set -euo pipefail
+          PIP_CONSTRAINT=/dev/null python -m pip install "fastapi==0.116.1"
+          set +e
+          PIP_CONSTRAINT=/dev/null python -m pip install -e ".[mcp]" "mcp<2"
+          install_status=$?
+          if [ "$install_status" -ne 0 ]; then
+            echo "Known-incompatible shared environment was rejected during installation."
+            exit 0
+          fi
+          python -m pip check > /tmp/old-fastapi-pip-check.txt 2>&1
+          check_status=$?
+          set -e
+          cat /tmp/old-fastapi-pip-check.txt
+          if [ "$check_status" -eq 0 ]; then
+            echo "::error::FastAPI 0.116.1 was incorrectly classified as compatible."
+            exit 1
+          fi
+          grep -Eiq 'fastapi.*starlette|starlette.*fastapi' /tmp/old-fastapi-pip-check.txt
+
+      - name: Verify supported MCP runtime
+        if: matrix.profile != 'fastapi-old-unsupported'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip check
+          skills-orchestrator mcp-test list_skills '{}' --config config/skills.yaml >/dev/null
+          python scripts/report_mcp_versions.py | tee mcp-runtime-versions.json
+          skills-orchestrator supply-chain sbom \
+            --installed-environment \
+            --output mcp-runtime-sbom.cdx.json
+          skills-orchestrator schema validate \
+            --kind supply-chain-sbom \
+            --input mcp-runtime-sbom.cdx.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          sbom = json.loads(Path("mcp-runtime-sbom.cdx.json").read_text())
+          names = {component["name"].lower() for component in sbom["components"]}
+          required = {"mcp", "starlette", "sse-starlette"}
+          missing = sorted(required - names)
+          if missing:
+              raise SystemExit(f"MCP runtime SBOM is missing: {missing}")
+          PY
+
+      - name: Verify current FastAPI returns HTTP 200
+        if: matrix.profile == 'fastapi-current'
+        run: |
+          python - <<'PY'
+          from fastapi import FastAPI
+          from fastapi.testclient import TestClient
+
+          app = FastAPI()
+
+          @app.get("/health")
+          def health():
+              return {"ok": True}
+
+          response = TestClient(app).get("/health")
+          assert response.status_code == 200, response.text
+          PY
+
+      - name: Retain MCP compatibility evidence
+        if: matrix.profile != 'fastapi-old-unsupported'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mcp-compatibility-${{ matrix.python-version }}-${{ matrix.profile }}
+          path: |
+            mcp-runtime-versions.json
+            mcp-runtime-sbom.cdx.json
+          if-no-files-found: error
+
   action-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -234,6 +356,11 @@ jobs:
       - name: Smoke test Docker image
         run: |
           docker run --rm skills-orchestrator:ci --version
+          docker run --rm \
+            -v "$PWD:/workspace" \
+            -w /workspace \
+            skills-orchestrator:ci \
+            mcp-test list_skills '{}' --config config/skills.yaml >/dev/null
           docker run --rm \
             -v "$PWD:/workspace" \
             -w /workspace \

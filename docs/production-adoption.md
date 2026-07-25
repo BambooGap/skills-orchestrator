@@ -152,6 +152,7 @@ Retain these artifacts for production repositories:
 - `skillops-review-summary.md`,
 - `dashboard-snapshot.json`,
 - `post-release-smoke.json` for released versions.
+- `constraints-mcp.txt` and `mcp-runtime-sbom.cdx.json` when the MCP server is deployed.
 - `slsa-readiness.json` for promoted SkillOps release pins.
 
 Recommended retention:
