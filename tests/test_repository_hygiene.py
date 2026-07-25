@@ -118,6 +118,7 @@ def test_release_publishers_require_a_github_verified_annotated_tag():
     ghcr = (ROOT / ".github" / "workflows" / "ghcr.yml").read_text(encoding="utf-8")
 
     assert "workflow_call:" in verifier
+    assert "workflow_dispatch:" in verifier
     assert "Require a GitHub-verified annotated tag" in verifier
     assert "ref_type" in verifier
     assert ".verification.verified" in verifier

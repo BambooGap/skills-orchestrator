@@ -11,6 +11,12 @@ on:
       target_sha:
         description: Commit targeted by the verified annotated tag
         value: ${{ jobs.verify-release-tag.outputs.target_sha }}
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Git tag to verify without publishing artifacts
+        required: true
+        type: string
 
 permissions:
   contents: read
