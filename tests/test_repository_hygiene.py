@@ -86,7 +86,7 @@ def test_readme_exposes_release_verification_and_slsa_boundaries():
     assert "actions/workflows/post-release-smoke.yml" in readme
     assert "actions/workflows/release-integrity.yml" in readme
     assert "a Git tag or the version in the source tree is not a public-release claim" in readme
-    assert "`v4.8.49` on PyPI" not in readme
+    assert "`v4.8.50` on PyPI" not in readme
     assert "[Supply Chain Verification](docs/supply-chain-verification.md)" in readme
     assert "它不是正式 SLSA 等级认证" in readme
     assert "it is not formal SLSA level certification" not in readme

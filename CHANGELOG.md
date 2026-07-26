@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.50] - 2026-07-26
+
+### Added
+- Added isolated MCP dependency constraints, Python 3.12/3.13 compatibility coverage, and
+  current/legacy FastAPI compatibility profiles for release verification.
+- Added release-source and constraints digest metadata to public smoke evidence, plus an installed
+  MCP runtime CycloneDX SBOM retained with each release.
+
+### Changed
+- Release verification now binds the GitHub-verified tag target, checked-out source, package
+  version, and MCP constraints to the same immutable release.
+- FastAPI compatibility checks now reject every failed package installation and accept only the
+  exact expected FastAPI/Starlette conflict from `pip check`.
+- Updated current installation and adoption examples to `v4.8.50`.
+
+### Fixed
+- Network and package-index failures can no longer be misclassified as an expected dependency
+  conflict during MCP compatibility verification.
+- Release smoke verification now fails closed when source-version or provenance inputs are missing,
+  inconsistent, or ambiguous.
+
 ## [4.8.49] - 2026-07-25
 
 ### Changed

@@ -388,7 +388,7 @@ def test_release_source_checks_bind_checkout_and_constraints(monkeypatch, tmp_pa
     digest = smoke.sha256_file(constraints)
     sha = "a" * 40
     args = argparse.Namespace(
-        version="v4.8.49",
+        version="v4.8.50",
         verified_target_sha=sha,
         checked_out_sha=sha,
         constraints_sha256=digest,
@@ -404,7 +404,7 @@ def test_release_source_checks_reject_mismatched_checkout_and_constraints(tmp_pa
     constraints = tmp_path / "constraints-mcp.txt"
     constraints.write_text("mcp==1.28.1\n", encoding="utf-8")
     args = argparse.Namespace(
-        version="v4.8.49",
+        version="v4.8.50",
         verified_target_sha="a" * 40,
         checked_out_sha="b" * 40,
         constraints_sha256="c" * 64,
@@ -424,7 +424,7 @@ def test_release_source_package_version_is_read_from_checkout(monkeypatch, tmp_p
     )
     monkeypatch.setattr(smoke, "REPO_ROOT", tmp_path)
     args = argparse.Namespace(
-        version="v4.8.49",
+        version="v4.8.50",
         verified_target_sha="",
         checked_out_sha="",
         constraints_sha256="",
@@ -438,13 +438,13 @@ def test_release_source_package_version_is_read_from_checkout(monkeypatch, tmp_p
 
 def test_release_source_package_version_rejects_local_package_mismatch(monkeypatch, tmp_path):
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "skills-orchestrator"\nversion = "4.8.49"\n',
+        '[project]\nname = "skills-orchestrator"\nversion = "4.8.50"\n',
         encoding="utf-8",
     )
     monkeypatch.setattr(smoke, "REPO_ROOT", tmp_path)
     monkeypatch.setattr(smoke, "LOCAL_PACKAGE_VERSION", "0.0.0")
     args = argparse.Namespace(
-        version="v4.8.49",
+        version="v4.8.50",
         verified_target_sha="",
         checked_out_sha="",
         constraints_sha256="",
@@ -472,7 +472,7 @@ def test_source_package_version_fails_for_missing_invalid_or_incomplete_pyprojec
 
 def test_release_metadata_marks_unreadable_source_version_unavailable(monkeypatch, tmp_path):
     monkeypatch.setattr(smoke, "REPO_ROOT", tmp_path)
-    args = argparse.Namespace(version="v4.8.49")
+    args = argparse.Namespace(version="v4.8.50")
 
     assert smoke.release_metadata(args)["package_version"] == "unavailable"
 
@@ -602,7 +602,7 @@ def test_mcp_runtime_install_smoke_records_protocol_versions_and_sbom(monkeypatc
 
     checks = smoke.mcp_runtime_install_smoke(
         package="skills-orchestrator",
-        version="4.8.49",
+        version="4.8.50",
         python="python3.12",
         constraints=None,
         sbom_output=str(output),

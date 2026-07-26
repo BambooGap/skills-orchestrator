@@ -69,7 +69,7 @@ own a lock file with hashes in the consuming repository:
 python3.12 -m pip install pip-tools
 
 cat > requirements.in <<'EOF'
-skills-orchestrator==4.8.49
+skills-orchestrator==4.8.50
 EOF
 
 pip-compile \
@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.49
+      - uses: BambooGap/skills-orchestrator@v4.8.50
         with:
           config: config/skills.yaml
           policy-pack: builtin/team-standard
@@ -169,7 +169,7 @@ skills-orchestrator init --template team-standard --hardened-workflow
 Use Docker when CI hosts should not install Python packages directly:
 
 ```bash
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.49 --version
+docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.50 --version
 
 docker build -t skills-orchestrator:local .
 docker run --rm -v "$PWD:/workspace" -w /workspace \
