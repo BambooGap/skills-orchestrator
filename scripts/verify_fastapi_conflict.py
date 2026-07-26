@@ -22,8 +22,12 @@ INSTALL_RESOLVER_MARKERS = re.compile(
     r"error:\s+cannot install[\s\S]+because",
     re.IGNORECASE,
 )
-PIP_CHECK_MARKERS = re.compile(
-    r"has requirement|requires?|incompatib|conflict",
+PIP_CHECK_CONFLICT_LINE = re.compile(
+    (
+        r"^fastapi\s+\S+\s+has requirement\s+"
+        r"starlette(?P<specifier>[<>=!~]\S*),\s+but you have\s+"
+        r"starlette\s+\S+\.?$"
+    ),
     re.IGNORECASE,
 )
 
@@ -46,8 +50,16 @@ def is_install_resolver_conflict(text: str) -> bool:
 
 
 def is_fastapi_starlette_conflict(text: str) -> bool:
-    """Classify the precise dependency conflict emitted by ``pip check``."""
-    return _mentions_fastapi_and_starlette(text) and PIP_CHECK_MARKERS.search(text) is not None
+    """Accept exactly one unsatisfied FastAPI-to-Starlette ``pip check`` line."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) != 1:
+        return False
+
+    match = PIP_CHECK_CONFLICT_LINE.fullmatch(lines[0])
+    if match is None:
+        return False
+
+    return bool(match.group("specifier"))
 
 
 def verify_rejection(

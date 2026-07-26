@@ -2,6 +2,8 @@ import argparse
 import json
 from pathlib import Path
 
+import pytest
+
 import scripts.post_release_smoke as smoke
 from scripts.post_release_smoke import (
     Check,
@@ -432,6 +434,47 @@ def test_release_source_package_version_is_read_from_checkout(monkeypatch, tmp_p
 
     assert by_name["release-source-package-version"].ok is False
     assert smoke.release_metadata(args)["package_version"] == "9.9.9"
+
+
+def test_release_source_package_version_rejects_local_package_mismatch(monkeypatch, tmp_path):
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "skills-orchestrator"\nversion = "4.8.49"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(smoke, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(smoke, "LOCAL_PACKAGE_VERSION", "0.0.0")
+    args = argparse.Namespace(
+        version="v4.8.49",
+        verified_target_sha="",
+        checked_out_sha="",
+        constraints_sha256="",
+    )
+
+    by_name = {check.name: check for check in smoke.release_source_checks(args)}
+
+    assert by_name["release-source-package-version"].ok is False
+
+
+def test_source_package_version_fails_for_missing_invalid_or_incomplete_pyproject(tmp_path):
+    missing = tmp_path / "missing.toml"
+    invalid = tmp_path / "invalid.toml"
+    incomplete = tmp_path / "incomplete.toml"
+    invalid.write_text("[project\n", encoding="utf-8")
+    incomplete.write_text('[project]\nname = "skills-orchestrator"\n', encoding="utf-8")
+
+    with pytest.raises(FileNotFoundError):
+        smoke.source_package_version(missing)
+    with pytest.raises(smoke.tomllib.TOMLDecodeError):
+        smoke.source_package_version(invalid)
+    with pytest.raises(ValueError, match="project.version"):
+        smoke.source_package_version(incomplete)
+
+
+def test_release_metadata_marks_unreadable_source_version_unavailable(monkeypatch, tmp_path):
+    monkeypatch.setattr(smoke, "REPO_ROOT", tmp_path)
+    args = argparse.Namespace(version="v4.8.49")
+
+    assert smoke.release_metadata(args)["package_version"] == "unavailable"
 
 
 def test_build_report_records_release_source_metadata():

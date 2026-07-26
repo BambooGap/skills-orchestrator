@@ -72,6 +72,36 @@ def test_successful_install_requires_matching_pip_check_failure():
     assert ok is True
 
 
+def test_pip_check_packages_on_unrelated_lines_are_rejected():
+    ok, _ = verify_rejection(
+        install_status=0,
+        install_log="installed",
+        pip_check_status=1,
+        pip_check_log=(
+            "package-a has requirement fastapi>=1, but you have fastapi 0.116.1.\n"
+            "package-b has requirement starlette<0.48, but you have starlette 1.3.1.\n"
+            "package-c has requirement numpy>=2.0, but you have numpy 1.0.\n"
+        ),
+    )
+
+    assert ok is False
+
+
+def test_expected_pip_check_conflict_plus_extra_conflict_is_rejected():
+    ok, _ = verify_rejection(
+        install_status=0,
+        install_log="installed",
+        pip_check_status=1,
+        pip_check_log=(
+            "fastapi 0.116.1 has requirement starlette<0.48.0,>=0.40.0, "
+            "but you have starlette 1.3.1.\n"
+            "package-c 1.0 has requirement numpy>=2.0, but you have numpy 1.0.\n"
+        ),
+    )
+
+    assert ok is False
+
+
 def test_unrelated_pip_check_failure_is_rejected():
     ok, _ = verify_rejection(
         install_status=0,
