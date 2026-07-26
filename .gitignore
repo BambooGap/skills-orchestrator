@@ -28,6 +28,7 @@ env/
 # Generated
 AGENTS.md
 skills.lock.json
+.skills-orchestrator/
 
 # Test virtual environments
 .venv-test/

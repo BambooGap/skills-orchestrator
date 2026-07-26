@@ -7,6 +7,22 @@ workflow passes.
 If a release is already published and turns out to be wrong, use
 [Release Rollback](release-rollback.md) before deleting tags, assets, or container images.
 
+## Dense development and prereleases
+
+Do not create a stable patch tag for every development checkpoint. During dense development:
+
+- keep ordinary snapshots on `main` and identify them by commit SHA;
+- publish automated nightly artifacts or images as `nightly-<commit-sha>`, without a stable PyPI
+  version or GitHub Release;
+- use PEP 440 release candidates such as `4.8.51rc1`, with matching immutable
+  `v4.8.51rc1` tags and GitHub Releases marked as prerelease;
+- promote one stable patch only after the release candidate passes the full checks below and no
+  blocking changes remain.
+
+Prerelease tags are immutable too. Never move or overwrite an RC, nightly artifact, or stable tag.
+If another candidate is needed, increment the `rcN` suffix. Production consumers should remain
+pinned to a stable commit, package hash, or image digest unless they explicitly opt into an RC.
+
 ## Local Checks
 
 ```bash

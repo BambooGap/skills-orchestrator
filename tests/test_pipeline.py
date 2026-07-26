@@ -229,6 +229,46 @@ class TestGate:
         assert uri == report.resolve().as_uri()
         assert passed, reason
 
+    @pytest.mark.parametrize(
+        "suffix",
+        [
+            "nested/%2e%2e/%2e%2e/outside.txt",
+            "nested/%2E%2E/%2E%2E/outside.txt",
+            "nested/%252e%252e/outside.txt",
+            "nested/%5c..%5coutside.txt",
+            "nested/%00outside.txt",
+        ],
+    )
+    def test_file_evidence_encoded_path_corpus_fails_closed(self, tmp_path, suffix):
+        (tmp_path / "nested").mkdir()
+        evidence = {
+            "type": "report",
+            "uri": f"{tmp_path.as_uri()}/{suffix}",
+            "sha256": "0" * 64,
+        }
+
+        passed, _reason = Gate(must_produce="report").check(
+            {"report": evidence}, artifact_root=tmp_path
+        )
+
+        assert not passed
+
+    @pytest.mark.parametrize("name", ["安全报告.txt", "résumé.txt", "re\u0301sume\u0301.txt"])
+    def test_file_evidence_accepts_canonical_unicode_names(self, tmp_path, name):
+        report = tmp_path / name
+        report.write_text("verified", encoding="utf-8")
+        evidence = {
+            "type": "report",
+            "uri": build_evidence_uri(report, artifact_root=tmp_path),
+            "sha256": hashlib.sha256(b"verified").hexdigest(),
+        }
+
+        passed, reason = Gate(must_produce="report").check(
+            {"report": evidence}, artifact_root=tmp_path
+        )
+
+        assert passed, reason
+
 
 class TestStep:
     def test_create_step_minimal(self):
@@ -1605,6 +1645,59 @@ class TestRunStateStore:
 
         assert store.base_dir == state_dir
         assert (state_dir / "runs" / "p1_r1.json").exists()
+
+    def test_default_store_is_namespaced_under_project_root(self, tmp_path, monkeypatch):
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        monkeypatch.delenv("SKILLS_ORCHESTRATOR_STATE_DIR", raising=False)
+        project_a = tmp_path / "project-a"
+        project_b = tmp_path / "project-b"
+        project_a.mkdir()
+        project_b.mkdir()
+
+        store_a = RunStateStore(project_root=project_a)
+        store_b = RunStateStore(project_root=project_b)
+        store_a.save(self._make_state("p1", "r1"))
+
+        assert store_a.base_dir == project_a / ".skills-orchestrator"
+        assert store_b.base_dir == project_b / ".skills-orchestrator"
+        assert store_b.load("p1", "r1") is None
+
+    def test_explicit_legacy_state_migration_is_non_destructive(self, tmp_path, monkeypatch):
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        monkeypatch.delenv("SKILLS_ORCHESTRATOR_STATE_DIR", raising=False)
+        legacy = RunStateStore(base_dir=str(tmp_path / "legacy"))
+        legacy.save(self._make_state("p1", "r1"))
+        source_path = legacy.runs_dir / "p1_r1.json"
+        original = source_path.read_text(encoding="utf-8")
+
+        target = RunStateStore(project_root=tmp_path / "project")
+        first = target.migrate_from(legacy.base_dir)
+        second = target.migrate_from(legacy.base_dir)
+
+        assert first == {"copied": 1, "skipped": 0}
+        assert second == {"copied": 0, "skipped": 1}
+        assert target.load("p1", "r1") is not None
+        assert source_path.read_text(encoding="utf-8") == original
+        assert (legacy.runs_dir / ".latest").exists()
+
+    def test_legacy_state_migration_rejects_conflicting_target(self, tmp_path, monkeypatch):
+        from skills_orchestrator.pipeline.store import RunStateStore
+
+        monkeypatch.delenv("SKILLS_ORCHESTRATOR_STATE_DIR", raising=False)
+        legacy = RunStateStore(base_dir=str(tmp_path / "legacy"))
+        source_state = self._make_state("p1", "r1")
+        source_state.context["origin"] = "legacy"
+        legacy.save(source_state)
+
+        target = RunStateStore(project_root=tmp_path / "project")
+        target_state = self._make_state("p1", "r1")
+        target_state.context["origin"] = "project"
+        target.save(target_state)
+
+        with pytest.raises(FileExistsError, match="内容不同"):
+            target.migrate_from(legacy.base_dir)
 
     def test_rejects_path_traversal_identifiers(self):
         """pipeline_id/run_id 不应能通过 ../ 逃逸 runs 目录。"""

@@ -7,6 +7,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_documented_dev_install_uses_verified_constraints_and_fresh_ci_cache():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    install = (ROOT / "docs" / "install.md").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    command = 'python3.12 -m pip install -c constraints.txt -e ".[dev]"'
+
+    assert command in readme
+    assert command in install
+    assert 'python -m pip install --no-cache-dir -c constraints.txt -e ".[dev]"' in workflow
+    assert "ruff>=0.15,<0.16" in pyproject["project"]["optional-dependencies"]["dev"]
+
+
+def test_dense_development_uses_prereleases_instead_of_stable_patch_churn():
+    release = (ROOT / "docs" / "release-verification.md").read_text(encoding="utf-8")
+
+    assert "nightly-<commit-sha>" in release
+    assert "4.8.51rc1" in release
+    assert "GitHub Releases marked as prerelease" in release
+    assert "Never move or overwrite an RC" in release
+
+
 def test_dual_license_metadata_and_files_are_present():
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 

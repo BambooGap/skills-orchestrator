@@ -42,7 +42,7 @@ dev = [
     "mcp>=1.0,<2",
     "pytest>=7.0",
     "pytest-benchmark>=4.0",
-    "ruff>=0.4",
+    "ruff>=0.15,<0.16",
     "twine>=5.0",
 ]
 

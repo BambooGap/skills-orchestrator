@@ -240,10 +240,21 @@ def _validate_pipeline_skills_or_exit(pipeline_id: str, pipeline, registry) -> N
     raise SystemExit(1)
 
 
-def _pipeline_store(state_dir: Optional[str] = None):
+def _pipeline_project_root(config: str) -> Path:
+    from skills_orchestrator.compiler.parser import Parser
+
+    parsed = Parser(str(Path(config).resolve())).parse()
+    return Path(parsed.base_dir).resolve()
+
+
+def _pipeline_store(
+    state_dir: Optional[str] = None,
+    *,
+    project_root: Optional[str | Path] = None,
+):
     from skills_orchestrator.pipeline.store import RunStateStore
 
-    return RunStateStore(base_dir=state_dir)
+    return RunStateStore(base_dir=state_dir, project_root=project_root)
 
 
 def _append_pipeline_skill_content(lines: list[str], registry, skill_id: str, label: str) -> None:
@@ -2424,7 +2435,7 @@ def pipeline_start(
         _validate_pipeline_skills_or_exit(pipeline_id, pipeline, registry)
 
         ctx = _parse_pipeline_context(context)
-        store = _pipeline_store(state_dir)
+        store = _pipeline_store(state_dir, project_root=registry._base_dir)
         state = PipelineRunService(
             pipeline,
             store,
@@ -2467,7 +2478,7 @@ def pipeline_status(
       skills-orchestrator pipeline status  # 查看最近的运行
     """
     try:
-        store = _pipeline_store(state_dir)
+        store = _pipeline_store(state_dir, project_root=_pipeline_project_root(config))
 
         # 加载 RunState
         if run_id and pipeline_id:
@@ -2519,13 +2530,18 @@ def pipeline_status(
 @click.argument("pipeline_id", required=False, default=None)
 @click.option("--limit", default=20, show_default=True, help="最多显示多少条运行记录")
 @click.option("--json", "as_json", is_flag=True, help="输出 JSON，便于 Agent/CI 读取")
+@click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
 @click.option(
     "--state-dir",
     default=None,
     help="Pipeline 状态目录；也可用 SKILLS_ORCHESTRATOR_STATE_DIR 固定到项目内目录",
 )
 def pipeline_list_runs(
-    pipeline_id: Optional[str], limit: int, as_json: bool, state_dir: Optional[str]
+    pipeline_id: Optional[str],
+    limit: int,
+    as_json: bool,
+    config: str,
+    state_dir: Optional[str],
 ):
     """列出 Pipeline 运行记录
 
@@ -2536,7 +2552,7 @@ def pipeline_list_runs(
       skills-orchestrator pipeline list-runs --json
     """
     try:
-        store = _pipeline_store(state_dir)
+        store = _pipeline_store(state_dir, project_root=_pipeline_project_root(config))
         rows = store.list_runs(pipeline_id)
         rows.sort(key=lambda row: row.get("updated_at") or "", reverse=True)
         rows = rows[: max(limit, 0)]
@@ -2564,6 +2580,50 @@ def pipeline_list_runs(
             click.echo(f"    started: {row['started_at']}")
             click.echo(f"    updated: {row['updated_at']}")
             click.echo("")
+    except Exception as e:
+        click.echo(_err(str(e)), err=True)
+        raise SystemExit(1)
+
+
+@pipeline.command("migrate-state")
+@click.option(
+    "--from-dir",
+    "source_dir",
+    default="~/.skills-orchestrator",
+    show_default=True,
+    help="旧 Pipeline 状态目录",
+)
+@click.option("--config", "-c", default="config/skills.yaml", help="配置文件路径")
+@click.option(
+    "--state-dir",
+    default=None,
+    help="目标状态目录；默认使用项目根目录下 .skills-orchestrator",
+)
+@click.option("--json", "as_json", is_flag=True, help="输出 JSON")
+def pipeline_migrate_state(
+    source_dir: str,
+    config: str,
+    state_dir: Optional[str],
+    as_json: bool,
+):
+    """显式、非破坏性地迁移旧 Pipeline 状态。"""
+    try:
+        store = _pipeline_store(state_dir, project_root=_pipeline_project_root(config))
+        result = store.migrate_from(source_dir)
+        payload = {
+            "source": str(Path(source_dir).expanduser().resolve()),
+            "target": str(store.base_dir.resolve()),
+            **result,
+        }
+        if as_json:
+            click.echo(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            click.echo(
+                console_safe_text(
+                    f"Pipeline 状态迁移完成：复制 {result['copied']}，"
+                    f"跳过 {result['skipped']}\n目标目录: {payload['target']}"
+                )
+            )
     except Exception as e:
         click.echo(_err(str(e)), err=True)
         raise SystemExit(1)
@@ -2615,7 +2675,7 @@ def pipeline_advance(
 
     config_path = str(Path(config).resolve())
     try:
-        store = _pipeline_store(state_dir)
+        store = _pipeline_store(state_dir, project_root=_pipeline_project_root(config))
         # 自动找最新运行（run_id 未指定时）
         if not run_id:
             state = store.load_latest(pipeline_id)
@@ -2696,7 +2756,7 @@ def pipeline_resume(
     from skills_orchestrator.pipeline.engine import PipelineEngine
 
     try:
-        store = _pipeline_store(state_dir)
+        store = _pipeline_store(state_dir, project_root=_pipeline_project_root(config))
 
         # 加载 RunState
         if run_id and pipeline_id:

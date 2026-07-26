@@ -137,9 +137,11 @@ skills-orchestrator pipeline list --config config/skills.yaml
 skills-orchestrator pipeline start code-review --config config/skills.yaml
 ```
 
-Pipeline run state is stored under `~/.skills-orchestrator` by default. In CI or shared developer
-machines, pin it to the repository workspace so `status`, `resume`, and `advance` never pick up
-another repository's latest run:
+Pipeline run state is stored under `<project-root>/.skills-orchestrator` by default. The project
+root comes from the parsed Skill configuration, so two repositories cannot pick up one another's
+latest run. The generated directory is ignored by this repository.
+
+An explicit `--state-dir` remains useful for CI jobs that want a disposable location:
 
 ```bash
 skills-orchestrator pipeline start code-review \
@@ -151,7 +153,20 @@ skills-orchestrator pipeline advance code-review \
   --state-dir .skills-orchestrator
 ```
 
-The same default can be set with `SKILLS_ORCHESTRATOR_STATE_DIR=.skills-orchestrator`.
+The same override can be set with `SKILLS_ORCHESTRATOR_STATE_DIR=.skills-orchestrator`.
+Explicit CLI and environment values are used exactly as supplied and are not additionally
+namespaced.
+
+Versions that predate project-local state used `~/.skills-orchestrator`. Migration is explicit so
+an old global run is never silently assigned to the wrong repository. The following command copies
+valid runs without deleting the source; byte-identical targets are skipped and conflicting targets
+fail closed:
+
+```bash
+skills-orchestrator pipeline migrate-state \
+  --from-dir ~/.skills-orchestrator \
+  --config config/skills.yaml
+```
 
 ## MCP Runtime
 

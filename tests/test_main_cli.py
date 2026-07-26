@@ -311,22 +311,64 @@ def test_pipeline_list_runs_text_and_json(workspace, monkeypatch):
     from skills_orchestrator.pipeline.models import RunState
     from skills_orchestrator.pipeline.store import RunStateStore
 
-    monkeypatch.setenv("HOME", str(workspace["root"]))
+    monkeypatch.delenv("SKILLS_ORCHESTRATOR_STATE_DIR", raising=False)
     state = RunState(pipeline_id="test-pipeline", run_id="run1")
     state.advance_to("step1")
-    RunStateStore().save(state)
+    RunStateStore(project_root=workspace["root"]).save(state)
 
     runner = CliRunner()
-    text_result = runner.invoke(cli, ["pipeline", "list-runs"])
+    text_result = runner.invoke(cli, ["pipeline", "list-runs", "--config", workspace["config"]])
     assert text_result.exit_code == 0
     assert "test-pipeline" in text_result.output
     assert "run1" in text_result.output
 
-    json_result = runner.invoke(cli, ["pipeline", "list-runs", "test-pipeline", "--json"])
+    json_result = runner.invoke(
+        cli,
+        [
+            "pipeline",
+            "list-runs",
+            "test-pipeline",
+            "--config",
+            workspace["config"],
+            "--json",
+        ],
+    )
     assert json_result.exit_code == 0
     payload = json.loads(json_result.output)
     assert payload["runs"][0]["pipeline_id"] == "test-pipeline"
     assert payload["runs"][0]["run_id"] == "run1"
+
+
+def test_pipeline_migrate_state_copies_legacy_runs(workspace, tmp_path, monkeypatch):
+    from skills_orchestrator.pipeline.models import RunState
+    from skills_orchestrator.pipeline.store import RunStateStore
+
+    monkeypatch.delenv("SKILLS_ORCHESTRATOR_STATE_DIR", raising=False)
+    legacy_dir = tmp_path / "legacy-state"
+    state = RunState(pipeline_id="test-pipeline", run_id="legacy1")
+    state.advance_to("step1")
+    RunStateStore(base_dir=str(legacy_dir)).save(state)
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "pipeline",
+            "migrate-state",
+            "--from-dir",
+            str(legacy_dir),
+            "--config",
+            workspace["config"],
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["copied"] == 1
+    assert payload["target"] == str(workspace["root"] / ".skills-orchestrator")
+    assert (
+        RunStateStore(project_root=workspace["root"]).load("test-pipeline", "legacy1") is not None
+    )
 
 
 def test_usage_report_json_reads_audit_events(tmp_path):

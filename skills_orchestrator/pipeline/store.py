@@ -45,13 +45,79 @@ class RunStateStore:
           latest -> 符号链接或记录文件
     """
 
-    def __init__(self, base_dir: Optional[str] = None):
-        if base_dir is None:
-            base_dir = os.environ.get(STATE_DIR_ENV) or os.path.expanduser("~/.skills-orchestrator")
-        self.base_dir = Path(base_dir)
+    def __init__(
+        self,
+        base_dir: Optional[str] = None,
+        *,
+        project_root: Optional[str | Path] = None,
+    ):
+        configured_dir = base_dir or os.environ.get(STATE_DIR_ENV)
+        if configured_dir:
+            self.base_dir = Path(configured_dir)
+        else:
+            root = Path(project_root) if project_root is not None else Path.cwd()
+            self.base_dir = root.resolve() / ".skills-orchestrator"
         self.runs_dir = self.base_dir / "runs"
         self.runs_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.runs_dir.chmod(0o700)
+
+    def migrate_from(self, source_base_dir: str | Path) -> Dict[str, int]:
+        """Copy valid legacy run records into this project's state directory.
+
+        Migration is intentionally explicit and non-destructive. Existing
+        byte-identical records are skipped; conflicting records fail closed.
+        The source directory is never changed.
+        """
+        source_base = Path(source_base_dir).expanduser().resolve()
+        target_base = self.base_dir.expanduser().resolve()
+        if source_base == target_base:
+            raise ValueError("源状态目录与目标状态目录相同，无需迁移")
+
+        source_runs = source_base / "runs"
+        if not source_runs.is_dir():
+            raise FileNotFoundError(f"旧状态目录不存在: {source_runs}")
+
+        copied = 0
+        skipped = 0
+        migrated_names: set[str] = set()
+        with self._write_lock():
+            for source_path in sorted(source_runs.iterdir()):
+                if (
+                    source_path.is_symlink()
+                    or not source_path.is_file()
+                    or not STATE_FILENAME_RE.fullmatch(source_path.name)
+                ):
+                    continue
+                raw = source_path.read_text(encoding="utf-8")
+                state = RunState.from_json(raw)
+                expected_name = (
+                    f"{self._validate_pipeline_id(state.pipeline_id)}_"
+                    f"{self._validate_run_id(state.run_id)}.json"
+                )
+                if source_path.name != expected_name:
+                    raise ValueError(f"状态文件名与内容不一致: {source_path.name}")
+
+                target_path = safe_child_path(self.runs_dir, expected_name)
+                if target_path.exists():
+                    if target_path.read_text(encoding="utf-8") != raw:
+                        raise FileExistsError(f"目标状态已存在且内容不同: {expected_name}")
+                    skipped += 1
+                else:
+                    self._atomic_write(target_path, raw)
+                    copied += 1
+                migrated_names.add(expected_name)
+
+            latest_source = source_runs / ".latest"
+            if latest_source.is_file():
+                latest_name = latest_source.read_text(encoding="utf-8").strip()
+                if (
+                    STATE_FILENAME_RE.fullmatch(latest_name)
+                    and latest_name in migrated_names
+                    and safe_child_path(self.runs_dir, latest_name).is_file()
+                ):
+                    self._atomic_write(self.runs_dir / ".latest", latest_name)
+
+        return {"copied": copied, "skipped": skipped}
 
     def save(self, state: RunState) -> Path:
         """保存 RunState 到文件，返回文件路径"""

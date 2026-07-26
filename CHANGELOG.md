@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added explicit, non-destructive migration of legacy global Pipeline state into a project's
+  local state namespace.
+- Added parameterized path-security regression coverage for Unicode and encoded separators,
+  normalization variants, NUL input, traversal, and symlinked parent directories.
+
+### Changed
+- Pipeline state now defaults to `<project-root>/.skills-orchestrator`, while explicit CLI and
+  environment overrides keep their existing exact behavior.
+- Development installs use the verified constraints set, Ruff stays within the tested `0.15.x`
+  range, and CI installs development dependencies without a package cache.
+- Dense development now uses commit snapshots, nightly artifacts, or immutable release candidates
+  before promoting a stable patch.
+
+### Fixed
+- Evidence URI validation now converts NUL-containing file paths into a normal gate rejection
+  instead of exposing a platform `ValueError`.
+
 ## [4.8.50] - 2026-07-26
 
 ### Added

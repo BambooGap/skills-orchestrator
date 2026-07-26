@@ -328,7 +328,7 @@ class ToolExecutor:
         from skills_orchestrator.pipeline.store import RunStateStore
 
         if self._store is None:
-            self._store = RunStateStore()
+            self._store = RunStateStore(project_root=getattr(self._registry, "_base_dir", None))
         return self._store
 
     def _get_pipeline(self, pipeline_id: str) -> Pipeline | None:

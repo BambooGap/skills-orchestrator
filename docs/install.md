@@ -189,7 +189,7 @@ For artifact attestation verification and hash-lock boundaries, see
 ```bash
 python3.12 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e '.[dev]' -c constraints.txt
+python3.12 -m pip install -c constraints.txt -e ".[dev]"
 pytest
 ```
 

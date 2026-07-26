@@ -177,7 +177,7 @@ class Gate:
             return False, "file URI evidence 必须提供 sha256", 0
         try:
             descriptor = self._open_beneath_root(root, relative)
-        except (FileNotFoundError, OSError):
+        except (FileNotFoundError, OSError, ValueError):
             return False, "file URI 不指向可读取的普通文件", 0
         try:
             before = os.fstat(descriptor)

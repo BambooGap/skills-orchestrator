@@ -36,7 +36,18 @@ def test_validate_skill_id_allows_chinese_ids():
 
 
 def test_validate_skill_id_rejects_path_traversal_and_punctuation():
-    for value in ("../evil", "a/b", "/absolute", "a.b", "bad:name"):
+    for value in (
+        "../evil",
+        "a/b",
+        "/absolute",
+        "a.b",
+        "bad:name",
+        "a∕b",
+        "a⁄b",
+        "a／b",
+        "a%2fb",
+        "a%5cb",
+    ):
         with pytest.raises(ValueError, match="非法"):
             validate_skill_id(value)
 
@@ -57,6 +68,56 @@ def test_safe_child_path_rejects_parent_segments(tmp_path):
 
     with pytest.raises(ValueError, match="路径逃逸"):
         safe_child_path(root, "..", "outside.txt")
+
+
+@pytest.mark.parametrize(
+    "parts",
+    [
+        ("..", "outside.txt"),
+        ("nested", "..", "..", "outside.txt"),
+        (".", "..", "outside.txt"),
+        ("nested", "..", "..", "root-sibling", "file"),
+    ],
+)
+def test_safe_child_path_property_corpus_never_escapes_root(tmp_path, parts):
+    root = tmp_path / "root"
+    root.mkdir()
+
+    with pytest.raises(ValueError, match="路径逃逸"):
+        safe_child_path(root, *parts)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "ascii-file",
+        "安全报告",
+        "résumé",
+        "re\u0301sume\u0301",
+        "fraction∕slash",
+        "fullwidth／slash",
+    ],
+)
+def test_unicode_child_names_remain_within_root_without_separator_reinterpretation(tmp_path, name):
+    root = tmp_path / "root"
+    root.mkdir()
+
+    resolved = safe_child_path(root, name)
+
+    assert resolved.parent == root.resolve()
+    assert resolved.name == name
+
+
+def test_path_validation_rejects_symlink_escape_at_any_parent(tmp_path):
+    root = tmp_path / "root"
+    outside = tmp_path / "outside"
+    root.mkdir()
+    outside.mkdir()
+    (root / "nested").mkdir()
+    (root / "nested" / "linked").symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="路径逃逸"):
+        validate_path_within_root(root / "nested" / "linked" / "report.txt", root)
 
 
 def test_parse_int_in_range_defaults_and_clamps():

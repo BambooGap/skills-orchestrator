@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -c constraints.txt -e ".[dev]"
+        run: python -m pip install --no-cache-dir -c constraints.txt -e ".[dev]"
 
       - name: Ruff lint
         run: ruff check skills_orchestrator/ tests/
@@ -44,7 +44,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: pip install -c constraints.txt -e ".[dev]"
+        run: python -m pip install --no-cache-dir -c constraints.txt -e ".[dev]"
 
       - name: Run tests
         run: pytest tests/ -v --tb=short

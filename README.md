@@ -173,7 +173,7 @@ appear in a future release; existing tags are not moved to rewrite their history
 ```bash
 git clone https://github.com/BambooGap/skills-orchestrator
 cd skills-orchestrator
-python3.12 -m pip install -e ".[dev]"
+python3.12 -m pip install -c constraints.txt -e ".[dev]"
 pytest tests/ -q
 ruff check skills_orchestrator/ tests/
 ```
