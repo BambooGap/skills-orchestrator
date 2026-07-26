@@ -18,7 +18,6 @@ def test_dual_license_metadata_and_files_are_present():
 
     license_notice = (ROOT / "LICENSE").read_text(encoding="utf-8")
     assert license_notice.startswith("MIT License")
-    assert (ROOT / "LICENSE-MIT").read_text(encoding="utf-8").startswith("MIT License")
     assert "Apache License" in (ROOT / "LICENSE-APACHE").read_text(encoding="utf-8")
 
 
@@ -66,8 +65,8 @@ def test_readme_points_to_dual_license_and_support_surfaces():
 
     assert "MIT OR Apache-2.0" in readme
     assert "License-MIT%20OR%20Apache--2.0-blue.svg)](#license)" in readme
-    assert "The top-level `LICENSE` keeps GitHub license detection" in readme
-    assert "[`LICENSE-APACHE`](LICENSE-APACHE)" in readme
+    assert "[MIT](LICENSE)" in readme
+    assert "[Apache-2.0](LICENSE-APACHE)" in readme
     assert "[Support](SUPPORT.md)" in readme
     assert "[Code of Conduct](CODE_OF_CONDUCT.md)" in readme
     assert "[Third-party Notices](THIRD_PARTY_NOTICES.md)" in readme

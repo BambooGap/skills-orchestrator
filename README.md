@@ -2,74 +2,27 @@
 
 [![PyPI](https://img.shields.io/pypi/v/skills-orchestrator.svg)](https://pypi.org/project/skills-orchestrator/)
 [![CI](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/BambooGap/skills-orchestrator/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BambooGap/skills-orchestrator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BambooGap/skills-orchestrator)
 [![Release](https://img.shields.io/github/v/release/BambooGap/skills-orchestrator)](https://github.com/BambooGap/skills-orchestrator/releases/latest)
-[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-release%20pins-blue?logo=githubactions&logoColor=white)](docs/github-action.md)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
-**开源 SkillOps / AI instruction governance system** — 用 policy packs、组织级 registry、证据包、SARIF/CI、SBOM、生态 adapter 和 MCP bridge，把分散的 `.md` skills 变成可治理、可审计、可接入团队流水线的工程资产。
+**Govern, audit, and ship AI-agent skills.**
 
-它不替代 Codex、Claude Code、Omnigent、CodeGraph、Superpowers 或业务记忆系统；它位于这些工具之间，负责回答团队最实际的问题：哪些 skills 可以用、谁负责、来源是否可信、CI 是否能阻断、审计证据在哪里，以及下游 agent runtime 应消费哪些经过治理的指令资产。
+Skills Orchestrator turns scattered Markdown instructions into versioned, policy-checked assets
+that teams can review in CI and deliver to agent runtimes.
 
-License: `MIT OR Apache-2.0` at your option. The top-level `LICENSE` keeps GitHub license detection
-on standard MIT text; Apache-2.0 remains available in [`LICENSE-APACHE`](LICENSE-APACHE).
+- **Govern:** metadata, zones, policy packs, registries, and deterministic conflict checks.
+- **Verify:** SARIF, SBOM, provenance, release attestations, and evidence bundles.
+- **Integrate:** GitHub Actions, MCP, and adapters for common agent environments.
 
-| Surface | Current status | Entry point |
-|---------|----------------|-------------|
-| OSS CLI | Published version shown by the PyPI badge | `python3.12 -m pip install skills-orchestrator` |
-| GitHub Action | Pin a reviewed public-release commit | `BambooGap/skills-orchestrator@<release-commit-sha>` |
-| Container image | Published tags and digests on GHCR | `ghcr.io/bamboogap/skills-orchestrator:<verified-release-tag>` |
-| SkillOps Contract | v1 executable spec | [`SPEC.md`](SPEC.md), [`CONFORMANCE.md`](CONFORMANCE.md) |
-| Enterprise adoption | Copyable repo starter packs | [`docs/adoption-playbook.md`](docs/adoption-playbook.md), `examples/adoption-repos/` |
-| Open-core contracts | Schema-backed examples | `examples/commercial-handoff/` |
-
-**Release contract:** a Git tag or the version in the source tree is not a public-release claim.
-Treat a version as published only after GitHub Release, PyPI, and GHCR are present and the
-[Release Integrity](https://github.com/BambooGap/skills-orchestrator/actions/workflows/release-integrity.yml)
-run passes. The workflow keeps the full public-artifact report as evidence and retries for up to
-15 minutes while indexes and registries settle.
-
-### 可验证发布面
-
-生产团队可以直接核验当前发布物，而不是只相信 README 声明：
-
-- [GitHub latest release](https://github.com/BambooGap/skills-orchestrator/releases/latest):
-  release tag、source archive、release notes 和 release commit。
-- [PyPI project](https://pypi.org/project/skills-orchestrator/): `skills-orchestrator`
-  wheel / sdist；发布流程使用 PyPI Trusted Publishing 和 artifact attestations。
-- [GHCR package](https://github.com/BambooGap/skills-orchestrator/pkgs/container/skills-orchestrator):
-  多架构 OCI image，可按 tag 或 digest 拉取。
-- [Post-release Smoke](https://github.com/BambooGap/skills-orchestrator/actions/workflows/post-release-smoke.yml):
-  发布后核验 GitHub Release、PyPI install、consumer-side hash-locked install、GHCR
-  image、Cosign signature、SBOM/provenance attestations、SLSA readiness report 和 starter kit path。
-- [Release Integrity](https://github.com/BambooGap/skills-orchestrator/actions/workflows/release-integrity.yml):
-  GitHub Release 发布后自动运行完整 smoke，并为报告生成 artifact attestation；同名 Release
-  证据禁止覆盖。只有该 run 成功的版本才能作为公开发布版本引用。
-- [Supply Chain Verification](docs/supply-chain-verification.md): 消费端验证 PyPI
-  wheel/sdist attestations、GHCR provenance/SBOM/OS SBOM attestations、Cosign signature、
-  Docker digest 和 hash-lock 边界的命令。
-
-SLSA 边界：项目生成的是 SLSA readiness / evidence input，用于说明哪些发布证据已经
-可验证；它不是正式 SLSA 等级认证，也不声明已经达到 SLSA Build L3+。
-细节见 [SLSA Readiness](docs/slsa-readiness.md)。
+[Quick start](#快速开始5-分钟) · [Documentation](docs/INDEX.md) ·
+[Latest release](https://github.com/BambooGap/skills-orchestrator/releases/latest) ·
+[Production guide](docs/production-adoption.md)
 
 ```bash
 python3.12 -m pip install skills-orchestrator
 skills-orchestrator init --template team-standard
 skills-orchestrator check --config config/skills.yaml
 ```
-
-The default PyPI install is the lightweight CI governance CLI. Install the optional MCP runtime only
-when you want `serve` or `mcp-test`:
-
-```bash
-python3.12 -m pip install "skills-orchestrator[mcp]"
-```
-
-Deploy the MCP server with `pipx`, `uv tool`, a dedicated virtual environment, or Docker. Do not
-install it into an existing business FastAPI environment. See [Install](docs/install.md) for the
-tested compatibility matrix and the release-matched `constraints-mcp.txt` workflow.
 
 ---
 
@@ -237,6 +190,23 @@ enterprise gate：
 Docker digest 和依赖 hash lock；先以 advisory mode 运行，再按团队变更流程升级到 blocking
 gate。推荐流程见
 [Production Adoption](docs/production-adoption.md)。
+
+#### 发布验证边界
+
+The release contract is strict: a Git tag or the version in the source tree is not a public-release claim.
+只有 GitHub Release、PyPI 和 GHCR 全部可用，并且
+[Release Integrity](https://github.com/BambooGap/skills-orchestrator/actions/workflows/release-integrity.yml)
+通过后，版本才可作为公开制品使用。
+
+- [GitHub latest release](https://github.com/BambooGap/skills-orchestrator/releases/latest)
+- [PyPI project](https://pypi.org/project/skills-orchestrator/)
+- [GHCR package](https://github.com/BambooGap/skills-orchestrator/pkgs/container/skills-orchestrator)
+- [Post-release Smoke](https://github.com/BambooGap/skills-orchestrator/actions/workflows/post-release-smoke.yml)
+- [Supply Chain Verification](docs/supply-chain-verification.md)
+
+项目生成 SLSA readiness / evidence input，用于说明哪些发布证据已经可验证。
+它不是正式 SLSA 等级认证，也不声明已经达到 SLSA Build L3+。细节见
+[SLSA Readiness](docs/slsa-readiness.md)。
 
 ### 规范、一致性与端到端参考
 
@@ -865,4 +835,4 @@ CI 运行：ruff lint + format check + Python 3.12/3.13 matrix。
 
 ## License
 
-Licensed under either [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option.
+Licensed under either [MIT](LICENSE) or [Apache-2.0](LICENSE-APACHE), at your option.
