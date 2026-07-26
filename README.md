@@ -7,109 +7,31 @@
 
 **Govern, audit, and ship AI-agent skills.**
 
-Skills Orchestrator turns scattered Markdown instructions into versioned, policy-checked assets
-that teams can review in CI and deliver to agent runtimes.
+Skills Orchestrator turns Markdown instructions into versioned, policy-checked assets that teams
+can review in CI and deliver to agent runtimes.
 
 - **Govern:** metadata, zones, policy packs, registries, and deterministic conflict checks.
 - **Verify:** SARIF, SBOM, provenance, release attestations, and evidence bundles.
 - **Integrate:** GitHub Actions, MCP, and adapters for common agent environments.
 
-[Quick start](#快速开始5-分钟) · [Documentation](docs/INDEX.md) ·
-[Latest release](https://github.com/BambooGap/skills-orchestrator/releases/latest) ·
-[Production guide](docs/production-adoption.md)
+[Quick start](#quick-start) · [Documentation](docs/INDEX.md) ·
+[Production guide](docs/production-adoption.md) ·
+[Latest release](https://github.com/BambooGap/skills-orchestrator/releases/latest)
+
+## Quick start
+
+Requires Python 3.12 or newer.
 
 ```bash
 python3.12 -m pip install skills-orchestrator
+
 skills-orchestrator init --template team-standard
 skills-orchestrator check --config config/skills.yaml
+skills-orchestrator build --config config/skills.yaml --lock
 ```
 
----
-
-## 为什么需要它？
-
-| 问题 | 没有 Skills Orchestrator | 有了之后 |
-|------|--------------------------|----------|
-| Skill 越来越多 | 手动维护 AGENTS.md，容易遗漏或冲突 | `build` 一条命令自动生成 |
-| 不同项目用不同规范 | 到处复制粘贴，版本不同步 | Zone 机制，目录自动对应规范 |
-| CI 只能看退出码 | 终端输出无法被工具链消费 | `check --format json/sarif` 生成机器可读报告和 rule-level trace |
-| Instruction 没有清单 | 供应链工具看不到 agent 规则资产 | `manifest --format json/cyclonedx` 导出 instruction inventory |
-| Policy 团队无法审计 | Resolver 结果只在 CLI 里可见 | `policy export --format opa-input/rego-test` 导出 OPA/Rego proof |
-| 团队规则不可执行 | owner/source/version/license 只写在文档里 | `check --policy-pack builtin/team-standard` 强制团队治理元数据 |
-| 外部 Skill 来源不可信 | 只知道复制自 URL，不知道 commit、hash、抓取时间 | `import` 写入 provenance，`builtin/engineering-grade` 检查来源证据 |
-| 多仓 Skill 无法盘点 | 每个 repo 各查各的 | `registry build` / `registry diff` / `registry graph` 导出组织级 skill registry 和治理关系图 |
-| 外部平台难以接入 | Hosted/GitHub App 重写 CLI 语义 | `examples/external-consumer` 固化 hosted registry、GitHub App、multi-repo artifact 输入边界 |
-| 商用审计缺证据包 | 发布时到处找 CI、manifest、SARIF | `evidence export` 一次导出审计证据和 hash ledger |
-| 上下文窗口有限 | 所有 Skill 全量注入，浪费 token | MCP Server 默认只注入选中内容；未选中 Skill 仍会以计数和审计元数据出现 |
-| 两个 Skill 互相冲突 | 运行时才发现，模型行为不确定 | 编译时 `conflict_with` 强制报错 |
-| 多步骤工作流无保证 | AI 靠自觉推进，容易跳步或遗漏 | Pipeline 编排 + artifact/evidence 门禁，拒绝仅声明名称或布尔值的伪产出 |
-| Skill 内容重复 | 相似 Skill 各自维护，改一处忘另一处 | Skill Inheritance，子 Skill 继承父 Skill |
-
----
-
-## 快速开始（5 分钟）
-
-### 安装
-
-```bash
-python3.12 -m pip install skills-orchestrator
-```
-
-Skills Orchestrator requires Python 3.12 or newer. On macOS, `/usr/bin/python3` is often
-Python 3.9, which can make `pip install skills-orchestrator` look like the package is missing.
-Use `python3.12`, `pipx --python python3.12`, `uvx --python 3.12`, or the Docker image.
-
-> `pip` 包内置 `team-standard` starter kit；需要更多 examples 时再 clone 本仓库。
-
-`serve` and `mcp-test` need the optional MCP runtime extra:
-
-```bash
-python3.12 -m pip install "skills-orchestrator[mcp]"
-```
-
-不想在 CI host 上安装 Python 包时，也可以直接使用已发布容器：
-
-```bash
-# Use v4.8.50 only after its Release Integrity run is green.
-docker run --rm ghcr.io/bamboogap/skills-orchestrator:v4.8.50 --version
-```
-
-### 初始化项目
-
-```bash
-cd my-project
-
-# 生产 bootstrap：生成 config、示例 skills、CI workflow 和 evidence 目录
-skills-orchestrator init --template team-standard
-
-# 严格供应链 bootstrap：生成 pinned checkout 的 CI workflow
-skills-orchestrator init --template team-standard --hardened-workflow
-
-# 兼容旧流程：从已有 skills/*.md frontmatter 生成配置
-skills-orchestrator init --non-interactive
-
-# 交互式：逐个确认每个 Skill 的配置
-skills-orchestrator init
-```
-
-### 检查 Skills
-
-```bash
-skills-orchestrator check --config config/skills.yaml
-# Skills check
-#   Findings: 0 errors, 0 warnings, 0 infos
-```
-
-启用团队标准规则：
-
-```bash
-skills-orchestrator check \
-  --config config/skills.yaml \
-  --policy-pack builtin/team-standard \
-  --fail-on warning
-```
-
-启用工程级治理规则：
+The starter kit creates a working config, example skills, CI workflow, and evidence directory.
+Run the stricter policy pack when the baseline is clean:
 
 ```bash
 skills-orchestrator check \
@@ -118,26 +40,61 @@ skills-orchestrator check \
   --fail-on warning
 ```
 
-CI 或 GitHub Code Scanning 可以使用机器可读输出：
+Use the optional MCP runtime only when an agent needs task-scoped skill loading:
 
 ```bash
-skills-orchestrator check --config config/skills.yaml --format json > check.json
-skills-orchestrator check --config config/skills.yaml --format sarif
-skills-orchestrator explainability build \
-  --check-json check.json \
-  --config config/skills.yaml \
-  --output ci-explainability.json \
-  --force
-skills-orchestrator schema validate --kind check --input check.json
-skills-orchestrator schema validate --kind ci-explainability --input ci-explainability.json
+python3.12 -m pip install "skills-orchestrator[mcp]"
+skills-orchestrator serve --config config/skills.yaml
 ```
 
-JSON check output includes `policy_trace`: an explainable CI trace for rule evaluation. It traces
-SkillOps rules and policy packs, not agent reasoning or runtime model behavior.
-`ci-explainability.json` turns the same trace into PR/CI-ready failure explanations: rule id,
-blocking status, file/line, skill id, severity, and suggested fix.
+See [Install](docs/install.md), [GitHub Action](docs/github-action.md), and
+[Docker Usage](docs/docker.md) for deployment-specific instructions.
 
-也可以直接在 GitHub Actions 中运行：
+## What it solves
+
+| Need | Skills Orchestrator surface |
+| --- | --- |
+| Enforce ownership, lifecycle, license, and provenance | Policy packs and stable rule IDs |
+| Detect duplicate, conflicting, or drifting instructions | Resolver, lock file, and registry diff |
+| Review findings in CI | JSON, SARIF, and reviewer summaries |
+| Inventory instruction assets | Native manifest and CycloneDX SBOM |
+| Retain audit evidence | Evidence bundles, hash ledger, and release attestations |
+| Deliver only task-relevant context | MCP routing with active/inactive skill decisions |
+| Coordinate governed multi-step work | Pipelines with artifact and evidence gates |
+| Reach existing agent environments | AGENTS.md, Claude Skills, MCP, and SDK adapters |
+
+Skills Orchestrator is a governance and delivery layer. It does not replace an agent runtime,
+evaluate model reasoning, or act as a security sandbox.
+
+## Operating model
+
+```text
+Markdown skills
+      │
+      ▼
+metadata + policy checks ──► JSON / SARIF / SBOM
+      │
+      ├──► AGENTS.md and adapter exports
+      ├──► registry and evidence bundles
+      └──► MCP task routing and pipelines
+```
+
+| Layer | Purpose | Main commands |
+| --- | --- | --- |
+| Static governance | Validate metadata, conflicts, policies, and lock drift | `check`, `validate`, `build --lock` |
+| Inventory and proof | Export manifests, policy inputs, registries, and evidence | `manifest`, `policy export`, `registry`, `evidence` |
+| Runtime delivery | Select and load governed skills for the current task | `serve`, `mcp-test` |
+| Workflow state | Advance gated, resumable multi-step processes | `pipeline start`, `pipeline advance` |
+| Ecosystem delivery | Generate or inspect downstream agent surfaces | `adapters`, `sync` |
+
+The authoritative contracts are [SPEC.md](SPEC.md), [CONFORMANCE.md](CONFORMANCE.md), and the
+packaged schemas. Runtime details live in [MCP Server](docs/MCP_SERVER.md),
+[Pipelines](docs/PIPELINES.md), and [Adapters](docs/adapters.md).
+
+## CI and production adoption
+
+Start with advisory checks. Promote to blocking gates only after the findings, registry diff, and
+review artifacts are useful to maintainers.
 
 ```yaml
 permissions:
@@ -145,693 +102,88 @@ permissions:
   security-events: write
   pull-requests: write
 
-jobs:
-  skills:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: BambooGap/skills-orchestrator@v4.8.50
-        with:
-          config: config/skills.yaml
-          policy-pack: builtin/team-standard
-          upload-sarif: true
-          reviewer-summary: true
-          dashboard-snapshot: true
-          comment-registry-diff: true
+steps:
+  - uses: actions/checkout@<reviewed-commit-sha>
+  - uses: BambooGap/skills-orchestrator@<release-commit-sha>
+    with:
+      config: config/skills.yaml
+      policy-pack: builtin/team-standard
+      upload-sarif: true
+      reviewer-summary: true
 ```
 
-`reviewer-summary: true` 会生成 check JSON、policy trace、registry graph、evidence
-ledger 和 reviewer summary artifact；`dashboard-snapshot: true` 会从同一份 evidence
-bundle 派生 dashboard-ready JSON。如果同时启用 `comment-registry-diff`，PR comment
-会使用更适合 reviewer 阅读的汇总内容。
+Production consumers should pin the exact PyPI version, GitHub Action release commit SHA, Docker
+digest, and dependency hashes. Do not automatically follow the newest tag. The complete rollout
+sequence is documented in [Production Adoption](docs/production-adoption.md) and the
+[Adoption Playbook](docs/adoption-playbook.md).
 
-更多输入参数见 [GitHub Action 文档](docs/github-action.md)。团队文档入口见
-[Documentation Index](docs/INDEX.md)。
+## Evidence and interoperability
 
-Docker 运行方式见 [Docker Usage](docs/docker.md)。
+The CLI produces machine-readable artifacts instead of requiring downstream systems to parse
+console output or Markdown:
 
-### 15 分钟生产接入
+| Artifact | Typical consumer |
+| --- | --- |
+| Check JSON and SARIF | CI, code scanning, reviewer automation |
+| Instruction manifest and CycloneDX | Inventory and supply-chain systems |
+| OPA input and Rego test fixture | Policy review and external enforcement |
+| Registry graph and diff | Platform teams and multi-repository governance |
+| Evidence manifest and bundle hash | Auditors, release owners, hosted consumers |
+| Adapter inspection and exports | Agent runtimes and integration teams |
 
-如果你是在一个真实仓库里第一次接入，优先走 adoption playbook，而不是直接启用最严格的
-enterprise gate：
+See [Manifest and Policy Exports](docs/manifest-policy-exports.md),
+[Registry and Evidence](docs/registry-evidence.md), and
+[Supply Chain Verification](docs/supply-chain-verification.md).
 
-1. 用 `init --template team-standard` 生成 starter kit。
-2. 先跑 `check`，再跑 `build --lock` 生成 `AGENTS.md` 和 `skills.lock.json`。
-3. 再跑 `doctor --profile adopter --fail-under 100` 和 `conformance run --profile core`。
-4. 在 GitHub Action 里先用 advisory 或 warning gate。
-5. 等 registry diff 和 SARIF 对 reviewer 有用后，再升级到 `builtin/engineering-grade`。
+## Documentation
 
-完整步骤见 [Adoption Playbook](docs/adoption-playbook.md)。可复制的真实仓库形态示例见
-[Reference Repository Examples](examples/adoption-repos/README.md)。
+| Goal | Start here |
+| --- | --- |
+| Add checks to one repository | [Install](docs/install.md), [GitHub Action](docs/github-action.md) |
+| Roll out across a team | [Production Adoption](docs/production-adoption.md), [Team Standardization](docs/team-standardization.md) |
+| Review security and provenance | [Policy Packs](docs/policy-packs.md), [Supply Chain Verification](docs/supply-chain-verification.md) |
+| Integrate an agent runtime | [MCP Server](docs/MCP_SERVER.md), [Adapters](docs/adapters.md), [Pipelines](docs/PIPELINES.md) |
+| Implement compatible tooling | [SkillOps Contract](SPEC.md), [Conformance](CONFORMANCE.md), [Third-party Implementation](docs/third-party-implementation.md) |
+| Evaluate adoption or commercial boundaries | [Adoption Maturity Model](docs/adoption-maturity-model.md), [Open-core Boundary](docs/open-core-boundary.md) |
 
-### 生产固定版本策略
+The [Documentation Index](docs/INDEX.md) contains the complete role-based map, examples, schemas,
+operations guides, and external-consumer contracts.
 
-生产仓库不要自动追最新 tag。固定 PyPI exact version、GitHub Action release commit SHA、
-Docker digest 和依赖 hash lock；先以 advisory mode 运行，再按团队变更流程升级到 blocking
-gate。推荐流程见
-[Production Adoption](docs/production-adoption.md)。
-
-#### 发布验证边界
+## Release verification boundary
 
 The release contract is strict: a Git tag or the version in the source tree is not a public-release claim.
-只有 GitHub Release、PyPI 和 GHCR 全部可用，并且
-[Release Integrity](https://github.com/BambooGap/skills-orchestrator/actions/workflows/release-integrity.yml)
-通过后，版本才可作为公开制品使用。
+A version is consumable only after its GitHub Release, PyPI package, and GHCR image are available
+and Release Integrity has passed.
 
 - [GitHub latest release](https://github.com/BambooGap/skills-orchestrator/releases/latest)
 - [PyPI project](https://pypi.org/project/skills-orchestrator/)
 - [GHCR package](https://github.com/BambooGap/skills-orchestrator/pkgs/container/skills-orchestrator)
 - [Post-release Smoke](https://github.com/BambooGap/skills-orchestrator/actions/workflows/post-release-smoke.yml)
+- [Release Integrity](https://github.com/BambooGap/skills-orchestrator/actions/workflows/release-integrity.yml)
 - [Supply Chain Verification](docs/supply-chain-verification.md)
 
-项目生成 SLSA readiness / evidence input，用于说明哪些发布证据已经可验证。
-它不是正式 SLSA 等级认证，也不声明已经达到 SLSA Build L3+。细节见
-[SLSA Readiness](docs/slsa-readiness.md)。
+The project produces SLSA readiness and evidence inputs. 它不是正式 SLSA 等级认证，也不声明
+已经达到 SLSA Build L3+. See [SLSA Readiness](docs/slsa-readiness.md) for the exact boundary.
 
-### 规范、一致性与端到端参考
+Published tags are immutable release snapshots. Documentation improvements land on `main` and
+appear in a future release; existing tags are not moved to rewrite their history.
 
-- [SkillOps Contract v1](SPEC.md): skill metadata、registry、diff、evidence、adapter 的机器可验证规范。
-- [Conformance](CONFORMANCE.md): 如何用 `conformance run`、`schema validate`、`check`、`registry`、`evidence` 验证兼容性。
-- [Third-party Implementation Guide](docs/third-party-implementation.md): 如何只依赖 schema、conformance 和负例 fixtures 实现兼容工具。
-- [Security Policy](SECURITY.md): MCP trust model、HMAC audit、import provenance 和漏洞报告流程。
-- [Reference Repository](examples/demo-repo/README.md): 可复制到独立 repo 的端到端参考场景，覆盖 PR diff comment、SARIF、evidence bundle 和 adapter inspect。
-- [Negative Conformance Fixtures](examples/negative-conformance/README.md): 可复制的坏输入样本，证明高风险 instruction artifacts 会稳定失败。
-- [Adoption Playbook](docs/adoption-playbook.md): 从 advisory CI 到 blocking gate 的接入路径。
-- [Production Adoption](docs/production-adoption.md): 生产 CI 接入的 SHA pin、Docker digest、PyPI version pin、证据保留和 runtime 边界。
-- [Supply Chain Verification](docs/supply-chain-verification.md): 验证 PyPI wheel/sdist attestations、GHCR provenance/SBOM attestations、digest 和 hash-lock 边界。
-- [Adoption Authorization](docs/adoption-authorization.md): 外部仓库维护者授权 adoption 的请求模板、公开引用许可和防误读边界。
-- [External Adoption Intake](docs/external-adoption-intake.md): 外部仓库接入前的 go / no-go 清单。
-- [Adoption Evidence Pack](docs/adoption-evidence-pack.md): 真实外部仓库接入的 artifact handoff、review agenda 和 promotion decision 清单。
-- [External Adoption Record](examples/external-adoption-record/README.md): 用 schema-valid artifact 记录外部接入、promotion decision 和公开 listing consent。
-- [Adoption Case Study Template](docs/adoption-case-study-template.md): 只有在 public listing consent 获批后才使用的公开案例模板。
-- [Adoption Maturity Model](docs/adoption-maturity-model.md): 从本地接入到多仓治理的分级准入标准。
-- [Agent Fleet Governance](docs/agent-fleet-governance.md): 多 Agent、多租户、多项目指令资产治理边界。
-- [Supervisor Governance](docs/supervisor-governance.md): 总控 Agent、子 Agent、交接、权限和证据的治理模型。
-- [Agent Handoff Contract Example](examples/agent-handoff/README.md): 可验证的 supervisor/worker handoff、tenant scope、tool boundary 和 evaluation gate 示例。
-- [Agent Runtime Image Contract Example](examples/agent-runtime-image/README.md): 可验证的外部 agent runtime 容器镜像、权限边界、证据和 handoff gate 示例。
-- [Reference Repository Examples](examples/adoption-repos/README.md): Healthchecks、Umami、Woodpecker 风格仓库的最小接入包。
-- [External Consumer Example](examples/external-consumer/): hosted registry、GitHub App 和 multi-repo artifact 输入边界。
-- [Commercial And Foundation Readiness](docs/foundation-readiness.md): 商用接入、外部 adoption、基金会候选之间的真实门槛。
-- [Release Rollback Playbook](docs/release-rollback.md): 发布错误时如何处理 PyPI、GHCR、GitHub Release 和证据包。
-- [Support](SUPPORT.md), [Code of Conduct](CODE_OF_CONDUCT.md), and [Third-party Notices](THIRD_PARTY_NOTICES.md):
-  外部贡献、支持边界和依赖 notices 入口。
-
-### SkillOps Readiness 与证据包
-
-```bash
-skills-orchestrator doctor --profile adopter --config config/skills.yaml
-
-skills-orchestrator doctor --profile maintainer --config config/skills.yaml
-
-skills-orchestrator conformance run \
-  --config config/skills.yaml \
-  --policy-pack builtin/engineering-grade
-
-skills-orchestrator check \
-  --config config/skills.yaml \
-  --policy-pack builtin/engineering-grade \
-  --format json \
-  > check.json
-
-skills-orchestrator explainability build \
-  --check-json check.json \
-  --config config/skills.yaml \
-  --output ci-explainability.json \
-  --force
-
-skills-orchestrator evidence export \
-  --config config/skills.yaml \
-  --out evidence
-
-skills-orchestrator evidence index \
-  --manifest "repo-a=../repo-a/evidence/evidence-manifest.json" \
-  --manifest "repo-b=../repo-b/evidence/evidence-manifest.json" \
-  --scope-name platform-adoption \
-  --output multi-repo-artifacts.json
-
-skills-orchestrator registry build \
-  --config-glob "config/skills.yaml" \
-  --output skill-registry.json
-
-skills-orchestrator registry graph \
-  --config-glob "config/skills.yaml" \
-  --output registry-graph.json
-
-skills-orchestrator registry diff registry-before.json registry-after.json \
-  --format json \
-  --output registry-diff.json \
-  --force
-
-skills-orchestrator registry diff registry-before.json registry-after.json \
-  --format markdown \
-  --output registry-diff.md \
-  --force
-
-skills-orchestrator reviewer summary \
-  --check-json check.json \
-  --registry-diff-json registry-diff.json \
-  --registry-diff-markdown registry-diff.md \
-  --registry-graph registry-graph.json \
-  --evidence-manifest evidence/evidence-manifest.json \
-  --output skillops-review-summary.md
-
-skills-orchestrator dashboard snapshot \
-  --evidence-dir evidence \
-  --repository BambooGap/skills-orchestrator \
-  --ref refs/heads/main \
-  --commit "$(git rev-parse HEAD)" \
-  --output dashboard-snapshot.json
-
-skills-orchestrator dashboard rollup \
-  --snapshot dashboard-snapshot.json \
-  --organization BambooGap \
-  --output dashboard-rollup.json
-
-skills-orchestrator registry comment-body registry-diff.md \
-  --output registry-diff-comment.md
-
-skills-orchestrator schema validate \
-  --kind registry \
-  --input skill-registry.json
-
-skills-orchestrator schema validate \
-  --kind registry-graph \
-  --input registry-graph.json
-
-skills-orchestrator schema validate \
-  --kind enterprise-dashboard-snapshot \
-  --input dashboard-snapshot.json
-
-skills-orchestrator schema validate \
-  --kind enterprise-dashboard-rollup \
-  --input dashboard-rollup.json
-
-skills-orchestrator schema list --format json > schema-catalog.json
-skills-orchestrator schema validate \
-  --kind schema-catalog \
-  --input schema-catalog.json
-skills-orchestrator schema audit --stability stable --format json > schema-audit.json
-skills-orchestrator schema validate \
-  --kind schema-audit \
-  --input schema-audit.json
-
-skills-orchestrator schema validate \
-  --kind agent-handoff \
-  --input examples/agent-handoff/release-review-handoff.json
-
-skills-orchestrator schema validate \
-  --kind agent-runtime-image \
-  --input examples/agent-runtime-image/codex-worker-image.json
-
-skills-orchestrator integrations list
-skills-orchestrator adapters inspect --format json
-skills-orchestrator supply-chain sbom --output package-sbom.cdx.json
-```
-
-`doctor` 默认使用 `adopter` profile，检查接入仓库真正需要的 config、policy、
-SkillOps CI workflow、lock 和 `AGENTS.md` 证据；`maintainer` profile 才额外检查
-本项目发版用的 `action.yml`、`Dockerfile` 和版本化质量报告；`enterprise` profile
-读取 evidence bundle 并验证核心 artifact schema，适合平台团队接入。`evidence export` 写出
-`check.json`、`check.sarif`、`ci-explainability.json`、`instruction-manifest.json`、
-`policy-opa-input.json`、`policy-proof.rego`、`doctor.json`、`skill-registry.json`、
-`registry-graph.json`、`adapter-inspect.json` 和 `package-sbom.cdx.json`，并在
-`evidence-manifest.json` 中记录 artifact SHA-256、`bundle_hash` 和可选
-`previous_bundle_hash`，适合 CI artifact、审计归档或客户交付。
-多仓场景下，`evidence index` 会把多个仓库的 evidence manifest 聚合成
-`multi-repo-artifacts.json`，供平台团队和 hosted registry 类外部消费者读取。
-`schema validate` 可单独验证 config、check、CI explainability、manifest、policy OPA input、
-doctor、registry、registry graph、registry diff、multi-repo artifacts、adapter inspection、
-Claude Skills export manifest、SBOM、dashboard snapshot/rollup、agent handoff、agent runtime image
-和 commercial handoff 文件合同。`schema list --format json` 现在输出可验证的
-`schema-catalog`，包含每个合同的 `contract_id`、`stability`、`since` 和目标消费者，
-适合平台团队做自动发现和兼容性审计；`schema audit` 会自检所有打包 schema 和
-catalog 元数据，是 v4 线的合同自审计 gate。生产 blocking CI 建议使用
-`schema audit --stability stable`，只绑定 stable contract surface；维护者发版继续运行默认
-`schema audit --stability all`，同时覆盖 stable 与 preview 合同 fixtures。
-`builtin/engineering-grade` 在 v3.2 起额外检查 `license`、外部 skill `provenance`
-和 review-window 元数据；外部导入应保留 observed `source_url`、`source_ref`、
-`source_commit`、`content_hash` 和 `fetched_at`，不要把未验证 frontmatter 当成可信来源。
-
-### 生态适配与 Open-core Handoff
-
-```bash
-skills-orchestrator adapters inspect --path . --format json \
-  > adapter-inspect.json
-
-skills-orchestrator adapters export mcp-client-config \
-  --config config/skills.yaml \
-  --output mcp-client.json
-
-skills-orchestrator adapters export claude-skills \
-  --config config/skills.yaml \
-  --output-dir .claude/skills \
-  --manifest-output claude-skills-export.json \
-  --force
-
-skills-orchestrator schema validate \
-  --kind claude-skills-export \
-  --input claude-skills-export.json
-
-skills-orchestrator adapters export openai-agents-sdk \
-  --config config/skills.yaml \
-  --output openai_skillops_agent.py
-
-skills-orchestrator schema validate \
-  --kind hosted-registry-ingest \
-  --input examples/commercial-handoff/registry-ingest.json
-```
-
-开源核心只负责产出本地 artifact 与机器可读合同。GitHub App、hosted registry
-和 enterprise dashboard 这类外部产品应消费这些文件，而不是在 SaaS 后端里重新实现
-resolver 或 registry 语义。
-
-### 导出 Instruction Manifest
-
-Native JSON 保留 Skills Orchestrator 的完整语义，CycloneDX 输出是互操作映射，用于进入现有 BOM / supply-chain 词汇体系。
-
-```bash
-skills-orchestrator manifest --config config/skills.yaml --format json
-skills-orchestrator manifest --config config/skills.yaml --format cyclonedx
-```
-
-### 导出 Policy Proof
-
-OPA/Rego 是对外审计和集成表面，不是第二套运行时 backend。Resolver 仍然是权威决策系统。
-
-```bash
-skills-orchestrator policy export --config config/skills.yaml --format opa-input
-skills-orchestrator policy export --config config/skills.yaml --format rego-test
-```
-
-### 编译生成 AGENTS.md
-
-```bash
-skills-orchestrator build --config config/skills.yaml
-# ✓ 解析完成: N skills, N zones
-# ✓ 使用 Zone: 默认区 (default)
-# ✓ 输出: AGENTS.md
-```
-
-把生成的 `AGENTS.md` 放到项目根目录，Claude / Cursor 会在会话启动或项目重新加载时读取。
-`build` 会拒绝把明显的 secret-like 字段写入 `AGENTS.md`，并限制单个 required skill 的
-输出大小。需要更严格限制时可传 `--max-skill-bytes` 或设置
-`SKILLS_ORCHESTRATOR_BUILD_MAX_SKILL_BYTES`。
-
----
-
-## 核心功能
-
-### Runtime Model
-
-Skills Orchestrator 把“启动时引导”和“运行时加载”分开：
-
-| 层 | 作用 | 典型入口 |
-|----|------|----------|
-| `AGENTS.md` | Bootstrap。告诉 Agent 当前项目有哪些 required / available skills，以及如何按需请求更多内容。多数 Agent 只在会话启动或项目重新加载时读取它。 | `build`, `sync agents-md` |
-| Check Reports | Static diagnostics。检查 metadata、重复 id、冲突声明、lock drift，并输出 text / JSON / SARIF。 | `check`, `validate --format json` |
-| Policy Packs | Team governance。把 owner/source/version/lifecycle/approver 等团队规则变成可执行检查。 | `check --policy-pack builtin/team-standard` |
-| Instruction Manifest | Inventory export。导出 native JSON 和 CycloneDX BOM，便于把 agent instructions 纳入供应链资产清单。 | `manifest` |
-| Policy Export | Policy proof。导出 OPA input 和 Rego test fixture，证明 resolver 事实可被 policy-as-code 审计。 | `policy export` |
-| Registry & Evidence | SkillOps evidence。生成组织级 registry、doctor readiness 报告和发布审计证据包。 | `registry`, `doctor`, `evidence export` |
-| MCP Server | Runtime skill loading。对话过程中通过 `prepare_context` / `search_skills` / `get_skill` 动态选择并获取本轮 Skill 内容，避免一次性塞满上下文。 | `serve`, `mcp-test` |
-| Pipeline | Runtime workflow orchestration。把多个 Skill 串成有状态流程，并在每一步自动注入当前步骤 Skill。 | `pipeline start`, MCP pipeline tools |
-
-团队落地建议见 [Team Standardization Guide](docs/team-standardization.md)。
-
-### 同一会话内如何动态切换 Skills
-
-`AGENTS.md` 不是热更新文件。多数 Agent 只会在 `/new`、新会话、项目重新加载时读取一次它。Skills Orchestrator 的动态能力来自 MCP：`AGENTS.md` 只告诉 Agent 一条固定协议，真正的 Skill 选择在每个任务开始时通过 `prepare_context` 完成。
-
-```text
-/new
-  ↓
-Agent 读取一次 AGENTS.md
-  ↓
-AGENTS.md 提供固定协议：
-  - 不要把所有 available skills 全量塞进上下文
-  - 每个新任务开始或任务目标明显变化时，先调用 MCP prepare_context(task)
-  - 本轮只遵循 prepare_context 返回的 active_skills
-  - 上一轮加载过但本轮未返回的 skills 视为 inactive
-  ↓
-任务 1：用户说“帮我做安全审查”
-  ↓
-Agent 调用：
-  prepare_context({"task": "帮我做安全审查", "max_skills": 3})
-  ↓
-MCP 返回本轮 active_skills，例如：
-  - security-review（安全代码审查）
-  - pr-review（PR Review）
-  - error-handling（错误处理规范）
-  ↓
-Agent 按这组 Skills 执行任务 1
-  ↓
-任务 2：用户说“现在帮我写发版流程”
-  ↓
-Agent 再次调用：
-  prepare_context({"task": "写发版流程", "max_skills": 3})
-  ↓
-MCP 返回新的 active_skills，例如：
-  - deployment-checklist（部署检查清单）
-  - git-commit-conventions（Git 提交规范）
-  - documentation（写文档）
-  ↓
-Agent 按新这组 Skills 执行任务 2，任务 1 的安全审查 Skills 不再作为本轮规则
-```
-
-`prepare_context` 默认会直接返回 active skills 的完整内容，适合让 Agent 立即进入任务。如果只想先看路由结果，可以传 `include_content: false`，再对需要的条目调用 `get_skill(id)`。
-
-```bash
-skills-orchestrator mcp-test prepare_context \
-  '{"task": "帮我做安全审查", "max_skills": 3, "include_content": false}' \
-  --config config/skills.yaml
-```
-
-返回结果包含四类信息：
-
-| 字段 | 含义 |
-|------|------|
-| `active_skills` | 本轮任务应该遵循的 Skill ID 列表 |
-| `inactive_skills` | 当前 Registry 中未被本轮选中的 Skill，本轮任务不应受其约束 |
-| `Decision Record (JSON)` | 结构化路由记录，包含 `routing_id`、`task_hash_alg`、registry generation、active/inactive skills、内容哈希和截断信息 |
-| `Execution Rule` | 明确告诉 Agent：旧 Skill 与本轮 active skills 冲突时，以本轮为准 |
-| `Active Skill Content` | 当 `include_content=true` 时，直接注入本轮所需 Skill 全文 |
-
-这意味着同一个会话可以连续处理多个不同任务，但每个任务边界都要重新路由一次。`prepare_context` 不能删除模型历史上下文里的旧文字，所以它会显式输出 inactive 规则，让 Agent 在行为上切换到新的一组 Skills。
-
-因此，修改 Skill 后通常需要重新 `build` / `sync` 并重启或刷新对应 Agent 会话；如果使用 MCP Server，运行中的 server 也需要重启才能重新加载配置和 Skill 内容。
-
-### 1. 编译时治理
-
-解析 Skill 的 YAML frontmatter，检测冲突，按 Zone 生成 `AGENTS.md`。
-
-- **Zone 机制**：不同目录自动应用不同规范（企业强制区 vs 个人自由区）
-- **冲突检测**：编译时 `conflict_with` 强制报错，不会运行时才发现
-- **Auto-Discovery**：从 frontmatter 自动发现 Skill，无需手动注册
-
-### 2. MCP Server（10 个工具）
-
-让 Claude 在对话中按需动态加载 Skill，上下文零浪费。
-
-MCP serving is optional. Install `skills-orchestrator[mcp]` before running `serve` or `mcp-test`.
-
-| 工具 | 用途 |
-|------|------|
-| `list_skills` | 查看所有可用 Skill（含 tag 过滤） |
-| `search_skills` | 按需求搜索相关 Skill |
-| `get_skill` | 加载完整 Skill 内容到上下文 |
-| `suggest_combo` | 根据任务描述推荐 Skill 组合 |
-| `prepare_context` | 每个新任务动态选择本轮 active skills，并可直接注入完整内容 |
-| `pipeline_start` | 启动一个工作流，注入当前步骤指导 |
-| `pipeline_status` | 查看工作流进度和当前步骤 |
-| `pipeline_list_runs` | 列出已保存的 Pipeline 运行记录 |
-| `pipeline_advance` | 完成当前步骤，推进到下一步 |
-| `pipeline_resume` | 恢复中断的工作流 |
-
-推荐在 `AGENTS.md` 中固定写入这条规则：每次新任务开始或任务目标明显变化时，先调用 `prepare_context(task)`；本轮只遵循返回的 `active_skills`，之前任务加载过但本次未返回的 Skill 视为 inactive。
-
-启动方式：
-
-```bash
-skills-orchestrator serve --config config/skills.yaml
-```
-
-需要运行期审计时，指定 audit 目录。审计事件是带序号与前序哈希的 JSONL，只记录 tool、
-参数 key、routing hash、active skill id 等治理字段，不记录任务原文或 Skill 正文。
-`production` Pipeline 强制要求可写 audit 目录；写入失败会阻止状态推进。
-
-```bash
-skills-orchestrator serve --config config/skills.yaml --audit-dir .skills-audit
-skills-orchestrator usage report --audit-dir .skills-audit
-```
-
-在 `.claude/settings.json` 中配置：
-
-```json
-{
-  "mcpServers": {
-    "skills-orchestrator": {
-      "command": "skills-orchestrator",
-      "args": ["serve", "--config", "/absolute/path/to/config/skills.yaml"]
-    }
-  }
-}
-```
-
-### 3. Pipeline 编排
-
-把多个 Skill 编排成有序工作流，并对明确的 artifact/evidence 施加检查。内置
-Pipeline 均为 `coordination`（进度协调）配置，不代表合并、发布或部署已获批准。
-它不验证模型推理质量，也不是宿主 Agent 的安全沙箱。
-
-```yaml
-# config/pipelines/quick-fix.yaml
-id: quick-fix
-name: 快速修复流程
-profile: coordination
-steps:
-  - skill: systematic-debugging
-    gate:
-      must_produce: [root_cause]
-      min_length: 50
-  - skill: tdd
-    gate:
-      must_produce: [test_code]
-      min_length: 100
-  - skill: pr-review
-    skip_if: trivial_fix
-```
-
-```bash
-# 启动工作流
-skills-orchestrator pipeline start quick-fix
-
-# 查看进度
-skills-orchestrator pipeline status
-
-# 推进到下一步
-skills-orchestrator pipeline advance quick-fix
-
-# 恢复中断的工作流
-skills-orchestrator pipeline resume
-```
-
-**关键设计**：
-- `pipeline_start` / `pipeline_advance` / `pipeline_resume` 返回时自动注入当前步骤 Skill 的完整内容，AI 无需额外调用 `get_skill`
-- Gate artifact/evidence 检查：`must_produce` 要求非空内容、字节或具有 `type` 与 `uri`/`sha256`/`content` 的结构化证据；`min_length` 只接受可测量内容。`production` profile 的每个步骤必须同时配置强证据、verifier allowlist、仓库控制的 `check_command` 和严格审计；只接受受控目录内的文件证据，验证器必须输出绑定 execution ID、运行、步骤与证据摘要的结构化 attestation。Pipeline 配置应只来自受信任仓库；它不验证 Agent 的推理、不是安全沙箱，也不替代独立 CI/eval。
-- `skip_if` 条件跳过：满足条件时自动跳过该步骤
-- RunState 持久化：工作流状态存到 `~/.skills-orchestrator/runs/`，中断后可恢复
-
-### 4. Skill Inheritance
-
-子 Skill 继承父 Skill 的内容，避免重复维护。
-
-```markdown
----
-id: chinese-code-review
-name: 中文代码审查
-base: code-review          # 继承父 Skill
-tags: [review, coding, chinese]
----
-
-## 额外规则（追加到父内容之后）
-
-- 审查意见用中文撰写
-- 遵循国内团队 commit 规范
-```
-
-编译时 Resolver 校验继承链（循环引用、缺失父 Skill），运行时 `get_skill` 返回合并后的完整内容。
-
-### 5. Sync 多工具同步
-
-将 Skill 同步到不同 AI 工具的目录格式。
-
-```bash
-# 同步到 Hermes Agent（全量，默认）
-skills-orchestrator sync hermes
-
-# 同步到 OpenClaw（全量，默认）
-skills-orchestrator sync openclaw
-
-# 同步到 AGENTS.md（摘要模式，默认）
-skills-orchestrator sync agents-md
-
-# 同步到 Cursor（摘要模式，默认）
-skills-orchestrator sync cursor
-
-# 同步到 Copilot（摘要模式，默认）
-skills-orchestrator sync copilot
-
-# 全量导出到指定文件
-skills-orchestrator sync agents-md --full -o AGENTS.md
-```
-
-| 目标 | 默认模式 | 说明 |
-|------|----------|------|
-| `hermes` | 全量 | 写入 `~/.hermes/skills/` 目录 |
-| `openclaw` | 全量 | 写入 `~/.openclaw/workspace/skills/` 目录 |
-| `agents-md` | 摘要 | 生成 `AGENTS.md`，Required Skills 完整内容 + Available Skills 表格 |
-| `cursor` | 摘要 | 生成 `.cursor/rules/*.mdc`，每个 Skill 对应一个文件 |
-| `copilot` | 摘要 | 生成 `.github/copilot-instructions.md` |
-
-AGENTS.md 输出格式：
-
-```markdown
-<!-- sync | 2026-05-02 -->
-
-## Required Skills
-
----
-id: systematic-debugging
-...
-
-（完整 Skill 内容）
-
----
-
-## Available Skills
-
-| Skill | 描述 | Tags |
-|-------|------|------|
-| brainstorming | 在任何创造性工作之前必须使用... | planning, creative |
-| writing-plans | 当你有规格说明或需求时使用... | planning |
-```
-
----
-
-## Skill 文件格式
-
-每个 `.md` 文件开头加 YAML frontmatter，Skills Orchestrator 自动发现，无需手动注册：
-
-```markdown
----
-id: my-skill
-name: 我的技能
-summary: "一句话描述，用于 search 和摘要展示"
-tags: [coding, quality]
-load_policy: free      # free / require（强制注入）
-priority: 80           # 数值越大优先级越高
-zones: [default]       # 适用的 Zone
-conflict_with: []      # 互斥的 Skill ID 列表
-base: parent-skill     # 可选：继承父 Skill
----
-
-# 正文内容（Markdown）
-...
-```
-
-### 目录结构（推荐）
-
-```
-skills/
-├── coding/        tdd.md, error-handling.md, api-design.md
-├── git/           git-operations.md, git-worktrees.md
-├── ops/           deployment-checklist.md, environment-setup.md
-├── planning/      brainstorming.md, writing-plans.md
-├── quality/       refactoring.md, systematic-debugging.md
-└── review/        chinese-code-review.md, security-review.md
-```
-
----
-
-## 配置文件（skills.yaml）
-
-```yaml
-version: "2.0"
-
-# 自动扫描目录，无需手动列出每个 Skill
-skill_dirs:
-  - ../skills
-
-# Zone：不同目录使用不同规范
-zones:
-  - id: enterprise
-    name: 企业强制区
-    load_policy: require       # 该 Zone 内所有 Skill 强制注入（free 自动升级为 forced）
-    rules:
-      - pattern: "*/internal/*"
-      - git_contains: "company.com"
-
-  - id: default
-    name: 默认区
-    load_policy: free
-    rules: []
-
-# 覆盖个别 Skill 的 frontmatter 默认值
-overrides: []
-
-# Combo：预定义的 Skill 组合
-combos:
-  - id: full-dev-workflow
-    name: 完整开发工作流
-    skills: [brainstorming, writing-plans, git-worktrees, finish-branch]
-```
-
----
-
-## 所有命令
-
-```bash
-# 编译 & 验证
-skills-orchestrator build     --config <path>            # 生成 AGENTS.md
-skills-orchestrator validate  --config <path>            # 验证，不生成文件
-skills-orchestrator status    --config <path>            # 查看 forced/passive/blocked
-skills-orchestrator inspect   --workdir <path>           # 检查目录命中哪个 Zone
-
-# 初始化 & 导入
-skills-orchestrator init                                 # 交互式初始化
-skills-orchestrator init --non-interactive                # 非交互式，从 frontmatter 自动生成
-skills-orchestrator import    <github-url>                # 从 GitHub 导入 Skill
-
-# MCP Server
-skills-orchestrator serve     --config <path>            # 启动 MCP Server
-skills-orchestrator mcp-test  <tool> <args>              # 调用 MCP 工具
-# 示例：为一个新任务动态选择本轮 skills
-skills-orchestrator mcp-test prepare_context '{"task": "做安全审查", "max_skills": 3}'
-
-# Pipeline 编排
-skills-orchestrator pipeline start    <pipeline-id>      # 启动工作流
-skills-orchestrator pipeline status                       # 查看进度
-skills-orchestrator pipeline advance <pipeline-id>       # 推进到下一步
-skills-orchestrator pipeline resume                      # 恢复中断的工作流
-
-# Sync 同步
-skills-orchestrator sync hermes                          # 同步到 Hermes Agent
-skills-orchestrator sync openclaw                        # 同步到 OpenClaw
-skills-orchestrator sync agents-md [-o FILE]             # 同步到 AGENTS.md
-skills-orchestrator sync cursor                          # 同步到 Cursor (.cursor/rules/*.mdc)
-skills-orchestrator sync copilot [-o FILE]               # 同步到 Copilot
-
-# Lock 可复现性
-skills-orchestrator build --lock                         # 编译时同时生成 skills.lock.json
-skills-orchestrator check --check-lock skills.lock.json      # 检查 lock 是否过期
-```
-
----
-
-## 从 GitHub 导入 Skill
-
-```bash
-# 导入受信任仓库里的所有 Skill
-skills-orchestrator import https://github.com/example/your-reviewed-skills
-
-# 导入后记录 observed source/provenance；加入默认 skill_dirs 前先复核 license 与内容安全
-```
-
----
-
-## 开发
+## Contributing and support
 
 ```bash
 git clone https://github.com/BambooGap/skills-orchestrator
 cd skills-orchestrator
 python3.12 -m pip install -e ".[dev]"
-pytest tests/ -v
+pytest tests/ -q
 ruff check skills_orchestrator/ tests/
 ```
 
-CI 运行：ruff lint + format check + Python 3.12/3.13 matrix。
+Read [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), [Governance](GOVERNANCE.md),
+[Support](SUPPORT.md), [Code of Conduct](CODE_OF_CONDUCT.md), and
+[Third-party Notices](THIRD_PARTY_NOTICES.md) before opening a change or report.
 
----
+External adoption and public references require explicit permission; see
+[Adoption Authorization](docs/adoption-authorization.md).
 
 ## License
 

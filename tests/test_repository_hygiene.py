@@ -72,6 +72,16 @@ def test_readme_points_to_dual_license_and_support_surfaces():
     assert "[Third-party Notices](THIRD_PARTY_NOTICES.md)" in readme
 
 
+def test_readme_stays_focused_as_a_repository_entrypoint():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert len(readme.splitlines()) <= 300
+    assert "## Quick start" in readme
+    assert "## What it solves" in readme
+    assert "## Documentation" in readme
+    assert "[Documentation Index](docs/INDEX.md)" in readme
+
+
 def test_readme_exposes_release_verification_and_slsa_boundaries():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
