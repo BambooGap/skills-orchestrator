@@ -35,14 +35,14 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = [
-    "mcp>=1.0,<2",
+    "mcp>=1.0,<3",
 ]
 dev = [
     "build>=1.0",
-    "mcp>=1.0,<2",
+    "mcp>=1.0,<3",
     "pytest>=7.0",
     "pytest-benchmark>=4.0",
-    "ruff>=0.15,<0.16",
+    "ruff>=0.15,<0.17",
     "twine>=5.0",
 ]
 
